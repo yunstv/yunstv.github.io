@@ -11,19 +11,19 @@
 程序设计最后的终点，就是要找到一种解决方案来解决问题。这句话正确无疑。但我又想起有个冷笑话，A对B说：我教你怎么去赢这盘象棋，B问怎样，A回答说：吃掉对方的“帅”就赢了啊。略去中间的过程，直接描述到结果，这其实是毫无意义的。而设计模式，又恰恰关乎中间解决问题的过程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="模式应用小分享——中介者模式(mediator)">
-<meta property="og:url" content="http://litten.github.io/2013/01/02/mediator-model/index.html">
+<meta property="og:url" content="http://yunstv.github.io/2013/01/02/mediator-model/index.html">
 <meta property="og:site_name" content="Litten的博客">
 <meta property="og:description" content="你需要一种设计模式，一定是哪里出问题了。这问题是指语言天生缺陷，不得不去寻找一种通用的解决方案。
 
 程序设计最后的终点，就是要找到一种解决方案来解决问题。这句话正确无疑。但我又想起有个冷笑话，A对B说：我教你怎么去赢这盘象棋，B问怎样，A回答说：吃掉对方的“帅”就赢了啊。略去中间的过程，直接描述到结果，这其实是毫无意义的。而设计模式，又恰恰关乎中间解决问题的过程。">
-<meta property="og:image" content="http://litten.github.io/assets/blogImg/mediator1.jpg">
+<meta property="og:image" content="http://yunstv.github.io/assets/blogImg/mediator1.jpg">
 <meta property="og:updated_time" content="2016-10-18T08:51:05.889Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="模式应用小分享——中介者模式(mediator)">
 <meta name="twitter:description" content="你需要一种设计模式，一定是哪里出问题了。这问题是指语言天生缺陷，不得不去寻找一种通用的解决方案。
 
 程序设计最后的终点，就是要找到一种解决方案来解决问题。这句话正确无疑。但我又想起有个冷笑话，A对B说：我教你怎么去赢这盘象棋，B问怎样，A回答说：吃掉对方的“帅”就赢了啊。略去中间的过程，直接描述到结果，这其实是毫无意义的。而设计模式，又恰恰关乎中间解决问题的过程。">
-<meta name="twitter:image" content="http://litten.github.io/assets/blogImg/mediator1.jpg">
+<meta name="twitter:image" content="http://yunstv.github.io/assets/blogImg/mediator1.jpg">
   
     <link rel="alternative" href="/atom.xml" title="Litten的博客" type="application/atom+xml">
   
@@ -43,16 +43,16 @@
 	<header id="header" class="inner">
 		<a href="/" class="profilepic">
 			
-			<img src="/assets/blogImg/litten.png" class="js-avatar">
+			<img src="/assets/blogImg/zzz.gif" class="js-avatar">
 			
 		</a>
 
 		<hgroup>
-		  <h1 class="header-author"><a href="/">Litten</a></h1>
+		  <h1 class="header-author"><a href="/">梦周十</a></h1>
 		</hgroup>
 
 		
-		<p class="header-subtitle">胆小认生，不易相处</p>
+		<p class="header-subtitle">迷离尘世间的小码农...</p>
 		
 
 		<nav class="header-menu">
@@ -88,9 +88,9 @@
 		<nav class="header-nav">
 			<div class="social">
 				
-					<a class="github" target="_blank" href="https://github.com/litten" title="github">github</a>
+					<a class="github" target="_blank" href="https://github.com/yunstv" title="github">github</a>
 		        
-					<a class="weibo" target="_blank" href="http://weibo.com/litten225" title="weibo">weibo</a>
+					<a class="weibo" target="_blank" href="http://weibo.com/3609009263/profile" title="weibo">weibo</a>
 		        
 					<a class="rss" target="_blank" href="/atom.xml" title="rss">rss</a>
 		        
@@ -104,20 +104,20 @@
       <nav id="mobile-nav">
   	<div class="overlay">
   		<div class="slider-trigger"><i class="icon-list"></i></div>
-  		<h1 class="header-author js-mobile-header hide">Litten</h1>
+  		<h1 class="header-author js-mobile-header hide">梦周十</h1>
   	</div>
 	<div class="intrude-less">
 		<header id="header" class="inner">
 			<div class="profilepic">
 				
-					<img src="/assets/blogImg/litten.png" class="js-avatar">
+					<img src="/assets/blogImg/zzz.gif" class="js-avatar">
 				
 			</div>
 			<hgroup>
-			  <h1 class="header-author">Litten</h1>
+			  <h1 class="header-author">梦周十</h1>
 			</hgroup>
 			
-			<p class="header-subtitle">胆小认生，不易相处</p>
+			<p class="header-subtitle">迷离尘世间的小码农...</p>
 			
 			<nav class="header-menu">
 				<ul>
@@ -131,9 +131,9 @@
 			<nav class="header-nav">
 				<div class="social">
 					
-						<a class="github" target="_blank" href="https://github.com/litten" title="github">github</a>
+						<a class="github" target="_blank" href="https://github.com/yunstv" title="github">github</a>
 			        
-						<a class="weibo" target="_blank" href="http://weibo.com/litten225" title="weibo">weibo</a>
+						<a class="weibo" target="_blank" href="http://weibo.com/3609009263/profile" title="weibo">weibo</a>
 			        
 						<a class="rss" target="_blank" href="/atom.xml" title="rss">rss</a>
 			        
@@ -248,7 +248,7 @@
 
 <div class="duoshuo">
 	<!-- 多说评论框 start -->
-	<div class="ds-thread" data-thread-key="mediator-model" data-title="模式应用小分享——中介者模式(mediator)" data-url="http://litten.github.io/2013/01/02/mediator-model/"></div>
+	<div class="ds-thread" data-thread-key="mediator-model" data-title="模式应用小分享——中介者模式(mediator)" data-url="http://yunstv.github.io/2013/01/02/mediator-model/"></div>
 	<!-- 多说评论框 end -->
 	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
 	<script type="text/javascript">
@@ -274,7 +274,7 @@
   <div class="outer">
     <div id="footer-info">
     	<div class="footer-left">
-    		&copy; 2016 Litten
+    		&copy; 2016 梦周十
     	</div>
       	<div class="footer-right">
       		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
@@ -334,7 +334,7 @@
     
     	<section class="tools-section tools-section-me">
   	  	
-  	  		<div class="aboutme-wrap" id="js-aboutme">Litten，&lt;br&gt;毕业于华科，就职于鹅厂&lt;br&gt;&lt;br&gt;热爱大海与冷笑话，&lt;br/&gt;目前是一枚前端&lt;br/&gt;&lt;br/&gt;胆小认生，不易相处，&lt;br&gt;年轻无为，卖马为生。</div>
+  	  		<div class="aboutme-wrap" id="js-aboutme">梦周十&lt;br&gt;炎黄子孙，生活在华夏大地&lt;br&gt;&lt;br&gt;热爱大海与冷笑话，&lt;br/&gt;目前是一枚前端&lt;br/&gt;&lt;br/&gt;胆小认生，不易相处，&lt;br&gt;年轻无为，卖马为生。</div>
   	  	
     	</section>
     
