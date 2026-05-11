@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Refractor / Prism token colours — minimal, inherits site colour via currentColor */
+.refractor {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+.refractor .token.comment,
+.refractor .token.prolog,
+.refractor .token.doctype,
+.refractor .token.cdata { color: var(--gray-9); font-style: italic; }
+.refractor .token.punctuation { color: var(--gray-11); }
+.refractor .token.property,
+.refractor .token.tag,
+.refractor .token.boolean,
+.refractor .token.number,
+.refractor .token.constant,
+.refractor .token.symbol,
+.refractor .token.deleted { color: var(--orange-11); }
+.refractor .token.selector,
+.refractor .token.attr-name,
+.refractor .token.string,
+.refractor .token.char,
+.refractor .token.builtin,
+.refractor .token.inserted { color: var(--grass-11); }
+.refractor .token.operator,
+.refractor .token.entity,
+.refractor .token.url,
+.refractor .token.variable { color: var(--iris-11); }
+.refractor .token.atrule,
+.refractor .token.attr-value,
+.refractor .token.function,
+.refractor .token.class-name { color: var(--blue-11); }
+.refractor .token.keyword { color: var(--violet-11); font-weight: 500; }
+.refractor .token.regex,
+.refractor .token.important { color: var(--red-11); }
+
+pre.shiki, pre:has(> code.refractor) {
+  background: var(--gray-2);
+  border: 1px solid var(--gray-4);
+  border-radius: var(--radius-3);
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
