@@ -2,6 +2,8 @@ import type { MetadataRoute } from 'next'
 import { listAll } from '@/lib/mdx'
 import type { PostMeta, ProjectMeta } from '@/types/content'
 
+export const dynamic = 'force-static'
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://yunstv.github.io'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
