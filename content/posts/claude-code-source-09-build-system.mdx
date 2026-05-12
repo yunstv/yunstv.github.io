@@ -1,0 +1,159 @@
+---
+title: Claude Code 源码研究（九）构建系统：为什么不能完整重建
+description: Bun 编译期内联 vs esbuild、4 个构建脚本、108 个缺失模块清单、vendor/ 原生模块——拆解为什么这是"研究仓库"而非"可运行工程"。
+date: 2026-05-04
+tags: [claude-code, source-code, research, build, bun, esbuild]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 9 篇。本篇回答一个核心问题：你为什么 npm install 之后还是跑不起来？
+</Callout>
+
+## 构建命令
+
+```bash
+npm run prepare-src   # 拷贝 + 转换 src → build-src
+npm run build         # prepare + esbuild bundle
+npm run check         # prepare + tsc --noEmit（类型检查）
+npm start             # node dist/cli.js
+```
+
+## 4 个构建脚本
+
+文件：`scripts/`
+
+| 脚本 | 行数 | 作用 |
+|---|---|---|
+| `scripts/prepare-src.mjs` | 4116 字节 | 步骤 1：拷贝 `src/` → `build-src/`，原 `src/` 不动 |
+| `scripts/transform.mjs` | 5258 字节 | 步骤 2：源码变换 |
+| `scripts/stub-modules.mjs` | 5735 字节 | 步骤 3：为 108 缺失模块生成空桩 |
+| `scripts/build.mjs` | 10120 字节 | 步骤 4：esbuild bundle，迭代式补桩 |
+
+## 转换步骤（transform.mjs）
+
+| 源码模式 | 转换后 | 原因 |
+|---|---|---|
+| `feature('FLAG')` | `false` | Bun 编译期函数，esbuild 不识别 |
+| `MACRO.VERSION` | `'2.1.88'` | Bun `--define` 编译期注入 |
+| `import from 'bun:bundle'` | 替换为 `stubs/bun-bundle.ts` | bun 专属模块 |
+| `MACRO.X`（其他） | 各种常量替换 | 同上 |
+
+## 4 个桩文件
+
+文件：`stubs/`
+
+| 文件 | 大小 | 作用 |
+|---|---|---|
+| `stubs/bun-bundle.ts` | 153 字节 | `feature(flag)` → 始终返回 `false`，让 esbuild 走死代码消除 |
+| `stubs/macros.ts` | 655 字节 | `MACRO.VERSION` 等常量 |
+| `stubs/macros.d.ts` | 368 字节 | MACRO 类型声明 |
+| `stubs/global.d.ts` | 322 字节 | 全局类型补丁 |
+
+## Bun 与 esbuild 的根本差异
+
+```typescript
+// Bun（真实构建）
+if (feature('KAIROS')) {        // 编译期求值 → true/false
+  require('./assistant/index')  // 当 false 时整段被消除
+}
+// 真正发布物里不会出现 ./assistant/index 的引用
+
+// esbuild（本仓库）
+if (false) {                    // 静态求值正确
+  require('./assistant/index')  // 但 esbuild 仍然要解析这个 require
+}                               // → 必须给 ./assistant/index 建桩文件
+```
+
+`scripts/stub-modules.mjs` 就是为此存在 — 把所有 feature-gated 分支里被 `require` 的模块**自动生成空桩**。
+
+<Callout type="warning">
+  这是 esbuild 和 Bun 在「死代码消除」上的根本差异：Bun 在 AST 层删掉整条 require，esbuild 在表达式层求值 false 但 require 路径仍要 resolve。
+</Callout>
+
+## 108 缺失模块清单（节选）
+
+| 模块 | feature gate | 用途 |
+|---|---|---|
+| `daemon/main.js` | `DAEMON` | 守护进程管理器 |
+| `daemon/workerRegistry.js` | `DAEMON` | worker 注册 |
+| `proactive/index.js` | `PROACTIVE` | 主动通知 |
+| `contextCollapse/*` | `CONTEXT_COLLAPSE` | 上下文折叠（实验） |
+| `skillSearch/*` | `EXPERIMENTAL_SKILL_SEARCH` | 远程技能搜索 |
+| `coordinator/workerAgent.js` | `COORDINATOR_MODE` | 多代理 worker |
+| `bridge/peerSessions.js` | `BRIDGE_MODE` | 桥接对等会话 |
+| `assistant/index.js` | `KAIROS` | KAIROS 助手 |
+| `assistant/AssistantSessionChooser.js` | `KAIROS` | 助手会话选择器 |
+| `compact/reactiveCompact.js` | `CACHED_MICROCOMPACT` | **响应式压缩**（核心） |
+| `compact/snipCompact.js` | `HISTORY_SNIP` | 裁剪式压缩 |
+| `compact/snipProjection.js` | `HISTORY_SNIP` | 裁剪投影 |
+| `compact/cachedMCConfig.js` | `CACHED_MICROCOMPACT` | 微压缩配置 |
+| `sessionTranscript/sessionTranscript.js` | `TRANSCRIPT_CLASSIFIER` | 会话转录 |
+| `commands/agents-platform/index.js` | `ant`（内部） | 内部代理平台 |
+| `commands/assistant/index.js` | `KAIROS` | 助手命令 |
+| `commands/buddy/index.js` | `BUDDY` | Buddy 命令 |
+| `commands/fork/index.js` | `FORK_SUBAGENT` | fork 子代理 |
+| `commands/peers/index.js` | `BRIDGE_MODE` | 多对等命令 |
+| `commands/proactive.js` | `PROACTIVE` | 主动命令 |
+| `commands/remoteControlServer/index.js` | `DAEMON` + `BRIDGE_MODE` | **远程控制服务器** |
+| `commands/subscribe-pr.js` | `KAIROS_GITHUB_WEBHOOKS` | PR 订阅 |
+| `commands/torch.js` | `TORCH` | 内部调试 |
+| `commands/workflows/index.js` | `WORKFLOW_SCRIPTS` | 工作流 |
+| `jobs/classifier.js` | `TEMPLATES` | 内部分类器 |
+
+## vendor/ — 原生模块源码桩
+
+文件：`vendor/`
+
+| 目录 | 用途 |
+|---|---|
+| `audio-capture-src/` | 语音模式的麦克风音频捕获（macOS / Linux） |
+| `image-processor-src/` | 图片粘贴压缩（贴板 → base64） |
+| `modifiers-napi-src/` | 键盘修饰键检测（Shift/Ctrl/Alt/Cmd） |
+| `url-handler-src/` | macOS URL scheme handler（claudecode://...） |
+
+这些是 **napi 原生 addon 的源码片段**（实际 `.node` 二进制不含在仓库），保留供研究参考。
+
+## TS 类型检查
+
+```bash
+npm run check
+# = npm run prepare-src && tsc --noEmit
+```
+
+`tsconfig.json`：标准 ESM TypeScript 配置，目标 ES2022+。
+
+## 排查缺失模块
+
+```bash
+npx esbuild build-src/entry.ts --bundle --platform=node \
+  --packages=external --external:'bun:*' \
+  --log-level=error --log-limit=0 --outfile=/dev/null 2>&1 | \
+  grep "Could not resolve" | sort -u
+```
+
+对每个缺失模块在 `build-src/src/` 下创建桩，重新跑 build。
+
+## 完整 Bun 构建（仅 Anthropic 内部）
+
+```bash
+bun build src/entrypoints/cli.tsx \
+  --define:feature='(flag) => flag === "SOME_FLAG"' \
+  --define:MACRO.VERSION='"2.1.88"' \
+  --target=bun \
+  --outfile=dist/cli.js
+```
+
+但**内部 monorepo 配置不公开**，普通用户无法做完整构建。
+
+## 总结
+
+| 项 | 答案 |
+|---|---|
+| 是否能完整重建？ | **不能** — 108 个内部模块永远拿不到 |
+| 折中方案有用吗？ | 仅供研究 — 桩模块导致部分功能不可用 |
+| 推荐使用方式 | 直接 `node cli.js`（预编译版本） |
+| 仓库价值 | **阅读源码** + 看 `docs/` 分析 |
+
+## 下一篇
+
+最后一篇来汇总：[Numbat / KAIROS / 卧底模式与未来路线图](/blog/claude-code-source-10-key-findings)——值得划重点的几个敏感主题。

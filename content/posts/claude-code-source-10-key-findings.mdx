@@ -1,0 +1,212 @@
+---
+title: Claude Code 源码研究（十）关键发现：Numbat、KAIROS、卧底模式与未来路线图
+description: 系列收官——模型代号体系、KAIROS 自主代理模式、Undercover 卧底机制、远程 killswitch、17 个未上线工具、Buddy 虚拟宠物。
+date: 2026-05-03
+tags: [claude-code, source-code, research, roadmap, kairos]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的最后一篇——前 9 篇拆架构，这篇汇总最值得划重点的"有故事"的发现。
+</Callout>
+
+## 一、模型代号体系
+
+| 代号 | 含义 |
+|---|---|
+| **Fennec**（耳廓狐） | Opus 4.6（已发布） |
+| **Capybara**（水豚） | Sonnet v8 |
+| **Tengu**（天狗） | 遥测/产品前缀（`tengu_*` flag 命名空间） |
+| **Numbat**（袋食蚁兽） | **下一代模型**（未发布） |
+
+证据：
+
+```typescript
+// src/constants/prompts.ts:402
+// @[MODEL LAUNCH]: Remove this section when we launch numbat.
+
+// src/utils/undercover.ts:49
+// Unreleased model version numbers (e.g., opus-4-7, sonnet-4-8)
+```
+
+代码中 20+ 处 `@[MODEL LAUNCH]` 标记，列出新模型发布要更新的位置：默认模型名、知识截止、定价表、上下文窗口、Thinking 支持、迁移脚本。
+
+## 二、KAIROS — 完全自主代理模式
+
+最大的未发布特性，**让 Claude Code 从被动助手变成主动自主代理**。
+
+System prompt 节选（`src/constants/prompts.ts:860-913`）：
+
+```
+你正在自主运行。
+你会收到 <tick> 提示让你保持活跃。
+如果没有有用的事可做，调用 SleepTool。
+倾向行动 — 读取文件、做修改、提交，无需询问。
+
+## 终端焦点
+- 未聚焦: 用户离开了。大幅倾向自主行动。
+- 聚焦: 用户在看。更协作。
+```
+
+关联工具：
+
+| 工具 | Feature Flag | 用途 |
+|---|---|---|
+| `SleepTool` | KAIROS / PROACTIVE | 自主操作间节奏控制 |
+| `SendUserFileTool` | KAIROS | 主动向用户发文件 |
+| `PushNotificationTool` | KAIROS / KAIROS_PUSH_NOTIFICATION | 推送到用户设备 |
+| `SubscribePRTool` | KAIROS_GITHUB_WEBHOOKS | 订阅 GitHub PR webhook |
+| `BriefTool` | KAIROS_BRIEF | 主动状态更新 |
+
+行为特征：
+
+- 通过 `<tick>` 心跳保持活跃
+- 终端焦点状态调节自主程度
+- 独立 commit/push/决策
+- 主动通知与状态更新
+- 监控 GitHub PR 变更
+
+<Callout type="warning">
+  「终端未聚焦时大幅倾向自主行动」——这意味着 KAIROS 模式下，你转头去开会的几分钟，Agent 可能已经自己 commit & push 了一轮。Plan Mode + 显式 review 的人在环越来越重要。
+</Callout>
+
+## 三、卧底模式（Undercover Mode）
+
+代码位置：`src/utils/undercover.ts`
+
+机制：
+
+- **Anthropic 员工在公开仓库自动启用**
+- 模型指令包含：「**不要暴露你的掩护身份**」
+- 自动剥离所有 AI 归属：
+  - 不在 commit message 加 "Generated with Claude Code"
+  - 不在 PR description 提 Claude
+  - 不签名 `Co-Authored-By: Claude`
+- **没有强制关闭选项** — 仅靠员工自觉
+
+<Callout type="danger">
+  合规风险：让 AI 贡献在开源项目中看起来像人类写的。这是个值得长期跟踪的伦理议题。
+</Callout>
+
+## 四、远程控制与紧急开关
+
+```
+client cli → 每小时 GET /api/claude_code/settings
+              ↓
+        服务端可下发:
+        ├─ 静默配置变更（多数）
+        ├─ 危险变更 → 阻塞对话框
+        │   ├─ 用户接受 → 应用
+        │   └─ 用户拒绝 → 进程退出 ⚠️
+        ├─ 6+ killswitch
+        │   ├─ 绕过权限模式
+        │   ├─ 快速模式
+        │   ├─ 语音模式
+        │   ├─ 分析 sink
+        │   └─ ...
+        └─ GrowthBook 特性 flag
+            └─ 无需用户同意即可改变任何用户行为
+```
+
+代码：
+
+- `src/services/remoteManagedSettings/`
+- `src/services/analytics/growthbook.js`（被 gate）
+
+## 五、遥测管线（无 opt-out）
+
+```
+事件 → ┬─→ 1P 内部分析（Anthropic）
+       └─→ Datadog APM
+```
+
+每事件携带：
+
+- 会话 ID
+- 用户 ID
+- 环境指纹（OS / 版本 / shell / cwd 哈希）
+- 进程指标（CPU / 内存）
+- `tengu_*` 命名空间事件名
+
+**没有面向用户的退出开关**。
+
+环境变量泄漏：`OTEL_LOG_TOOL_DETAILS=1` 可记录完整工具输入（含文件内容、命令）。
+
+## 六、未上线工具（17 个）
+
+| 工具 | Feature Flag | 描述 |
+|---|---|---|
+| **WebBrowserTool** | `WEB_BROWSER_TOOL` | 内置浏览器自动化（代号 bagel） |
+| **TerminalCaptureTool** | `TERMINAL_PANEL` | 终端面板捕获 |
+| **WorkflowTool** | `WORKFLOW_SCRIPTS` | 工作流脚本 |
+| **MonitorTool** | `MONITOR_TOOL` | 系统/进程监控 |
+| **SnipTool** | `HISTORY_SNIP` | 对话历史裁剪 |
+| **ListPeersTool** | `UDS_INBOX` | Unix 域套接字对等发现 |
+| **RemoteTriggerTool** | `AGENT_TRIGGERS_REMOTE` | 远程代理触发 |
+| **SubscribePRTool** | `KAIROS_GITHUB_WEBHOOKS` | GitHub PR webhook |
+
+部分游离在 `tools/` 而非 `src/tools/`。
+
+## 七、Buddy 系统（虚拟宠物，未上线）
+
+`src/buddy/` — 完整实现但 feature gate 关闭：
+
+- **18 个物种**：鸭、鹅、blob、猫、龙、章鱼、猫头鹰、企鹅、乌龟、蜗牛、幽灵、墨西哥钝口螈、水豚、仙人掌、机器人、兔子、蘑菇、chonk
+- **5 档稀有度**：普通(60%)、非凡(25%)、稀有(10%)、史诗(4%)、传说(1%)
+- **7 种帽子**：皇冠、礼帽、螺旋帽、光环、巫师帽、毛线帽、小鸭子帽
+- **5 项属性**：DEBUGGING、PATIENCE、CHAOS、WISDOM、SNARK
+- **1% 闪亮变种**：任何物种
+- **确定性生成**：基于用户 ID 哈希
+
+<Callout type="info">
+  整套 gacha 系统已经写完了——稀有度概率、闪亮变种、确定性 hash——只等 feature flag 打开。这是个完整的「隐藏特性」。
+</Callout>
+
+## 八、Dream Task — 后台记忆整固
+
+`src/tasks/DreamTask/DreamTask.ts`
+
+- feature flag: `tengu_onyx_plover`
+- 空闲时间自主处理和整固记忆
+- 类似人类 REM 睡眠的「知识固化」
+
+## 九、语音模式
+
+`src/voice/voiceModeEnabled.ts` + `src/services/voice.ts`
+
+- Push-to-talk 已完全实现
+- `VOICE_MODE` feature gate 控制
+- WebSocket 连接 Anthropic `voice_stream` 端点
+- 使用 `conversation_engine` 模型做 STT
+- **仅 OAuth 用户**（不支持 API Key / Bedrock / Vertex）
+- mTLS WebSocket
+
+## 十、隐藏命令
+
+- `/btw` — 不在命令列表里显示
+- `/stickers` — 复活节彩蛋
+- `/torch` — 内部调试（`TORCH` flag）
+
+## 演化方向三大判断
+
+1. **新模型梯队**：Numbat（下一代）、Opus 4.7、Sonnet 4.8 在制
+2. **自主代理化**：KAIROS — 无人值守运行 + 主动行动 + 推送通知
+3. **多模态扩张**：语音输入就绪、浏览器工具待上线、工作流自动化即将到来
+
+<Callout type="success">
+  一句话总结全系列：**Claude Code 正在从一个「编程助手」进化为一个「全天候自主开发代理」**——源码里的 KAIROS、Numbat、Push、PR webhook 都指向同一个方向。
+</Callout>
+
+## 系列回顾
+
+完整 10 篇：
+
+1. [项目总览](/blog/claude-code-source-01-overview)
+2. [目录结构](/blog/claude-code-source-02-directory-layout)
+3. [核心引擎](/blog/claude-code-source-03-core-engine)
+4. [工具系统](/blog/claude-code-source-04-tool-system)
+5. [任务系统](/blog/claude-code-source-05-task-system)
+6. [命令与 UI](/blog/claude-code-source-06-commands-and-ui)
+7. [服务与远程](/blog/claude-code-source-07-services-and-remote)
+8. [推理逻辑](/blog/claude-code-source-08-reasoning)
+9. [构建系统](/blog/claude-code-source-09-build-system)
+10. 关键发现（本篇）

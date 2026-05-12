@@ -4,6 +4,7 @@ import { glob } from 'glob'
 import matter from 'gray-matter'
 import { bundleMDX } from 'mdx-bundler'
 import rehypeSlug from 'rehype-slug'
+import remarkGfm from 'remark-gfm'
 import { rehypeHighlight } from './rehype/highlight'
 
 const CONTENT_DIR = path.join(process.cwd(), 'content')
@@ -58,6 +59,10 @@ export async function getBySlug<T>(type: ContentType, slug: string): Promise<Con
   const { code, frontmatter } = await bundleMDX({
     source,
     mdxOptions(options) {
+      options.remarkPlugins = [
+        ...(options.remarkPlugins ?? []),
+        remarkGfm,
+      ]
       options.rehypePlugins = [
         ...(options.rehypePlugins ?? []),
         rehypeSlug,

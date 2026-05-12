@@ -1,0 +1,137 @@
+---
+title: Claude Code 源码研究（三）核心引擎：QueryEngine 与 query 主循环
+description: 两层 AsyncGenerator 嵌套、stop_reason 状态机、taskBudget 跨压缩追踪——拆解 1295 + 1729 行核心代码。
+date: 2026-05-10
+tags: [claude-code, source-code, research, engine]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 3 篇。这是整个系列里最"硬"的一篇——发动机内部。
+</Callout>
+
+## 两层 AsyncGenerator 嵌套
+
+```
+QueryEngine (顶层会话管理)
+   │  持有: messages / costTracker / fileStateCache / sessionId
+   │
+   └─ ask({ ... }) : AsyncGenerator           暴露给 SDK/REPL
+        │
+        └─ yield* query(...)                  src/query.ts
+                  │
+                  └─ queryLoop()              单轮 while(true)
+```
+
+## QueryEngine
+
+文件：`src/QueryEngine.ts`（1295 行）
+
+```typescript
+// src/QueryEngine.ts:130
+export type QueryEngineConfig = { ... }
+
+// src/QueryEngine.ts:184
+export class QueryEngine { ... }
+
+// src/QueryEngine.ts:1186
+export async function* ask({ ... })
+```
+
+职责：
+
+- 维护会话级状态（messages、cost、fileStateCache、attribution）
+- 管理压缩边界与历史
+- 调度 `query()` 完成一个 turn
+- 汇总使用量、错误、API 时长
+
+## query 主循环
+
+文件：`src/query.ts`（1729 行）
+
+```typescript
+// src/query.ts:219
+export async function* query(params: QueryParams): AsyncGenerator<
+  StreamEvent | RequestStartEvent | Message | TombstoneMessage | ToolUseSummaryMessage,
+  Terminal
+>
+
+// src/query.ts:241
+async function* queryLoop(params, consumedCommandUuids)
+```
+
+### 每轮循环的执行阶段
+
+```
+while (true) {
+  1. applyToolResultBudget       限制聚合 tool_result 大小
+                                 (src/query.ts:379)
+  2. snipCompactIfNeeded         HISTORY_SNIP feature gate
+                                 (src/query.ts:401)
+  3. microcompact                增量上下文压缩
+                                 (src/query.ts:414)
+  4. autoCompactIfNeeded         全量上下文压缩
+  5. fetchSystemPromptParts      构造 system prompt（动态拼接）
+  6. 调 API（流式）              @anthropic-ai/sdk
+  7. 收流式事件                  message_start / content_block_* / message_stop
+     ├─ thinking_delta  → 流式推理块
+     ├─ text_delta      → 流式回复
+     └─ tool_use_delta  → 拼工具调用
+  8. stop_reason 分支
+     ├─ 'tool_use'     → toolExecutor 并发 call()，拼回 tool_result，continue
+     ├─ 'end_turn'     → return Terminal
+     ├─ 'max_tokens'   → maxOutputTokensRecoveryCount++，降级重试
+     └─ 'pause_turn'   → 等待
+  9. state = { ...新 messages, ... }
+}
+```
+
+### 关键设计细节
+
+| 设计点 | 体现 |
+|---|---|
+| **状态聚合到 `State` 对象** | 9 个独立状态合并为一个对象，便于 continue 时整体重赋值 — `src/query.ts:268` |
+| **`using` 资源管理** | `using pendingMemoryPrefetch = startRelevantMemoryPrefetch(...)` — TC39 资源管理语法，generator 所有出口路径自动释放 — `src/query.ts:301` |
+| **预算追踪跨压缩** | `taskBudgetRemaining` 在 microcompact 后告诉服务端剩余预算（服务端看到的是 summary，会少算）— `src/query.ts:282-291` |
+| **Chain tracking** | `queryTracking.chainId / depth` 追踪 AgentTool 派生链 — `src/query.ts:346-355` |
+| **Skill 预取并行** | `skillPrefetch?.startSkillDiscoveryPrefetch(...)` 与模型流式生成并行 — `src/query.ts:331-335` |
+| **可恢复 token 预算** | `maxOutputTokensOverride` + `maxOutputTokensRecoveryCount`，被 truncate 时降级 |
+| **stop_reason 不可信** | 注释：`stop_reason === 'tool_use' is unreliable -- it's not always set correctly` — 改用扫描内容块判断 — `src/query.ts:554` |
+| **持久化策略** | 只对 `querySource` 以 `agent:` 或 `repl_main_thread` 开头时持久化 content replacement — `src/query.ts:376` |
+
+<Callout type="warning">
+  注释里直接写"stop_reason 不可信"——这是来自实战的经验教训。任何依赖 stop_reason 等于 'tool_use' 的逻辑都会偶发失败，正确做法是扫 content blocks。
+</Callout>
+
+### Generator 输出协议
+
+`query()` yield 出 5 类对象，由 `src/screens/REPL.tsx` 消费：
+
+| 类型 | 含义 |
+|---|---|
+| `StreamEvent` | API 流式原始事件 |
+| `RequestStartEvent` | 请求开始（用于 TTFT 等指标） |
+| `Message` | 完整消息（assistant / user / tombstone） |
+| `TombstoneMessage` | 被压缩或被裁剪的消息墓碑 |
+| `ToolUseSummaryMessage` | 工具调用聚合摘要 |
+
+最终 `return Terminal` — 表示该 turn 自然结束。
+
+## Hook 与停止钩子
+
+`src/query/stopHooks.ts` — 提供 `stop_reason` 钩子点，用于：
+
+- 自动 compact 触发
+- 用户中断响应
+- 计划模式入口
+
+## 推荐阅读路径
+
+1. `src/query.ts:219-240` — `query()` 包装
+2. `src/query.ts:241-310` — `queryLoop()` 状态机入口
+3. `src/query.ts:307-450` — 每轮预处理（budget、snip、compact）
+4. `src/query.ts:550-980` — stop_reason 分派与重试
+5. `src/QueryEngine.ts:184` — class 主体
+
+## 下一篇
+
+下一篇拆 [Tool 接口契约与 43 个内置工具](/blog/claude-code-source-04-tool-system)——792 行的接口定义里藏着权限链路、懒加载、落盘策略。

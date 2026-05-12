@@ -1,0 +1,292 @@
+---
+title: Claude Code 源码研究（八）推理逻辑：thinking 块、Plan Mode、4 种正交拆分
+description: Claude Code 本身不推理——它是调度器。模型推理表达的 3 类内容块、4 种正交任务拆分工具、ultrathink 关键字触发、Plan Mode 的工程化。
+date: 2026-05-05
+tags: [claude-code, source-code, research, reasoning, plan, agent]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 8 篇——也是最有"哲学味"的一篇。先讲清边界：什么是模型干的，什么是工程干的。
+</Callout>
+
+## 核心认知
+
+**Claude Code 本身不"推理"，它是个调度器。** 推理由 Claude 模型在 API 端完成，工程层负责给模型搭舞台。
+
+```
+推理（Reasoning）= 模型行为
+拆分（Decomposition）= 工程提供 4 种正交工具供模型调用
+调度（Orchestration）= QueryEngine + query 循环
+```
+
+## 1. 模型推理表达：3 种内容块
+
+Anthropic API 协议下，模型每个 turn 输出三类内容块：
+
+| Block 类型 | 含义 | 处理位置 |
+|---|---|---|
+| `thinking` / `redacted_thinking` | **Extended Thinking 推理块** | `src/utils/messages.ts:2960-3015` |
+| `text` | 给用户的回复文本 | 直接渲染到 transcript |
+| `tool_use` | 工具调用请求 | `src/query.ts:130` — 配对 `tool_result` |
+
+### Thinking 块的流处理
+
+```typescript
+// src/utils/messages.ts:3011-3015
+switch (message.event.content_block.type) {
+  case 'thinking':
+  case 'redacted_thinking':
+    onSetStreamMode('thinking')   // UI 状态切到"思考中"
+    return
+  ...
+}
+
+// src/utils/messages.ts:2964-2974
+// 完整 thinking 块捕获用于 transcript 模式
+const thinkingBlock = message.message.content.find(b => b.type === 'thinking')
+if (thinkingBlock) {
+  onStreamingThinking?.(() => ({
+    thinking: thinkingBlock.thinking,
+    isStreaming: false,
+    streamingEndedAt: Date.now(),
+  }))
+}
+```
+
+### Thinking 必须保留在轨迹内
+
+```
+// src/query.ts:158 注释
+// thinking blocks must be preserved for the duration of an assistant
+// trajectory (a single turn, or if that turn includes a tool_use block
+// then also its subsequent tool_result and the following assistant message)
+```
+
+即：thinking 块对 API 不可丢弃，必须随后续 tool_result 一起发回。
+
+## 2. Thinking 配置
+
+文件：`src/utils/thinking.ts`
+
+```typescript
+export type ThinkingConfig =
+  | { type: 'adaptive' }                       // 模型自适应（4.6+ 强制）
+  | { type: 'enabled'; budgetTokens: number }  // 固定预算
+  | { type: 'disabled' }
+```
+
+### 触发机制
+
+| 路径 | 行为 |
+|---|---|
+| 用户输入含 "ultrathink" 关键词 | `thinking.ts:29` → 触发深度推理（budget 拉满） |
+| 4.6+ 模型 | `thinking.ts:135` — **强制** adaptive thinking |
+| `tengu_turtle_carbon` GrowthBook flag | 运行期开关 |
+| `feature('ULTRATHINK')` | 编译期开关 |
+
+### Adaptive Thinking
+
+模型自己决定每 turn 用多少 thinking token，4.6+ 必须开（注释：**Do not change adaptive thinking support without notifying the model**）。
+
+### 关键字高亮
+
+`thinking.ts:36-58` — 在用户输入框里把 "ultrathink" 用彩虹色高亮，告诉用户已触发深度思考。
+
+```typescript
+const RAINBOW_COLORS = [
+  'rainbow_red', 'rainbow_orange', 'rainbow_yellow',
+  'rainbow_green', 'rainbow_blue', 'rainbow_indigo', 'rainbow_violet',
+]
+```
+
+## 3. 任务拆分的 4 种正交机制
+
+工程层提供**四套不同维度**的「拆任务」工具，由模型按需选用：
+
+### A. TodoWriteTool — 模型自我清单
+
+`src/tools/TodoWriteTool/`
+
+- **轻量**：只在上下文里维护一个列表
+- **不产生子进程**
+- 适合短期规划：3-7 项
+
+### B. TaskCreateTool — 持久任务图
+
+`src/tools/TaskCreateTool/TaskCreateTool.ts`
+
+- 任务**持久化到磁盘**任务列表
+- 支持 `blocks` / `blockedBy` 依赖图
+- 触发 `taskCreated` hooks（用户可拦截）
+- 状态：`pending / in_progress / completed / cancelled`
+- `isTodoV2Enabled()` 控制启用
+
+### C. EnterPlanModeTool — 切计划模式（人在环）
+
+`src/tools/EnterPlanModeTool/EnterPlanModeTool.ts`
+
+```typescript
+// 进入计划模式后:
+// 1. permissionContext.mode = 'plan'
+// 2. 禁止写文件（FileWrite/FileEdit/Bash 写命令）
+// 3. 只能 Read/Grep/Glob 探索
+// 4. 必须用 ExitPlanModeTool 提交方案供用户审批
+```
+
+call 返回的指令文本：
+
+```
+In plan mode, you should:
+1. Thoroughly explore the codebase to understand existing patterns
+2. Identify similar features and architectural approaches
+3. Consider multiple approaches and their trade-offs
+4. Use AskUserQuestion if you need to clarify the approach
+5. Design a concrete implementation strategy
+6. When ready, use ExitPlanMode to present your plan for approval
+
+Remember: DO NOT write or edit any files yet.
+```
+
+**禁用条件**：
+
+- agent 上下文（避免子代理嵌套陷入）
+- KAIROS channels 模式（无终端无法弹审批对话框）
+
+### D. AgentTool — 派生子代理（隔离上下文）
+
+`src/tools/AgentTool/AgentTool.tsx`（1397 行）+ `runAgent.ts`（973 行）
+
+**真正的水平任务拆分**：
+
+- 主代理调 `AgentTool({ subagent_type, prompt })`
+- spawn `LocalAgentTask` 或 `RemoteAgentTask`
+- 子代理跑**独立的 query 循环**：
+  - 独立 messages
+  - 独立 toolUseContext
+  - 独立 token 预算
+  - 独立工具集（按 `subagent_type` 过滤）
+- 子代理完成 → 用 `SyntheticOutputTool` 汇总 → 单条 summary 给主代理
+- 节省主代理上下文（不暴露子代理工具调用细节）
+
+子代理类型：内置 + 用户自定义（`.claude/agents/*.md`）+ MCP 上的 agent。加载逻辑在 `loadAgentsDir.ts`。
+
+#### 派生链路
+
+```
+主代理 query 循环
+  └─ tool_use: AgentTool({ subagent_type: 'Explore', prompt: '...' })
+       └─ AgentTool.call()
+            └─ runAgent({ agentType, prompt, parentMessage, onProgress, thinkingConfig })
+                  └─ LocalAgentTask (同进程)
+                       ├─ registerTask(appState)
+                       ├─ 独立 query 循环
+                       │    ├─ updateProgressFromMessage()   追踪进度
+                       │    └─ 完成 → SyntheticOutputTool 汇总
+                       └─ AgentTool 返回 summary 给主代理
+```
+
+<Callout type="success">
+  这 4 种工具是正交的：TodoWrite 解决「我自己怎么走」，TaskCreate 解决「跨会话怎么记」，PlanMode 解决「先和用户对齐」，AgentTool 解决「另起一个上下文去干」。
+</Callout>
+
+## 4. Plan 持久化
+
+文件：`src/utils/plans.ts`
+
+```typescript
+export function getPlanSlug(sessionId?: SessionId): string
+export function setPlanSlug(sessionId, slug): void
+export function clearPlanSlug(sessionId?): void
+export function clearAllPlanSlugs(): void
+export const getPlansDirectory: () => string  // memoized
+export function getPlanFilePath(agentId?): string
+export function getPlan(agentId?): string | null
+export async function copyPlanForResume(...)
+export async function copyPlanForFork(...)
+export async function persistFileSnapshotIfRemote(): Promise<void>
+```
+
+计划文件落盘到 `getPlansDirectory()`，支持：
+
+- session 级独立 plan
+- fork / resume 时复制
+- 远程会话时持久化文件快照
+
+## 5. Plan Mode V2
+
+文件：`src/utils/planModeV2.ts`
+
+```typescript
+isPlanModeInterviewPhaseEnabled()
+```
+
+新版引入「interview phase」——进入 plan 后先以问答形式澄清需求，再展开探索。被 EnterPlanModeTool 用来切换 prompt 文本。
+
+## 6. ultraplan / ultrathink
+
+文件：`src/utils/ultraplan/`
+
+- `ccrSession.ts` — Claude Code Reflection session
+- `keyword.ts` — 触发关键字检测
+
+与 ultrathink 配套，提供更长链的推理与计划。
+
+## 7. 推理 → 工具 → 推理 完整流程
+
+```
+用户输入
+  ↓
+processUserInput.ts        命令解析 / 文件附件 / mention
+  ↓
+QueryEngine.ask()
+  ↓
+query() → queryLoop()
+  ↓
+preProcess (budget / snip / microcompact / autocompact)
+  ↓
+fetchSystemPromptParts     动态拼 system prompt（含 thinking 提示）
+  ↓
+API stream                  (模型推理发生在这里)
+  ├─ thinking_delta    →   onSetStreamMode('thinking')   ← 推理块
+  ├─ text_delta        →   onSetStreamMode('responding') ← 回复
+  └─ tool_use_delta    →   拼 tool_use 块                ← 工具
+  ↓
+stop_reason == 'tool_use'
+  └─ toolExecutor 并发 call()
+       ├─ Tool.checkPermissions() → 必要时弹用户对话框
+       ├─ Tool.call() → 可能 spawn Task（如 AgentTool → LocalAgentTask）
+       │              ├─ 子代理内部又跑 query 循环（递归推理）
+       │              └─ 返回 summary
+       └─ onProgress(yield) 流出进度
+  ↓
+拼回 tool_result → 下一轮 while（再次推理）
+  ↓
+stop_reason == 'end_turn' → return Terminal
+```
+
+## 8. 实现语言
+
+| 维度 | 答案 |
+|---|---|
+| 主体语言 | **TypeScript / TSX**（约 100%） |
+| 校验 | zod v4（运行时 schema） |
+| TUI | 自研 ink fork（`src/ink/`） |
+| SDK | `@anthropic-ai/sdk` + `@modelcontextprotocol/sdk` |
+| 现代语法 | AsyncGenerator、TC39 `using`、ESM |
+| 性能敏感 | napi 原生模块（`vendor/`）：audio / image / modifiers / url-handler |
+| `.js` 桩 | 仅根 `utils/` `types/` 下 4 个极小桩（< 200 字节/个） |
+
+## 推荐阅读路径
+
+1. `src/Task.ts` — 任务模型（最短）
+2. `src/Tool.ts:362-700` — Tool 接口契约
+3. `src/query.ts:241-500` — 主循环骨架
+4. `src/utils/thinking.ts` — 推理配置
+5. `src/utils/messages.ts:2960-3020` — thinking 块流处理
+6. `src/tools/EnterPlanModeTool/EnterPlanModeTool.ts` — 计划模式入口
+7. `src/tools/AgentTool/runAgent.ts` — 子代理派生
+8. `src/constants/prompts.ts` — **模型实际收到的 prompt 全文**（含 KAIROS、卧底模式等）
+
+## 下一篇
+
+下一篇拆 [构建系统](/blog/claude-code-source-09-build-system)——为什么"不能完整重建"？108 个缺失模块都是什么？

@@ -1,0 +1,225 @@
+---
+title: Claude Code 源码研究（五）任务系统：7 种 Task 与多态生命周期
+description: 极薄多态接口、base36 防爆破 ID、输出落盘 + symlink 增量读取、input/output token 计费陷阱——拆解任务调度层。
+date: 2026-05-08
+tags: [claude-code, source-code, research, task, async]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 5 篇。Task 系统是工具与子代理的"底座"——AgentTool 跑的就是 Task。
+</Callout>
+
+## Task 抽象
+
+文件：`src/Task.ts`（125 行）
+
+```typescript
+// 7 种任务类型
+export type TaskType =
+  | 'local_bash'            // 长跑 bash 子进程
+  | 'local_agent'           // 本地子代理（AgentTool 后端）
+  | 'remote_agent'          // 远程代理（云端）
+  | 'in_process_teammate'   // 同进程队友
+  | 'local_workflow'        // 工作流脚本（feature gate）
+  | 'monitor_mcp'           // MCP 监控（feature gate）
+  | 'dream'                 // 后台记忆整固
+
+// 五态机
+export type TaskStatus =
+  | 'pending' | 'running'
+  | 'completed' | 'failed' | 'killed'
+
+export function isTerminalTaskStatus(status): boolean
+// completed / failed / killed 不再转移
+// 用于阻止向死队友注入消息、清理孤儿任务
+
+// 多态接口（极薄）
+export type Task = {
+  name: string
+  type: TaskType
+  kill(taskId: string, setAppState: SetAppState): Promise<void>
+}
+// 注释: spawn/render 历史上是多态的，#22546 后被移除
+//       6 种 kill 实现都只用 setAppState，
+//       getAppState/abortController 是死代码
+```
+
+<Callout type="info">
+  接口被砍到只剩 `kill` 是多态的——其他都按类型直调。这是个反"过度抽象"的实例：当多态没有真实价值时，删掉它比留着更好。
+</Callout>
+
+## 任务 ID
+
+```typescript
+// 类型前缀 + 8 位字符
+local_bash         → b...
+local_agent        → a...
+remote_agent       → r...
+in_process_teammate → t...
+local_workflow     → w...
+monitor_mcp        → m...
+dream              → d...
+
+// 36⁸ ≈ 2.8 万亿组合
+const TASK_ID_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz'
+
+// crypto.randomBytes(8) % 36 取字符
+// 设计原因: 防止符号链接攻击爆破
+```
+
+## TaskStateBase
+
+```typescript
+export type TaskStateBase = {
+  id: string
+  type: TaskType
+  status: TaskStatus
+  description: string
+  toolUseId?: string
+  startTime: number
+  endTime?: number
+  totalPausedMs?: number
+  outputFile: string      // 输出落盘路径
+  outputOffset: number    // 已读偏移
+  notified: boolean       // 是否已通知用户
+}
+```
+
+设计：**输出落盘而非内存**，避免长跑任务撑爆。`outputOffset` 实现增量读取。
+
+## 注册表
+
+文件：`src/tasks.ts`
+
+```typescript
+const LocalWorkflowTask = feature('WORKFLOW_SCRIPTS')
+  ? require('./tasks/LocalWorkflowTask/LocalWorkflowTask.js').LocalWorkflowTask
+  : null
+const MonitorMcpTask = feature('MONITOR_TOOL')
+  ? require('./tasks/MonitorMcpTask/MonitorMcpTask.js').MonitorMcpTask
+  : null
+
+export function getAllTasks(): Task[] {
+  const tasks = [LocalShellTask, LocalAgentTask, RemoteAgentTask, DreamTask]
+  if (LocalWorkflowTask) tasks.push(LocalWorkflowTask)
+  if (MonitorMcpTask) tasks.push(MonitorMcpTask)
+  return tasks
+}
+
+export function getTaskByType(type: TaskType): Task | undefined
+```
+
+注意：`LocalMainSessionTask` 和 `InProcessTeammateTask` 类型存在但**未注册到 getAllTasks**（它们由特殊路径创建）。
+
+## 7 种实现
+
+| 实现 | 文件 | 形态 |
+|---|---|---|
+| LocalShellTask | `src/tasks/LocalShellTask/` + `guards.ts` + `killShellTasks.ts` | 子进程（Bash 长跑） |
+| LocalAgentTask | `src/tasks/LocalAgentTask/` | 同进程 query 循环（AgentTool 后端） |
+| RemoteAgentTask | `src/tasks/RemoteAgentTask/` | 走 bridge/remote/WebSocket |
+| InProcessTeammateTask | `src/tasks/InProcessTeammateTask/` + `types.ts` | 多代理协作（mailbox） |
+| LocalMainSessionTask | `src/tasks/LocalMainSessionTask.ts` | 主会话身份占位 |
+| DreamTask | `src/tasks/DreamTask/DreamTask.ts` | 空闲整固记忆（tengu_onyx_plover flag） |
+| LocalWorkflowTask / MonitorMcpTask | feature-gated | 仅在内部构建可用 |
+
+## 进度追踪
+
+`src/tasks/LocalAgentTask/LocalAgentTask.tsx:23-100`
+
+```typescript
+export type ToolActivity = {
+  toolName: string
+  input: Record<string, unknown>
+  activityDescription?: string  // 来自 Tool.getActivityDescription()
+  isSearch?: boolean
+  isRead?: boolean
+}
+
+export type AgentProgress = {
+  toolUseCount: number
+  tokenCount: number
+  lastActivity?: ToolActivity
+  recentActivities?: ToolActivity[]  // 最多 5 个
+  summary?: string
+}
+
+export type ProgressTracker = {
+  toolUseCount: number
+  latestInputTokens: number        // 累计 — 取最新（API 已含全部历史）
+  cumulativeOutputTokens: number   // 累加 — 每 turn 输出
+  recentActivities: ToolActivity[]
+}
+```
+
+<Callout type="warning">
+  **Token 计费陷阱**：`input_tokens` 在 Claude API 里**每 turn 累计**（含上下文），所以保留最新值；`output_tokens` 是每 turn 独立产生，所以累加。两者混淆会造成翻倍计费。这是个值得记的细节。
+</Callout>
+
+## 任务派生链路（AgentTool 视角）
+
+```
+主代理 query 循环
+  └─ tool_use: AgentTool({ subagent_type: 'Explore', prompt: '...' })
+       └─ AgentTool.call(...)
+            └─ runAgent({
+                 agentType, prompt,
+                 parentMessage,
+                 onProgress,
+                 thinkingConfig,
+                 ...
+               })
+                  └─ 创建 LocalAgentTask（同进程）
+                       ├─ registerTask(appState, taskState)
+                       ├─ initTaskOutputAsSymlink(taskId)
+                       └─ 内部跑独立 query 循环
+                            ├─ 独立 messages
+                            ├─ 独立 toolUseContext
+                            ├─ 独立 token 预算
+                            ├─ updateProgressFromMessage()  追踪进度
+                            └─ 完成 → SyntheticOutputTool 汇总输出
+                  └─ AgentTool 返回单条 summary 给主代理
+                       └─ 节省主代理上下文（不暴露子代理工具痕迹）
+```
+
+## 任务生命周期 hook
+
+```
+spawn (各实现自身)
+  ↓
+registerTask(appState, taskState)
+  ↓
+status = 'pending' → 'running'
+  ↓
+periodic: updateTaskState(setAppState, taskId, patch)
+  ↓
+[panel grace: PANEL_GRACE_MS]    完成后保留显示
+  ↓
+emitTaskProgress(sdkChannel)     SDK 用户能看到
+  ↓
+notified=true 后 enqueuePendingNotification
+  ↓
+status = 'completed' | 'failed' | 'killed'
+  ↓
+evictTaskOutput(taskId)          落盘输出清理
+registerCleanup(...)              注销资源
+```
+
+## 工作目录
+
+- 任务输出路径：`getTaskOutputPath(taskId)`（落盘）
+- 代理 transcript：`getAgentTranscriptPath(...)`
+- 任务面板状态：`AppState.tasks`、`AppState.expandedView === 'tasks'`
+
+## 设计要点总结
+
+1. **极薄多态**：`Task` 接口只剩 `kill` 是多态的，其余按类型直调
+2. **状态在 AppState**：所有任务进度通过 `setAppState` 更新 → React 自动重渲染
+3. **输出落盘**：用 symlink 实现增量读取，避免内存爆炸
+4. **ID 防爆破**：8 字符 base36 + 类型前缀，2.8 万亿组合
+5. **Token 计费正确**：input 取最新，output 累加
+6. **Feature gate**：通过 `feature(FLAG)` 静态消除未启用类型
+
+## 下一篇
+
+下一篇拆 [命令系统与 UI 层](/blog/claude-code-source-06-commands-and-ui)——100+ 斜杠命令、自研 ink fork、144 个 React 组件。

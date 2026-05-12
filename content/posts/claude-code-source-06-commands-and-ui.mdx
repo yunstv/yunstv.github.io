@@ -1,0 +1,168 @@
+---
+title: Claude Code 源码研究（六）命令系统与 UI：100+ 斜杠命令、自研 ink fork
+description: 100+ 命令分类速查、为什么要 fork ink（鼠标选择、转录搜索高亮、超链接）、144 个 React 组件、84 个 hooks、Vim 模式。
+date: 2026-05-07
+tags: [claude-code, source-code, research, ui, ink, react]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 6 篇。前几篇讲引擎和能力，这篇讲"用户看到的"。
+</Callout>
+
+## 命令系统
+
+文件：`src/commands.ts`（25KB）+ `src/commands/`（100+ 子目录）
+
+每个斜杠命令独立一个目录或 `.ts` 文件。
+
+### 命令分类
+
+| 类别 | 代表 |
+|---|---|
+| 认证/账户 | `login/`, `logout/`, `oauth-refresh/`, `feedback/`, `privacy-settings/` |
+| 会话控制 | `clear/`, `resume/`, `compact/`, `export/`, `rewind/`, `fast/`, `effort/` |
+| 代码工作流 | `commit.ts`, `commit-push-pr.ts`, `review.ts`, `autofix-pr/`, `pr_comments/`, `diff/`, `issue/` |
+| 配置 | `model/`, `config/`, `permissions/`, `hooks/`, `output-style/`, `keybindings/` |
+| 集成 | `ide/`, `mcp/`, `install-github-app/`, `install-slack-app/`, `chrome/`, `desktop/`, `mobile/` |
+| 上下文 | `add-dir/`, `memory/`, `files/`, `context/`, `ctx_viz/`, `break-cache/` |
+| 计划 | `plan/`, `advisor.ts`, `bughunter/`, `insights.ts`, `passes/` |
+| 内部/调试 | `doctor/`, `debug-tool-call/`, `heapdump/`, `sandbox-toggle/`, `reset-limits/`, `mock-limits/`, `perf-issue/` |
+| 代理/团队 | `agents/`, `bridge/`, `bridge-kick.ts` |
+| 其他 | `init.ts`, `release-notes/`, `rename/`, `color/`, `brief.ts`, `good-claude/` |
+| 隐藏 | `/btw`, `/stickers`（彩蛋） |
+
+### 命令类型
+
+参考 `src/types/command.ts`：
+
+- **JSX 命令**：渲染一个 React 组件（如 `/login` 弹对话框）
+- **prompt 命令**：往 messages 注入一段文本，触发模型回应
+- **action 命令**：直接执行副作用，不与模型交互
+- **本地命令**：完全在客户端运行（如 `/clear`、`/cost`）
+
+## UI 层 — 自研 ink
+
+文件：`src/ink/`（50 文件）
+
+**为什么 fork ink**：Anthropic 自己加了多个特性：
+
+| 文件 | 作用 |
+|---|---|
+| `reconciler.ts` | React reconciler 端口 |
+| `renderer.ts` / `render-to-screen.ts` / `render-node-to-output.ts` | 渲染管线 |
+| `layout/` | yoga-layout 集成（实际计算在 `src/native-ts/yoga-layout/`） |
+| `wrap-text.ts` / `wrapAnsi.ts` / `bidi.ts` | 文本换行 + ANSI + 双向文字 |
+| `selection.ts` / `hit-test.ts` | **终端鼠标选择**（原 ink 无） |
+| `searchHighlight.ts` | **转录搜索高亮** |
+| `supports-hyperlinks.ts` | OSC 8 超链接 |
+| `parse-keypress.ts` | 自研键盘解析 |
+| `terminal-querier.ts` / `terminal-focus-state.ts` | 终端能力探测 + 焦点检测 |
+| `Ansi.tsx` | ANSI 控制符 React 组件 |
+| `termio/` | 低级终端 I/O |
+| `colorize.ts` | 颜色处理 |
+| `stringWidth.ts` / `widest-line.ts` | 字符宽度（含全角/emoji） |
+| `tabstops.ts` | tab 停止位 |
+
+<Callout type="success">
+  fork 一个上游 lib 是有代价的——但 Claude Code 需要的「终端里能用鼠标选中文本」「在转录里搜索并高亮命中」「点击渲染的超链接」这些特性都不在原 ink 里。这个 fork 是产品力的关键组件。
+</Callout>
+
+## 组件层
+
+### components/（144 个）
+
+代表：
+
+- `App.tsx` — 顶层
+- `AutoUpdater.tsx` / `AutoUpdaterWrapper.tsx` — 自动更新
+- `BridgeDialog.tsx` — 桥接对话框
+- `BypassPermissionsModeDialog.tsx` — 绕过权限警告
+- `ApproveApiKey.tsx` — API 密钥审批
+- `AwsAuthStatusBox.tsx` — AWS 认证状态
+- `ChannelDowngradeDialog.tsx` — 通道降级
+- `ClaudeCodeHint/` — 提示卡片
+- `ClaudeInChromeOnboarding.tsx` — Chrome 引导
+- `ClaudeMdExternalIncludesDialog.tsx` — CLAUDE.md 外部包含警告
+- `AgentProgressLine.tsx` — 子代理进度行
+- `BashModeProgress.tsx` — Bash 模式进度
+- `AutoModeOptInDialog.tsx` — Auto 模式知情同意
+
+### screens/（3 个整屏）
+
+| 屏 | 文件 |
+|---|---|
+| REPL | `src/screens/REPL.tsx` — 主交互界面 |
+| Doctor | `src/screens/Doctor.tsx` — 诊断界面 |
+| ResumeConversation | `src/screens/ResumeConversation.tsx` — 会话恢复选择器 |
+
+## React Hooks
+
+文件：`src/hooks/`（84 个）
+
+### 关键 hook 速查
+
+| 类别 | hook |
+|---|---|
+| 认证 | `useApiKeyVerification` |
+| 输入 | `useTextInput` / `useInputBuffer` / `useArrowKeyHistory` / `usePasteHandler` / `useSearchInput` / `useTypeahead` |
+| 历史 | `useHistorySearch` / `useFileHistorySnapshotInit` |
+| 命令 | `useCommandQueue` / `useQueueProcessor` / `useCommandKeybindings` / `useMergedCommands` |
+| 工具 | `useCanUseTool` / `useMergedTools` / `useTaskListWatcher` / `useTasksV2` |
+| 会话 | `useRemoteSession` / `useSSHSession` / `useSessionBackgrounding` / `useTeleportResume` |
+| 桥接 | `useMailboxBridge` / `useReplBridge` |
+| IDE | `useIDEIntegration` / `useIdeAtMentioned` / `useIdeConnectionStatus` / `useIdeLogging` / `useIdeSelection` / `useDiffInIDE` |
+| 通知 | `useChromeExtensionNotification` / `useTerminalNotification` / `useNotifyAfterTimeout` / `useInboxPoller` |
+| 计划/团队 | `useSwarmInitialization` / `useSwarmPermissionPoller` / `useTeammateViewAutoExit` |
+| 推荐 | `useClaudeCodeHintRecommendation` / `useLspPluginRecommendation` / `useOfficialMarketplaceNotification` |
+| 退出 | `useExitOnCtrlCD` / `useExitOnCtrlCDWithKeybindings` |
+| 杂项 | `useBlink` / `useDoublePress` / `useElapsedTime` / `useMemoryUsage` / `useTimeout` / `useTerminalSize` / `useAfterFirstRender` |
+
+## React Context
+
+文件：`src/context/`
+
+- `QueuedMessageContext.tsx` — 待发送消息队列
+- `mailbox.tsx` — 跨代理邮箱
+- `modalContext.tsx` — 模态对话框栈
+- `notifications.tsx` — 通知队列
+- `overlayContext.tsx` / `promptOverlayContext.tsx` — 浮层
+- `stats.tsx` — 统计指标
+- `fpsMetrics.tsx` — FPS 监控
+- `voice.tsx` — 语音模式状态
+
+## 状态管理
+
+文件：`src/state/`
+
+- `AppState.tsx` — `AppState` 类型定义（messages、tasks、toolPermissionContext、expandedView 等）
+- `AppStateStore.ts` — 中央 store
+- `selectors.ts` — 选择器
+- `store.ts` — store 工厂
+- `onChangeAppState.ts` — 状态变化订阅
+- `teammateViewHelpers.ts` — 队友视图辅助
+
+## 键盘绑定
+
+文件：`src/keybindings/`
+
+- `KeybindingContext.tsx` / `KeybindingProviderSetup.tsx` — React 接入
+- `defaultBindings.ts` — 默认键位
+- `loadUserBindings.ts` — 加载 `~/.claude/keybindings.json`
+- `parser.ts` / `match.ts` / `resolver.ts` — 解析与匹配
+- `reservedShortcuts.ts` — 保留键
+- `schema.ts` / `validate.ts` — zod 校验
+- `useKeybinding.ts` / `useShortcutDisplay.ts` — React hook
+
+## Vim 模式
+
+文件：`src/vim/`
+
+- `motions.ts` — h/j/k/l, w, b, e, gg, G
+- `operators.ts` — d, c, y, p
+- `textObjects.ts` — iw, aw, i", a(, ib 等
+- `transitions.ts` — 模式切换（normal/insert/visual）
+- `types.ts` — 类型
+
+## 下一篇
+
+下一篇拆 [服务层与远程会话](/blog/claude-code-source-07-services-and-remote)——bridge、remote、双层 GrowthBook gate、远程托管设置（每小时轮询）。

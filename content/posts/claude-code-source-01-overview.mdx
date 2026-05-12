@@ -1,0 +1,75 @@
+---
+title: Claude Code 源码研究（一）项目总览
+description: 基于 @anthropic-ai/claude-code v2.1.88 的反编译研究——这是个什么仓库？为什么不可重建？技术栈是什么？
+date: 2026-05-12
+tags: [claude-code, source-code, research, overview]
+---
+
+<Callout type="info">
+  本系列共 10 篇，逐模块拆解 Claude Code v2.1.88 反编译源码。本篇是入口——先建立全局观。
+</Callout>
+
+## 项目性质
+
+| 项 | 值 |
+|---|---|
+| 名称 | `@anthropic-ai/claude-code-source` v2.1.88 |
+| 类型 | **反编译研究仓库**（非可运行工程） |
+| 来源 | npm 包 `@anthropic-ai/claude-code@2.1.88` 解包 |
+| 发布物 | 仅一个 ~12MB 的 `cli.js`，仓库 `src/` 是从中解包的 TypeScript 源码 |
+| 版权 | Anthropic / Claude，仅供研究学习 |
+
+## 仓库根目录
+
+| 文件/目录 | 作用 |
+|---|---|
+| `README.md` / `README_CN.md` | 中英双语主文档（51KB + 17KB），含目录树、108 个缺失模块清单 |
+| `QUICKSTART.md` | 三种构建方式说明 |
+| `package.json` | 仅 `esbuild` + `typescript` 两个依赖 |
+| `tsconfig.json` | TS 类型检查配置 |
+| `src/` | **核心源码**：1902 个 .ts/.tsx 文件、33MB、53 个子目录 |
+| `docs/` | 5 篇双语深度分析报告（zh/ + en/） |
+| `scripts/` | 4 个构建脚本（.mjs） |
+| `stubs/` | Bun 编译期 API 的 esbuild 替身 |
+| `tools/` | 5 个游离工具目录（位置外置） |
+| `vendor/` | 4 个原生模块源码桩 |
+| `types/`, `utils/` | 顶层运行时小桩（< 200 字节/文件） |
+
+## 构建状态
+
+`QUICKSTART.md` 明确说明 **无法完整重建**：
+
+- 源码用 Bun 编译期内联（`feature()`、`MACRO`、`bun:bundle`）
+- esbuild 无法消除 feature-gated 分支里的 `require()` 调用
+- ~108 个内部模块（daemon、bridge assistant、context collapse 等）**根本不在发布物中**
+- 三种实践方案：
+  - **A. 推荐** — 直接 `node cli.js`
+  - **B. 折中** — esbuild 最佳努力 + 手动建桩
+  - **C. 完整** — Bun，但需 Anthropic 内部构建配置
+
+<Callout type="warning">
+  约 108 个 feature-gated 模块在编译期被消除，源码中已无对应实现。所以"反编译"严格说只是"解包"——只能拿到被 inline 后剩下的部分。
+</Callout>
+
+## 技术栈
+
+- **语言**：TypeScript / TSX（约 100%，仅 4 个游离 `.js` 桩）
+- **校验**：zod v4（运行时 schema）
+- **TUI**：自研 ink fork（`src/ink/` 50 文件）
+- **SDK**：`@anthropic-ai/sdk`、`@modelcontextprotocol/sdk`
+- **运行时特性**：AsyncGenerator、`using` 资源管理、ESM
+- **原生加速**：napi 模块在 `vendor/`（audio / image / modifiers / url-handler）
+
+## 文件大小 Top 5（src/ 根级）
+
+| 文件 | 大小 | 备注 |
+|---|---|---|
+| `main.tsx` | 804 KB | 启动入口聚合，疑似反编译合并 |
+| `query.ts` | 69 KB | 主查询循环（1729 行） |
+| `interactiveHelpers.tsx` | 57 KB | 交互模式辅助 |
+| `QueryEngine.ts` | 47 KB | 顶层会话管理（1295 行） |
+| `Tool.ts` | 30 KB | Tool 接口契约（792 行） |
+
+## 下一篇
+
+下一篇拆 [`src/` 53 个子目录都在干什么](/blog/claude-code-source-02-directory-layout)——从入口到 UI 到服务层的速查表。

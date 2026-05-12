@@ -1,0 +1,178 @@
+---
+title: Claude Code 源码研究（七）服务与远程：bridge、远控、双层 feature gate
+description: services/ 全清单、bridge/（30 文件）远程会话核心、remoteManagedSettings 每小时轮询、双层 GrowthBook gate 模式。
+date: 2026-05-06
+tags: [claude-code, source-code, research, services, remote, bridge]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 7 篇。从这里开始进入"远程化"的世界——Claude Code 不只是本地 CLI。
+</Callout>
+
+## services/
+
+文件：`src/services/`
+
+### 服务清单
+
+| 子目录/文件 | 作用 |
+|---|---|
+| `api/` | Anthropic API 客户端（Claude 接入） |
+| `oauth/` | OAuth 认证流（Claude.ai 登录） |
+| `mcp/` | MCP 服务器接入 + 类型定义 |
+| `analytics/` | 遥测埋点（Statsig / Datadog 双管线） |
+| `compact/` | 上下文压缩（**核心 `reactiveCompact.js` 在 108 缺失模块中**） |
+| `extractMemories/` | 从对话抽取记忆条目 |
+| `SessionMemory/` | 会话级记忆 |
+| `teamMemorySync/` | 团队共享记忆同步 |
+| `MagicDocs/` | 自动文档生成 |
+| `policyLimits/` | 策略限制（企业管理） |
+| `claudeAiLimits.ts` / `claudeAiLimitsHook.ts` | Claude.ai 速率限制 |
+| `mockRateLimits.ts` / `rateLimitMessages.ts` / `rateLimitMocking.ts` | 速率限制 mock（调试） |
+| `remoteManagedSettings/` | **远程托管设置**（每小时轮询） |
+| `settingsSync/` | 配置同步 |
+| `voice.ts` / `voiceStreamSTT.ts` / `voiceKeyterms.ts` | 语音模式（push-to-talk + WebSocket STT） |
+| `autoDream/` | 后台 Dream Task 服务 |
+| `AgentSummary/` | 代理输出汇总 |
+| `PromptSuggestion/` | 提示建议 + `speculation.ts`（推测执行） |
+| `tips/` | 提示卡片 |
+| `notifier.ts` | 桌面通知 |
+| `lsp/` | Language Server Protocol 集成 |
+| `tools/` | 工具运行时辅助 |
+| `toolUseSummary/` | 工具调用聚合 |
+| `internalLogging.ts` | 内部日志 |
+| `diagnosticTracking.ts` | 诊断指标 |
+| `vcr.ts` | API 录制回放（测试用） |
+| `mcpServerApproval.tsx` | MCP 服务器审批 UI |
+| `preventSleep.ts` | 防止系统休眠 |
+| `tokenEstimation.ts` | Token 数估算（无需调 API） |
+| `awaySummary.ts` | 用户离开时的汇总 |
+| `plugins/` | 插件加载与管理 |
+
+## remote/ — 远程会话
+
+文件：`src/remote/`
+
+| 文件 | 作用 |
+|---|---|
+| `RemoteSessionManager.ts` | 远程会话生命周期 |
+| `SessionsWebSocket.ts` | WebSocket 传输 |
+| `remotePermissionBridge.ts` | 权限请求跨设备转发（手机端弹窗） |
+| `sdkMessageAdapter.ts` | SDK 消息适配 |
+
+## bridge/ — 桥接基础设施
+
+文件：`src/bridge/`（30 文件）
+
+> **远程会话核心**。Claude.ai / 移动端 / 浏览器扩展通过 bridge 接入本地 cli。
+
+| 模块 | 作用 |
+|---|---|
+| `bridgeApi.ts` | bridge HTTP API |
+| `bridgeConfig.ts` / `envLessBridgeConfig.ts` / `pollConfig.ts` / `pollConfigDefaults.ts` | 配置轮询 |
+| `bridgeMain.ts` | 主流程 |
+| `bridgeMessaging.ts` | 消息协议 |
+| `bridgePermissionCallbacks.ts` | 权限回调跨设备 |
+| `bridgePointer.ts` | UI 鼠标光标跨设备 |
+| `bridgeStatusUtil.ts` / `bridgeUI.ts` / `bridgeDebug.ts` | 状态/UI/调试 |
+| `bridgeEnabled.ts` | feature 启用判定 |
+| `capacityWake.ts` | 容量唤醒 |
+| `codeSessionApi.ts` | code session API |
+| `createSession.ts` / `sessionRunner.ts` / `sessionIdCompat.ts` | 会话创建/运行 |
+| `flushGate.ts` | 刷新门控 |
+| `inboundAttachments.ts` / `inboundMessages.ts` | 入站消息处理 |
+| `initReplBridge.ts` / `replBridge.ts` / `replBridgeHandle.ts` / `replBridgeTransport.ts` | REPL 桥接 |
+| `remoteBridgeCore.ts` | 远程核心 |
+| `jwtUtils.ts` | JWT 验签 |
+| `trustedDevice.ts` | 受信任设备 |
+| `workSecret.ts` | 工作密钥 |
+| `debugUtils.ts` | 调试工具 |
+| `types.ts` | 类型 |
+
+## server/ — Direct Connect
+
+文件：`src/server/`
+
+| 文件 | 作用 |
+|---|---|
+| `createDirectConnectSession.ts` | 直连会话创建 |
+| `directConnectManager.ts` | 直连管理器 |
+| `types.ts` | 类型 |
+
+## upstreamproxy/ — 上游代理
+
+文件：`src/upstreamproxy/`
+
+| 文件 | 作用 |
+|---|---|
+| `upstreamproxy.ts` | 代理实现 |
+| `relay.ts` | 中继转发 |
+
+## 远程托管设置（远控的核心）
+
+```
+client cli  ──(每小时 GET)──→  /api/claude_code/settings
+                                   ↓
+                          1. 设置变更
+                             ├─ 静默写入（多数）
+                             └─ 危险变更弹阻塞对话框
+                                ├─ 用户接受 → 应用
+                                └─ 用户拒绝 → 进程退出
+                          2. 6+ killswitch
+                             ├─ 绕过权限模式
+                             ├─ 快速模式 (Fast)
+                             ├─ 语音模式
+                             ├─ 分析 sink
+                             └─ ...
+                          3. GrowthBook 特性 flag
+                             └─ 无需用户同意即可改变任何行为
+```
+
+代码位置：`src/services/remoteManagedSettings/`
+
+<Callout type="warning">
+  「拒绝远程下发的配置变更 → 进程退出」这一条是值得读源码确认的。它意味着 Anthropic 可以远程禁用任意本地实例——本质是个 killswitch 网络。
+</Callout>
+
+## GrowthBook 特性分发
+
+`src/services/analytics/growthbook.js`（缺失，被 gate）暴露 `getFeatureValue_CACHED_MAY_BE_STALE(flagName, default)`，几乎所有 feature gate 都依赖：
+
+```typescript
+// 例: src/utils/thinking.ts:23
+export function isUltrathinkEnabled(): boolean {
+  if (!feature('ULTRATHINK')) return false  // 编译期 gate
+  return getFeatureValue_CACHED_MAY_BE_STALE('tengu_turtle_carbon', true)
+  // ↑ 运行期 GrowthBook gate（无需用户同意可灰度）
+}
+```
+
+**双层 gate 模式**：
+
+- `feature()` 决定**代码是否被打包**（编译期）
+- `getFeatureValue_CACHED_MAY_BE_STALE()` 决定**代码是否被启用**（运行期）
+
+<Callout type="info">
+  这个双层结构让 Anthropic 既能在源码层删除「不想发布」的特性，又能对「已发布」特性做无感灰度——你今天看到的 Claude Code 和明天的可能行为不同，但二进制完全一样。
+</Callout>
+
+## Skill 与插件分发
+
+- `src/skills/` — `bundledSkills.ts` + `loadSkillsDir.ts` + `mcpSkillBuilders.ts`
+- `src/plugins/` — `builtinPlugins.ts` + `bundled/`
+- 远程技能：`skillSearch/` 模块在 108 缺失里（`EXPERIMENTAL_SKILL_SEARCH`）
+
+## 双层遥测管线
+
+```
+事件 → ┬─→ 1P 内部分析（Anthropic）
+       └─→ Datadog APM
+            ↑
+            环境指纹、进程指标、会话/用户 ID 随每事件
+            没有面向用户的退出开关
+            OTEL_LOG_TOOL_DETAILS=1 可记录完整工具输入
+```
+
+## 下一篇
+
+下一篇钻到模型层：[推理逻辑、Plan Mode、AgentTool 派生](/blog/claude-code-source-08-reasoning)——Claude Code 本身不"推理"，它是个调度器。

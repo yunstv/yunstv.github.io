@@ -1,0 +1,138 @@
+---
+title: Claude Code 源码研究（二）目录结构速查
+description: src/ 下 53 个子目录、200+ 文件在干什么——一份按职责分层的速查表，从入口、引擎、工具到 UI 全覆盖。
+date: 2026-05-11
+tags: [claude-code, source-code, research, architecture]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 2 篇。本篇是速查地图——后面 8 篇会按模块挖。
+</Callout>
+
+## src/ 顶层裸文件（按职责）
+
+| 文件 | 大小 | 作用 |
+|---|---|---|
+| `src/main.tsx` | 804 KB | 主入口巨型文件，CLI 启动 / REPL 初始化等聚合 |
+| `src/query.ts` | 69 KB | 查询循环主逻辑（消息流 + 工具编排） |
+| `src/QueryEngine.ts` | 47 KB | 顶层会话管理类 |
+| `src/interactiveHelpers.tsx` | 57 KB | 交互模式辅助 |
+| `src/Tool.ts` | 30 KB | Tool 接口契约 |
+| `src/commands.ts` | 25 KB | 命令注册表 |
+| `src/dialogLaunchers.tsx` | 23 KB | 模态对话框启动器 |
+| `src/setup.ts` | 20 KB | 启动初始化（配置、目录、迁移） |
+| `src/tools.ts` | 17 KB | 工具注册表 |
+| `src/history.ts` | 14 KB | 会话历史管理 |
+| `src/cost-tracker.ts` | 11 KB | Token/费用计费 |
+| `src/context.ts` | 6 KB | 上下文管理 |
+| `src/Task.ts` | 3 KB | Task 抽象层 |
+| `src/tasks.ts` | 1 KB | Task 注册表 |
+
+## src/ 子目录分类
+
+### 入口与启动
+
+| 目录 | 内容要点 |
+|---|---|
+| `src/entrypoints/` | `cli.tsx`、`mcp.ts`、`sdk/`、`agentSdkTypes.ts`、`sandboxTypes.ts` |
+| `src/bootstrap/` | `state.ts` — 启动期全局状态 |
+| `src/cli/` | I/O：`print.ts`、`structuredIO.ts`、`remoteIO.ts`、`transports/`、`handlers/` |
+
+### 引擎与协议
+
+| 目录 | 内容要点 |
+|---|---|
+| `src/query/` | 查询子模块：`config.ts`、`deps.ts`、`stopHooks.ts`、`tokenBudget.ts` |
+| `src/schemas/` | `hooks.ts` — Hook 系统 zod schema |
+| `src/types/` | 全局类型：`command.ts`、`hooks.ts`、`ids.ts`、`permissions.ts`、`plugin.ts`、`generated/` |
+| `src/constants/` | 22 个常量文件：`prompts.ts`、`product.ts`、`apiLimits.ts`、`toolLimits.ts`、`betas.ts`、`oauth.ts`、`figures.ts`、`xml.ts` |
+
+### 工具与命令
+
+| 目录 | 数量 | 内容要点 |
+|---|---|---|
+| `src/tools/` | 43 子目录 | 文件 / Shell / 网络 / 代理 / 任务 / 计划 / MCP / 元工具 / Worktree / 远程 |
+| `src/commands/` | 100+ 子目录 | 认证 / 会话 / 代码工作流 / 配置 / 集成 / 上下文 / 计划 / 调试 / 代理 / 团队 |
+
+### 多代理与未上线
+
+| 目录 | 内容要点 |
+|---|---|
+| `src/assistant/` | KAIROS 助手（仅 `sessionHistory.ts`，核心被 gate） |
+| `src/coordinator/` | 多代理协调（仅 `coordinatorMode.ts`） |
+| `src/bridge/` | 远程桥接（30 文件）：bridgeApi、replBridge、pollConfig、jwtUtils、trustedDevice |
+| `src/remote/` | `RemoteSessionManager`、`SessionsWebSocket`、`remotePermissionBridge` |
+| `src/server/` | direct connect 服务端 |
+| `src/upstreamproxy/` | 上游代理 |
+| `src/tasks/` | 7 种任务实现 |
+| `src/skills/` | Skill 系统：`bundled/`、`loadSkillsDir.ts`、`mcpSkillBuilders.ts` |
+| `src/plugins/` | 插件系统：`builtinPlugins.ts`、`bundled/` |
+| `src/buddy/` | 虚拟宠物：companion、sprites、prompt、useBuddyNotification |
+| `src/voice/` | `voiceModeEnabled.ts` |
+| `src/memdir/` | 记忆目录：findRelevantMemories、memoryAge、teamMemPaths |
+| `src/outputStyles/` | 输出风格目录加载 |
+
+### UI 层
+
+| 目录 | 数量 | 内容要点 |
+|---|---|---|
+| `src/ink/` | 50 文件 | **自研 ink fork**：reconciler、布局、ANSI、selection、hyperlinks、bidi |
+| `src/components/` | 144 文件 | React 组件：App.tsx、对话框、状态条、进度行、自动更新器 |
+| `src/screens/` | 3 文件 | `REPL.tsx`、`Doctor.tsx`、`ResumeConversation.tsx` |
+| `src/hooks/` | 84 文件 | React hook：`useApiKeyVerification`、`useTextInput`、`useTasksV2`、`useVoice*` |
+| `src/context/` | — | React Context：`mailbox`、`modalContext`、`notifications`、`overlayContext` |
+| `src/state/` | — | 全局状态：`AppState.tsx`、`AppStateStore.ts`、`selectors.ts`、`store.ts` |
+
+### 服务层 — src/services/
+
+| 子目录 | 作用 |
+|---|---|
+| `analytics/` | 遥测埋点（Statsig/Datadog） |
+| `api/` | Anthropic API 客户端 |
+| `oauth/` | OAuth 认证流 |
+| `mcp/` | MCP 服务器接入 |
+| `compact/` | 上下文压缩（核心 `reactiveCompact.js` 缺失） |
+| `extractMemories/`, `SessionMemory/`, `teamMemorySync/`, `MagicDocs/` | 记忆与文档 |
+| `policyLimits/`, `claudeAiLimits.ts`, `mockRateLimits.ts` | 速率/策略限制 |
+| `remoteManagedSettings/`, `settingsSync/` | 远程托管设置（每小时轮询） |
+| `voice.ts`, `voiceStreamSTT.ts`, `voiceKeyterms.ts` | 语音模式 |
+| `autoDream/` | 后台 Dream Task |
+| `AgentSummary/`, `PromptSuggestion/`, `tips/`, `notifier.ts` | 智能提示与通知 |
+| `lsp/`, `tools/`, `toolUseSummary/` | LSP / 工具运行汇总 |
+| `internalLogging.ts`, `diagnosticTracking.ts`, `vcr.ts` | 内部日志、诊断、VCR 录制 |
+
+### 系统层
+
+| 目录 | 内容要点 |
+|---|---|
+| `src/keybindings/` | parser、resolver、validator、`defaultBindings.ts`、`reservedShortcuts.ts` |
+| `src/vim/` | `motions.ts`、`operators.ts`、`textObjects.ts`、`transitions.ts` |
+| `src/migrations/` | **11 个迁移**：`migrateFennecToOpus`、`migrateSonnet45ToSonnet46`、`migrateBypassPermissionsAcceptedToSettings` 等 |
+| `src/native-ts/` | `color-diff/`、`file-index/`、`yoga-layout/` |
+| `src/moreright/` | `useMoreRight.tsx` |
+| `src/utils/` | **329 个文件**：Shell、Cursor、CircularBuffer、QueryGuard、auth、attachments、advisor、ansi*、bash/、background/、claudeInChrome/、cliHighlight 等 |
+
+## 核心架构分层图
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ entrypoints/cli.tsx → main.tsx → screens/REPL.tsx        │  入口
+├─────────────────────────────────────────────────────────┤
+│ QueryEngine.ts / query.ts ── 消息循环 / 工具编排         │  引擎
+├──────────────┬──────────────┬───────────────────────────┤
+│ tools/ (43)  │ commands/    │ skills/ + plugins/         │  能力
+│              │ (100+)       │                            │
+├──────────────┴──────────────┴───────────────────────────┤
+│ services/ (api, oauth, mcp, voice, analytics, compact)   │  服务
+├─────────────────────────────────────────────────────────┤
+│ bridge/ + remote/ + server/ + upstreamproxy/             │  远程
+├─────────────────────────────────────────────────────────┤
+│ components/ + screens/ + hooks/ + ink/ + state/          │  UI
+├─────────────────────────────────────────────────────────┤
+│ utils/ (329) + constants/ + types/ + schemas/            │  基础
+└─────────────────────────────────────────────────────────┘
+```
+
+## 下一篇
+
+下一篇钻进核心：[`QueryEngine` 与 `query.ts` 主循环](/blog/claude-code-source-03-core-engine)——这两个文件加起来 3024 行，是整个 CLI 的发动机。

@@ -1,0 +1,191 @@
+---
+title: Claude Code 源码研究（四）工具系统：43 个内置工具与权限链路
+description: Tool 接口契约（792 行）、ToolSearch 懒加载、maxResultSizeChars 落盘策略、AgentTool 子代理派生——能力层全揭秘。
+date: 2026-05-09
+tags: [claude-code, source-code, research, tools, agent]
+---
+
+<Callout type="info">
+  这是 [Claude Code 源码研究系列](/blog/claude-code-source-01-overview)的第 4 篇——能力层。Tool 是工程层挂载到模型的"手脚"。
+</Callout>
+
+## Tool 接口契约
+
+文件：`src/Tool.ts`（792 行，定义在 362-695 行）
+
+```typescript
+export type Tool<Input, Output, P> = {
+  // 元数据
+  name: string
+  aliases?: string[]
+  searchHint?: string                    // ToolSearch 关键字匹配
+  shouldDefer?: boolean                  // 是否走 ToolSearch 懒加载
+  alwaysLoad?: boolean                   // MCP: _meta['anthropic/alwaysLoad']
+  mcpInfo?: { serverName, toolName }     // MCP 元信息
+  isMcp?: boolean
+  isLsp?: boolean
+  strict?: boolean                       // strict 模式（tengu_tool_pear flag）
+
+  // Schema
+  inputSchema: z.ZodType                 // zod v4
+  inputJSONSchema?: ToolInputJSONSchema  // 直接 JSON Schema（MCP）
+  outputSchema?: z.ZodType
+
+  // 执行
+  call(args, context, canUseTool, parentMessage, onProgress): Promise<ToolResult>
+
+  // 描述（给模型看）
+  description(input, opts): Promise<string>
+  prompt(opts): Promise<string>
+
+  // 能力判定
+  isEnabled(): boolean
+  isConcurrencySafe(input): boolean
+  isReadOnly(input): boolean
+  isDestructive?(input): boolean         // 不可逆操作
+  isOpenWorld?(input): boolean
+  isSearchOrReadCommand?(input): { isSearch, isRead, isList? }
+  interruptBehavior?(): 'cancel' | 'block'
+  requiresUserInteraction?(): boolean
+  isTransparentWrapper?(): boolean       // 如 REPLTool 完全委托内部工具
+
+  // 安全
+  validateInput?(input, ctx): Promise<ValidationResult>
+  checkPermissions(input, ctx): Promise<PermissionResult>
+  toAutoClassifierInput(input): unknown  // Auto 模式安全分类器输入
+
+  // 限制
+  maxResultSizeChars: number             // 超出落盘，模型收到文件路径
+
+  // 渲染（UI）
+  userFacingName(input): string
+  renderToolUseMessage(input, opts)
+  renderToolResultMessage?(output, ...)
+  renderToolUseProgressMessage?(...)
+  renderToolUseRejectedMessage?(...)
+  renderToolUseErrorMessage?(...)
+  renderToolUseQueuedMessage?()
+  renderToolUseTag?(input)
+  renderGroupedToolUse?(toolUses[], opts) // 并行调用聚合
+  getActivityDescription?(input)         // 状态条文本
+  getToolUseSummary?(input)
+  extractSearchText?(output)              // 转录搜索索引
+  isResultTruncated?(output)
+
+  // 副作用
+  backfillObservableInput?(input)         // 观察者前回填字段
+  mapToolResultToToolResultBlockParam(content, toolUseID)
+  getPath?(input)                         // 文件路径工具
+  preparePermissionMatcher?(input)
+  inputsEquivalent?(a, b)
+}
+```
+
+## 43 个内置工具
+
+| 类别 | 工具 | 备注 |
+|---|---|---|
+| 文件 | FileReadTool / FileWriteTool / FileEditTool / NotebookEditTool / GlobTool / GrepTool / LSPTool | 6 + LSP |
+| Shell | BashTool / PowerShellTool / REPLTool | 跨平台 |
+| 网络 | WebFetchTool / WebSearchTool | — |
+| 代理/任务 | AgentTool / TaskCreateTool / TaskGetTool / TaskListTool / TaskStopTool / TaskUpdateTool / TaskOutputTool / TeamCreateTool / TeamDeleteTool | 9 |
+| 计划/思考 | EnterPlanModeTool / ExitPlanModeTool / TodoWriteTool / BriefTool / SyntheticOutputTool | 5 |
+| MCP | MCPTool / McpAuthTool / ListMcpResourcesTool / ReadMcpResourceTool | 4 |
+| 元工具 | ToolSearchTool / SkillTool / ConfigTool / SleepTool / AskUserQuestionTool / SendMessageTool | 6 |
+| Worktree | EnterWorktreeTool / ExitWorktreeTool | 2 |
+| 远程 | RemoteTriggerTool / ScheduleCronTool | 2 |
+| 共享 | `shared/gitOperationTracking`, `spawnMultiAgent` | — |
+| 测试 | `testing/TestingPermissionTool.tsx` | — |
+
+## 关键工具实现要点
+
+### AgentTool（最重）
+
+目录：`src/tools/AgentTool/`（6072 行）
+
+| 文件 | 行数 | 作用 |
+|---|---|---|
+| `AgentTool.tsx` | 1397 | Tool 主体 + UI 渲染 |
+| `runAgent.ts` | 973 | 子代理 query 循环 |
+| `loadAgentsDir.ts` | 755 | 加载自定义 agent 定义 |
+| `agentToolUtils.ts` | 686 | 工具结果处理 |
+| `forkSubagent.ts` | 210 | fork-style 派生 |
+| `resumeAgent.ts` | 265 | 恢复中断的 agent |
+| `agentMemorySnapshot.ts` | 197 | 记忆隔离快照 |
+| `prompt.ts` | 287 | 给主代理看的工具描述 |
+
+### TaskCreateTool（持久任务）
+
+`src/tools/TaskCreateTool/TaskCreateTool.ts:48`
+
+- `isTodoV2Enabled()` 控制启用
+- 输入：`subject` / `description` / `activeForm` / `metadata`
+- 执行 `executeTaskCreatedHooks` — 钩子若返回 `blockingError` 则删除任务
+- 自动展开 UI 任务面板
+
+### EnterPlanModeTool（计划模式）
+
+`src/tools/EnterPlanModeTool/EnterPlanModeTool.ts:36`
+
+- 修改 `toolPermissionContext.mode = 'plan'`
+- 调 `prepareContextForPlanMode` 激活分类器
+- 返回 `mapToolResultToToolResultBlockParam` 内的指令文本告诉模型：「**只探索 / 不写文件 / 用 ExitPlanMode 提交方案**」
+- KAIROS channels 模式下禁用（避免陷入无法退出）
+- agent 上下文中禁用
+
+## buildTool 工厂
+
+`src/Tool.ts` 末尾的 `buildTool(def: ToolDef)` 为下列字段提供默认值：
+
+- `isEnabled` → `() => true`
+- `isConcurrencySafe` → `() => false`
+- 其他 Renderer 字段：根据有无回退
+
+## 工具懒加载 — ToolSearch
+
+部分工具 `shouldDefer: true`，初始 prompt 里只显示工具名，schema 通过 `ToolSearchTool` 用关键字搜索后注入：
+
+```
+模型看到: <function name="WebFetch" /> (仅名字)
+模型调用: ToolSearch({ query: "fetch url" })
+ToolSearch 返回: <function>{schema...}</function>
+模型再调用: WebFetch({ url, prompt })
+```
+
+`alwaysLoad: true` 的工具（如 Bash、Read、Write）始终完整加载。
+
+<Callout type="success">
+  这个设计很巧：把不常用工具的 schema 推迟到「真正需要时」加载，省下大量首轮 system prompt token——尤其是 MCP 工具往往 schema 巨长。
+</Callout>
+
+## 工具结果落盘
+
+`maxResultSizeChars` 超过时：
+
+- 结果保存到磁盘
+- 模型收到预览 + 文件路径
+- 防止单个工具结果撑爆上下文
+- `Infinity` 表示永不落盘（如 Read — 否则形成 Read→file→Read 死循环）
+
+## 权限链路
+
+```
+模型 tool_use
+  ↓
+validateInput(input, ctx)         返回 false → 直接告诉模型失败原因
+  ↓
+checkPermissions(input, ctx)      返回 ASK → 弹用户对话框（hooks/useCanUseTool）
+  ↓                                返回 ALLOW → 执行
+  ↓                                返回 DENY → 拒绝
+preparePermissionMatcher(input)   解析 hook `if` 条件（如 "Bash(git *)"）
+  ↓
+hooks PreToolUse                   用户自定义脚本拦截
+  ↓
+call(args, ctx, canUseTool, ...)
+  ↓
+hooks PostToolUse
+```
+
+## 下一篇
+
+下一篇拆 [Task 系统](/blog/claude-code-source-05-task-system)——7 种任务类型、状态机、ID 防爆破、Token 计费陷阱。
