@@ -34,7 +34,7 @@ jobs:
 
       - name: Build
         env:
-          NEXT_PUBLIC_SITE_URL: https://yunstv.github.io
+          NEXT_PUBLIC_SITE_URL: https://yunstv.cn
         run: pnpm build
 
       - uses: actions/configure-pages@v5
