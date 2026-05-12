@@ -1,0 +1,30 @@
+---
+name: yunstv.github.io
+description: 这个个人博客本身——Next.js 16 + Radix Themes + MDX 实现，零数据库，部署到 Vercel。
+date: 2026-05-11
+status: active
+stack: [Next.js, TypeScript, Radix Themes, MDX, Tailwind]
+github: https://github.com/yunstv/yunstv.github.io
+featured: true
+---
+
+## 为什么自己写
+
+成熟的博客平台都不缺，但还是想要：
+
+- 内容完全可移植（文件而非数据库）
+- 排版、组件、深色模式都自己说了算
+- 顺便练一下 Next.js App Router 的新东西
+
+## 技术亮点
+
+- **mdx-bundler** 在 Server Component 里编译 MDX，详情页 SSG
+- **Radix Themes** 提供 Heading/Text/Card 等基础组件
+- **refractor** 做代码块高亮，比 shiki 更轻量
+- 文章 frontmatter 含 `draft` 字段，生产构建自动过滤
+
+## 后续计划
+
+- giscus 评论
+- Pagefind 全文搜索
+- Vercel Analytics

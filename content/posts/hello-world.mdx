@@ -1,0 +1,38 @@
+---
+title: Hello, World
+description: 这个站点的第一篇文章——介绍站点结构、技术栈和写作约定。
+date: 2026-05-11
+tags: [meta, intro]
+---
+
+欢迎来到我的个人博客与作品集站点。
+
+## 为什么是 MDX
+
+MDX 让我能在文章里直接嵌入 React 组件，比如下面这个 `<Callout>`：
+
+<Callout type="info">
+  这是一个 Callout 组件，定义在 `components/mdx/callout.tsx`，在所有 MDX 里都能直接用。
+</Callout>
+
+## 代码高亮示例
+
+```tsx
+import { useState } from 'react'
+
+export function Counter() {
+  const [n, setN] = useState(0)
+  return <button onClick={() => setN(n + 1)}>clicked {n} times</button>
+}
+```
+
+```bash
+pnpm dev
+pnpm build
+```
+
+## 接下来
+
+- 在 `content/posts/` 下添加新文章
+- 在 `content/projects/` 下添加项目
+- 部署到 Vercel

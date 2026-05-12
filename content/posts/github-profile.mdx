@@ -1,0 +1,47 @@
+---
+title: 关于我的 GitHub 主页
+description: GitHub profile README 的来历、那两张统计卡片是怎么挂上去的，以及一些可以找到我的地方。
+date: 2026-05-11
+tags: [meta, github, profile]
+---
+
+GitHub 有一个少有人注意的小彩蛋：如果你建一个**仓库名和用户名完全一样**的公开仓库，
+里面的 `README.md` 会被自动渲染在你的个人主页顶部。我的就是 [`yunstv/yunstv`](https://github.com/yunstv/yunstv)——
+顺便也是这个博客的源码仓库。
+
+## 那段简介
+
+主页上目前就一句话：
+
+> A speck of dust in the universe.
+
+宇宙里的一粒尘。说不上谦虚，也说不上颓丧，更多是一种合适的距离感——
+让自己不至于把任何一件事看得太重，也不至于因为做的东西小就懒得去做。
+
+## 那两张统计卡片
+
+主页中间挂着两张图：
+
+![GitHub Stats](https://github-readme-stats-sigma-five.vercel.app/api?username=yunstv&show_icons=true)
+
+![Top Languages](https://github-readme-stats.vercel.app/api/top-langs?username=yunstv&layout=compact&langs_count=8)
+
+它们来自 [anuraghazra/github-readme-stats](https://github.com/anuraghazra/github-readme-stats)——
+一个挂在 Vercel 上的小服务，每次别人打开你的主页时，从 GitHub API 拉数据、
+现场画 SVG 返回。所以数字总是新鲜的，连一行 CI 都不用配。
+
+<Callout type="info">
+  上游 Vercel 实例会被限流，所以社区里通常会自己 fork 一份部署。
+  README 里我用了 `github-readme-stats-sigma-five.vercel.app` 这个 fork 作为主色卡，
+  以及官方实例的 top-langs 作为兜底。
+</Callout>
+
+源码里还用了 `<picture>` + `prefers-color-scheme` 让卡片跟随访客的深色模式偏好——
+亮色用默认主题，深色切到 `radical` / `dracula`。一个非常便宜的小细节。
+
+## 在哪能找到我
+
+- GitHub: [github.com/yunstv](https://github.com/yunstv)
+- Twitter / X: [@mengzhoushi](https://x.com/mengzhoushi)
+
+如果你顺着这篇文章点进来，欢迎随便逛。

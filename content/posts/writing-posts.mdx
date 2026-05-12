@@ -1,0 +1,147 @@
+---
+title: 从 MDX 到上线：博客写作工作流
+description: 一份给我自己（也给任何想 fork 这个仓库的人）的写作流程——新建文件、写 frontmatter、本地预览、发布。
+date: 2026-05-13
+tags: [meta, mdx, workflow]
+---
+
+这篇文章本身就是按下面的步骤写出来的——可以理解为这套流程的活体测试。
+
+## TL;DR
+
+```bash
+# 1. 新建文件
+touch content/posts/my-new-post.mdx
+
+# 2. 写 frontmatter + 正文
+$EDITOR content/posts/my-new-post.mdx
+
+# 3. 本地看效果（dev server 会热更新）
+pnpm dev
+
+# 4. 满意了就提交
+git add content/posts/my-new-post.mdx
+git commit -m "post: my-new-post"
+git push
+```
+
+文件名就是 URL slug，`my-new-post.mdx` 对应 `/blog/my-new-post`。
+
+## frontmatter 字段
+
+最小可发布的 frontmatter：
+
+```mdx
+---
+title: 标题
+description: 一句话摘要，会显示在列表页卡片和 SEO meta 上
+date: 2026-05-13
+---
+```
+
+完整可选字段：
+
+- `title` (**必填**)——卡片和详情页标题
+- `description` (**必填**)——列表卡片摘要 + OG description
+- `date` (**必填**)——发布日期，决定排序，**写 `YYYY-MM-DD` 不要加引号**
+- `updated`——最近修改日，可选
+- `tags`——标签数组，例：`[mdx, story]`
+- `cover`——封面图路径，可选（目前模板没用到，加了也无害）
+- `draft`——`true` 时**生产构建会过滤掉**，但本地 `pnpm dev` 仍然可见
+
+<Callout type="info">
+  `draft: true` 的文章在 `pnpm build` 后访问会返回 404，但仍出现在 `pnpm dev` 中——这正是要的：边写边看，但不会误推到线上。
+</Callout>
+
+## 写正文
+
+文件后缀是 `.mdx`，意味着你可以同时用：
+
+- **CommonMark Markdown**——标题、列表、引用、链接、图片、代码块
+- **React 组件**——直接 JSX 标签
+
+### 代码块（带高亮）
+
+围栏代码块加语言名即可，refractor 会现场高亮：
+
+````mdx
+```tsx
+export function Hello() {
+  return <h1>Hi</h1>
+}
+```
+````
+
+已注册的语言：tsx、jsx、ts、js、bash、json、yaml、css、html、python、go、rust 等
+（见 `lib/rehype/highlight.ts`）。不在列表里的会保持纯文本，不报错。
+
+### 自定义组件：`<Callout>`
+
+四种 type，红黄绿蓝任选：
+
+```mdx
+<Callout type="info">提示性信息</Callout>
+<Callout type="warning">需要注意的事</Callout>
+<Callout type="success">恭喜你做对了</Callout>
+<Callout type="danger">小心，会炸</Callout>
+```
+
+效果像这样：
+
+<Callout type="success">这就是 `<Callout type="success">` 长的样子。</Callout>
+
+新加自定义组件的方式：在 `components/mdx/` 下写一个组件，
+然后到 `components/mdx/mdx-components.tsx` 里 export 它，
+之后所有 MDX 文章都能直接用。
+
+### 图片、音视频
+
+参见 [《在 MDX 博客里加图片、音乐和视频》](/blog/embedding-media)——
+里面讲了什么时候放 `public/`、什么时候走外部嵌入、对应组件长什么样。
+
+### 暂不支持的语法
+
+构建管线里目前没装 `remark-gfm`，所以下面这些 GitHub 风味 Markdown **不会按预期渲染**：
+
+- 表格 (`| a | b |`)
+- 任务列表 (`- [ ]`)
+- 删除线 (`~~foo~~`)
+- 裸 URL 自动链接
+
+绕过办法：表格用列表代替，或者真的需要时再装 `remark-gfm` 加到 `lib/mdx.ts` 的 `remarkPlugins` 里。
+
+## 草稿工作流
+
+写一半不想发布？给 frontmatter 加一行：
+
+```yaml
+draft: true
+```
+
+本地照常 `pnpm dev` 预览，但 `pnpm build` 不会生成它的页面，
+列表页和 sitemap 也不会包含——线上访问 `/blog/<slug>` 直接 404。
+
+写完了再去掉这一行（或者改成 `draft: false`）即可。
+
+## 一些坑
+
+- **YAML 里的日期不要加引号**：写 `date: 2026-05-13` 而不是 `date: "2026-05-13"`。
+  gray-matter 会把无引号的 ISO 日期解析成 JS 的 `Date` 对象，加引号反而变成字符串——
+  内部排序对两种情况都做了兼容，但保持一致更省心。
+- **slug 来自文件名**：`Hello World.mdx`（带空格大写）会生成 `/blog/Hello World` 这种丑陋 URL，
+  统一用 kebab-case 的英文 / 拼音。
+- **改完 frontmatter 不刷新**：Next.js 16 的 dev 偶尔不监听 `.mdx` 文件变化，
+  保存后浏览器看不到 → 在终端 `Ctrl+C` 后重跑 `pnpm dev`。
+- **新装的组件忘记注册**：在 `components/mdx/` 下写了组件，
+  但 `mdx-components.tsx` 没导出 → MDX 里写 `<Foo />` 会渲染成字面字符串而不是组件。
+
+## 写完之后
+
+```bash
+pnpm build          # 确认 prod 构建过得了
+git add content/    # 只 add 自己改过的内容文件
+git commit -m "post: 怎么往这个博客加新文章"
+git push
+```
+
+`git push` 后 Vercel / Cloudflare Pages 会自动构建部署，约一分钟内文章上线。

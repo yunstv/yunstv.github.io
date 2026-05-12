@@ -1,0 +1,183 @@
+---
+title: 在 MDX 博客里加图片、音乐和视频
+description: 一份按「现在最简单 → 长期才需要」排列的多媒体方案——什么时候直接进仓库、什么时候必须走外部存储、以及对应的 MDX 组件长什么样。
+date: 2026-05-12
+tags: [mdx, blog, media, recipes]
+---
+
+这个博客是纯文件 + MDX 的——所有内容都是 git 里的 `.mdx` 文件，没有数据库、没有后台。
+那要怎么往文章里塞图片、音乐、视频？下面是我打算长期遵循的一套方案。
+
+## 一个核心权衡
+
+只有一件事需要先讲清楚：**资源进 Git，还是走外部存储？**
+
+- **进 Git**：一切 portable，文章和资源永远绑定，备份 = `git clone`
+- **走外部**：仓库轻，CI 快，但多一个 dashboard 要管，链接可能失效
+
+我的默认策略是**能进 `public/` 就进 `public/`**，触发以下任一条件再外迁：
+
+- 单文件 &gt; 5 MB
+- 仓库总大小 &gt; 200 MB
+- 某类资源（比如完整视频）从一开始就明显属于"外部生态"
+
+## 图片
+
+### 默认做法：`public/` + Markdown 语法
+
+最简单：
+
+```mdx
+![一只猫](/images/posts/2026/cat.jpg)
+```
+
+文件放在 `public/images/posts/2026/cat.jpg` 即可。能用、能被搜索引擎抓、能右键保存。
+小博客这一招够撑很久。
+
+### 想要懒加载 + 响应式：包一层 `<Image>`
+
+直接 `<img>` 会让首屏带宽暴涨。Next.js 自带 `<Image>` 能解决，
+但它不能直接在 MDX 里替代 markdown 的 `![]()`——需要在 `mdx-components.tsx` 里把 `img` 映射过去：
+
+```tsx
+// components/mdx/mdx-components.tsx 节选
+import NextImage from 'next/image'
+
+export const mdxComponents = {
+  // ... 其它
+  img: ({ src, alt }) => (
+    <NextImage
+      src={src as string}
+      alt={alt ?? ''}
+      width={1200}
+      height={800}
+      sizes="(min-width: 768px) 720px, 100vw"
+      style={{ width: '100%', height: 'auto', borderRadius: 'var(--radius-3)' }}
+    />
+  ),
+}
+```
+
+这样所有文章里的 `![](...)` 自动升级为优化过的图片，原始 MDX 写法不用改。
+
+### 量大了：外部存储
+
+仓库突破 200 MB 的时候，把图迁去 Cloudflare R2 / Vercel Blob / 七牛——
+MDX 里就写完整 URL，其它都不用动。
+
+## 音乐
+
+### 短片段（几 MB）：`public/` + `<audio>`
+
+写一个简单的 MDX 组件：
+
+```tsx
+// components/mdx/audio-player.tsx
+export function AudioPlayer({ src, title }: { src: string; title?: string }) {
+  return (
+    <figure style={{ margin: '1.5rem 0' }}>
+      {title && <figcaption style={{ marginBottom: 8, opacity: 0.7 }}>{title}</figcaption>}
+      <audio controls src={src} style={{ width: '100%' }} />
+    </figure>
+  )
+}
+```
+
+注册到 `mdx-components.tsx`，文章里直接：
+
+```mdx
+<AudioPlayer src="/audio/demo.mp3" title="一段背景音" />
+```
+
+### 完整曲目 / 专辑：嵌入外部平台
+
+整张专辑、几十分钟的播客——**不要 commit 进 Git**。要么用 SoundCloud / 网易云 / Spotify 的 iframe，
+要么自己包一个语义化组件：
+
+```tsx
+// components/mdx/netease-music.tsx
+export function NeteaseMusic({ id, height = 86 }: { id: string; height?: number }) {
+  return (
+    <iframe
+      width="100%"
+      height={height}
+      src={`//music.163.com/outchain/player?type=2&id=${id}&auto=0&height=66`}
+      frameBorder="0"
+      allow="autoplay"
+    />
+  )
+}
+```
+
+文章里 `<NeteaseMusic id="123456" />` 就能用，未来换平台只改一个组件。
+
+## 视频
+
+**几乎永远不要自托管视频。** 带宽、转码、字幕、移动端兼容——每一项单拎出来都够写一篇文章。
+
+### 一律嵌入
+
+YouTube：
+
+```tsx
+// components/mdx/youtube.tsx
+export function YouTube({ id }: { id: string }) {
+  return (
+    <div style={{ position: 'relative', paddingTop: '56.25%', margin: '1.5rem 0' }}>
+      <iframe
+        src={`https://www.youtube.com/embed/${id}`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+        allowFullScreen
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+      />
+    </div>
+  )
+}
+```
+
+Bilibili 同理，把 src 换成：
+
+```tsx
+`https://player.bilibili.com/player.html?bvid=${bvid}&page=${page}&high_quality=1`
+```
+
+注意国内访问稳定性，海外读者会看不到——双语博客最好两个平台都嵌一份。
+
+进阶可以用 [lite-youtube-embed](https://github.com/paulirish/lite-youtube-embed)：
+首屏只加载缩略图，点击才真正拉 iframe。首页带视频列表时差距巨大。
+
+### 例外：极短演示（&lt; 10 秒）
+
+录屏演示一个交互、一段动画——这种 webm/mp4 放 `public/` 是合理的：
+
+```mdx
+<video autoPlay muted loop playsInline style={{ width: '100%', borderRadius: 8 }}>
+  <source src="/videos/demo.webm" type="video/webm" />
+</video>
+```
+
+<Callout type="warning">
+  永远不要用 GIF。同样画质下 webm 通常是 GIF 的 1/10 体积，浏览器支持率早已 99%+。
+</Callout>
+
+## 现在就可以做的事
+
+如果接受这套方案，落地到当前项目只需要加 4 个组件 + 3 个目录：
+
+- `components/mdx/image.tsx`——包 `next/image`，覆盖默认 `img`
+- `components/mdx/audio-player.tsx`——`<AudioPlayer />`
+- `components/mdx/youtube.tsx`——`<YouTube />`
+- `components/mdx/bilibili.tsx`——`<Bilibili />`
+- `public/images/posts/`、`public/audio/`、`public/videos/`——三个目录可以先留空
+
+每个组件都不超过 30 行。加完之后，任意一篇 MDX 都能直接：
+
+```mdx
+![cover](/images/posts/2026/foo.jpg)
+
+<AudioPlayer src="/audio/intro.mp3" title="开场白" />
+
+<YouTube id="dQw4w9WgXcQ" />
+```
+
+等真正写到第一篇带视频或音乐的文章再说也不晚——**不要为了未来才需要的东西现在就动手**。

@@ -1,0 +1,82 @@
+---
+title: react-element-in-viewport：滚动到视口再播动画
+description: 一个轻量 React 组件，包装 IntersectionObserver + animate.css，让元素只在真正进入屏幕时才触发入场动画。
+date: 2026-05-12
+tags: [react, animation, library, open-source]
+---
+
+最近收拾自己的开源仓库时翻出 [`react-element-in-viewport`](https://github.com/yunstv/react-element-in-viewport)——
+一个我 2023 年写的小工具库，最近又顺手维护了一下。问题简单、库也小，
+正好适合写一篇文章解释它解决了什么。
+
+## 问题：动画该在什么时候播
+
+CSS 入场动画通常绑在元素 mount 那一刻——React 渲染 → 浏览器布局 → 立即播放。
+对首屏元素没问题，但有一类内容会出问题：
+
+- 长文章里隔屏出现的图、卡片、CTA
+- 落地页里"滚到这里才出现"的卖点区块
+- 文档站里需要逐段强调的代码示例
+
+如果它们的入场动画在初次渲染时就被消耗掉了，用户真正滚动到的时候只看到一个静止的成品——
+辛苦写的弹跳、淡入、缩放全部白搭。
+
+## 思路：等元素真的可见再播
+
+浏览器原生有解：`IntersectionObserver` 能告诉你某个 DOM 节点什么时候、以多少比例和视口相交。
+把这套东西封到一个 React 组件里，对外暴露一个 `animation` prop，
+配合 [animate.css](https://animate.style/) 的 keyframe 类名，就是这个库。
+
+用起来就一行：
+
+```jsx
+import { ElementInViewport } from 'react-element-in-viewport'
+import 'react-element-in-viewport/dist/style.css'
+
+export function Section() {
+  return (
+    <ElementInViewport animation="bounce">
+      <div>滚到这里我才弹一下</div>
+    </ElementInViewport>
+  )
+}
+```
+
+`animation` 可以是 animate.css 里的任意 keyframe 名——
+`bounce`、`flash`、`pulse`、`fadeInUp`、`zoomIn`、`slideInLeft` 等都直接能用。
+
+## 它做对的事
+
+- **零运行时依赖**（除 React 本身）——`IntersectionObserver` 是浏览器原生 API，
+  2020 年之后的浏览器都不需要 polyfill
+- **wraps 而不是 hooks**——直接把要动画的元素塞进 `children`，不用动它本身的类名或 style，
+  也不会污染外层的 ref
+- **只触发一次**——出视口再回来不会循环播，避免长列表里来回滑产生的视觉噪音
+
+## 它没做的事（也不该做）
+
+- 不带任何 keyframe，全靠 animate.css 提供——更换动画引擎、自定义动画需要在外面配
+- 不处理 SSR——`IntersectionObserver` 只在浏览器存在，组件天然是 client-side 的
+- 不暴露"动画结束"回调——目前是一次性 fire-and-forget，需要的话可以自己加
+
+<Callout type="info">
+  如果你只想要 hooks 风格而不是 wrapper 组件，可以直接用
+  `react-intersection-observer` 自己拼一个——这个库其实就是它的 opinionated 封装版。
+</Callout>
+
+## 什么时候**不**该用它
+
+- **首屏关键内容**——动画延后到滚动会让 LCP 变差，关键元素应该直接显示
+- **复杂时序编排**——多个元素依次淡入、错位入场，用 [framer-motion](https://www.framer.com/motion/)
+  或 [GSAP](https://gsap.com/) 更合适
+- **性能敏感的超长列表**——给每行都套一个 `IntersectionObserver` 不便宜，
+  应该用一个 observer 同时观测多个目标
+
+## 演示和源码
+
+- Demo: [yunstv.github.io/react-element-in-viewport](https://yunstv.github.io/react-element-in-viewport/)
+- Repo: [github.com/yunstv/react-element-in-viewport](https://github.com/yunstv/react-element-in-viewport)
+- 安装：`npm install --save react-element-in-viewport`
+
+写这种小库的最大乐趣，是隔一两年回头看，发现当初的接口设计还能用——
+比绝大多数产品代码都要 evergreen。
