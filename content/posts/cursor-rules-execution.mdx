@@ -1,0 +1,188 @@
+---
+title: .cursorrules 文件的执行逻辑
+description: Cursor 怎么"执行"这个文件？什么时候读？怎么注入到 prompt？新版的 .cursor/rules/*.mdc 又是怎么回事——拆清楚机制再写规则。
+date: 2026-05-13
+tags: [cursor, ide, rules, prompt-engineering]
+---
+
+<Callout type="info">
+  常见误解：把 `.cursorrules` 当成"会被执行的脚本"。它不是脚本，它是 **prompt 拼接的输入**——理解这点之后再写规则会更省心。
+</Callout>
+
+## 它"执行"了什么
+
+严格说，`.cursorrules` 不"执行"任何东西。它的整个生命周期只做两件事：
+
+1. **Cursor IDE 在合适的时机读这个文件**
+2. **把内容拼进发给模型的 system prompt**
+
+之后规则起没起作用——取决于模型读完之后愿不愿意听。所以"执行"在这里只是个比喻；它本质上是**给 AI 的常驻 system prompt 片段**。
+
+## 文件位置与发现
+
+Cursor 按下面的顺序找规则：
+
+| 优先级 | 位置 | 形态 |
+|---|---|---|
+| 1 | `.cursor/rules/*.mdc` | **新格式**，多文件 + frontmatter 元数据，可按 glob 或场景作用 |
+| 2 | `.cursorrules`（仓库根） | **旧格式**（legacy），单文件、纯文本 / Markdown |
+| 3 | Cursor Settings → Rules for AI | **用户级**，跨项目，所有仓库共享 |
+
+新旧格式可共存，但官方推荐迁移到 `.cursor/rules/`——粒度更细，能按文件类型/路径生效。
+
+## 读文件的时机
+
+| 触发点 | 行为 |
+|---|---|
+| 打开 workspace | 首次扫描 `.cursor/rules/` 与 `.cursorrules` |
+| 保存规则文件 | 热重载，下次 AI 请求生效 |
+| 切换分支 / 文件变更 | 重新扫描（避免脏读） |
+| 每次 AI 请求（Chat / Composer / Cmd+K / Tab） | 把命中的规则注入 system 段 |
+
+<Callout type="info">
+  规则**不是每个 token 都重读一次**——是请求级注入。这意味着你修改规则后，**当前已发出的请求不受影响**，下一次新请求才生效。
+</Callout>
+
+## prompt 拼接的位置
+
+Cursor 大致按这个结构组装请求：
+
+```
+┌─────────────────────────────────────────┐
+│ system prompt（Cursor 内置）            │
+│   工具能力、安全约束、回答格式          │
+├─────────────────────────────────────────┤
+│ ← .cursor/rules/*.mdc 命中规则          │  ← 你写的规则在这里
+│ ← .cursorrules 全文（如果存在）         │
+│ ← User Rules for AI（全局）             │
+├─────────────────────────────────────────┤
+│ 当前文件 / 选中代码 / @ 提及的上下文    │
+├─────────────────────────────────────────┤
+│ 用户消息                                │
+└─────────────────────────────────────────┘
+```
+
+规则是**优先级很高的 system 段**，模型把它当"上级指示"看待，但仍然是软约束——不会像类型系统那样强制。
+
+## .mdc 文件的 frontmatter
+
+新格式的精髓在每条规则可以独立标注作用域：
+
+```markdown
+---
+description: TypeScript style guide for React components
+globs: ["**/*.tsx", "components/**/*.ts"]
+alwaysApply: false
+---
+
+- Always use functional components with hooks.
+- Prefer `const` over `function` declarations.
+- Use early returns to flatten nesting.
+```
+
+| 字段 | 作用 |
+|---|---|
+| `description` | 规则的一句话摘要，模型用它判断要不要拉这条规则 |
+| `globs` | 文件路径匹配。当前会话涉及的文件命中 glob 时，规则才注入 |
+| `alwaysApply` | `true` 时无视 globs 永远注入；`false` 时按 description + globs 决定 |
+
+<Callout type="success">
+  这个机制实际上是个**规则的 lazy-load**：避免一次塞太多规则导致 system prompt 撑爆——只有"相关"的才进入上下文。
+</Callout>
+
+## 与 CLAUDE.md / Copilot Instructions 的关系
+
+不同工具的"规则文件"机制是独立的，互不读取：
+
+| 工具 | 文件 | 加载方式 |
+|---|---|---|
+| Cursor | `.cursorrules` + `.cursor/rules/*.mdc` | Cursor IDE 自己处理 |
+| Claude Code | `CLAUDE.md`（递归向上 + 项目内） | Claude Code CLI 处理 |
+| GitHub Copilot | `.github/copilot-instructions.md` | Copilot 扩展处理 |
+| Aider | `.aider.conf.yml` + `CONVENTIONS.md` | Aider CLI 处理 |
+| 通用约定 | `AGENTS.md` | 多家在跟进的草案 |
+
+它们之间**不互通**——同一个项目想让多个工具行为一致，要么手动同步内容，要么用 symlink 把它们都指向同一个权威文件。
+
+## 写规则的几个坑
+
+### 1. 太长 → 模型抓不住重点
+
+`.cursorrules` 整文件都会进 system prompt。写到 2000 行模型就开始挑着读——把不重要的删掉比加更多覆盖面更有用。
+
+### 2. 把示例和规则混在一起
+
+```markdown
+错：
+
+代码风格：
+function foo(x) {
+  if (!x) return  // 用 early return
+  return x.bar
+}
+
+对：
+
+代码风格：
+- 用 early return，避免深嵌套
+- 例：见 lib/utils/early-return.ts
+```
+
+模型容易把示例代码当成"必须照抄的模板"，而不是说明某条规则的图解。
+
+### 3. 否定式 vs 肯定式
+
+| 写法 | 模型理解 |
+|---|---|
+| 「不要用 var」 | 偶尔仍然用 |
+| 「用 const，不可重新赋值的情况下用 let；禁止 var」 | 稳定避开 |
+
+肯定式 + 明确替代品 远好过单纯禁令。
+
+### 4. Git 提交规则放进 `.cursorrules` 的注意事项
+
+```markdown
+# Git Commit Rules
+- 严格遵循 Conventional Commits 格式
+- 不加 Co-authored-by trailer
+```
+
+这种规则只对**让 AI 替你生成 commit message** 时生效。如果你用 CLI 直接 `git commit` 写消息，模型根本不在场——规则不起作用。所以这类规则更适合配合一个工作流（如 "/commit" 命令）使用。
+
+### 5. 修改后没生效
+
+最常见的是「保存了 `.cursorrules`，但当前 Chat 还是旧规则」——前面说过：**规则按请求级注入**，已发出的请求不会回滚。新开一个 Chat 或重启 Cursor 就好。
+
+## 一个最小可用模板
+
+适合直接抄到新项目：
+
+```markdown
+You are an expert in TypeScript, React, Next.js, and Tailwind.
+
+## Style
+- Use early returns; flatten nested if/else.
+- Prefer `const`; use `let` only when reassignment is needed.
+- Event handlers: name with `handle` prefix (handleClick, handleKeyDown).
+- All code comments in English.
+
+## React
+- Functional components only.
+- Hooks at the top, JSX at the bottom.
+- Tailwind for styling; avoid inline styles and CSS modules.
+
+## Output
+- Reply in Chinese.
+- Minimize prose; show the code.
+- If unsure, say so instead of guessing.
+
+## Git
+- Conventional Commits format.
+- No Co-authored-by trailers.
+```
+
+短、肯定式、分节——这三条做到，规则就基本能稳定生效。
+
+## 一句话总结
+
+`.cursorrules` **不是被执行的代码**，是**被注入的 prompt**——把它当成"给 AI 的常驻指示"来设计，而不是"配置文件"，写出来的规则会顺手很多。
