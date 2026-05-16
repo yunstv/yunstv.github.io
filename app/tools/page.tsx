@@ -18,6 +18,11 @@ const TOOLS = [
     name: '图片拼接',
     desc: '粘贴多张图片，拖拽排序，按横向/纵向 + 紧凑/间距四种风格一键合成长图。',
   },
+  {
+    href: '/tools/image-crop',
+    name: '图片裁切',
+    desc: '粘贴一张图，拖动选定重点区域，按 1:1 / 圆形 / 16:9 / 9:16 四种比例导出。',
+  },
 ]
 
 export default function ToolsPage() {
