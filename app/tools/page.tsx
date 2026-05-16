@@ -13,6 +13,11 @@ const TOOLS = [
     name: '文本转图片',
     desc: '把终端里 Claude 的输出粘贴进来，导出成几种风格的截图，方便分享和存档。',
   },
+  {
+    href: '/tools/image-merge',
+    name: '图片拼接',
+    desc: '粘贴多张图片，拖拽排序，按横向/纵向 + 紧凑/间距四种风格一键合成长图。',
+  },
 ]
 
 export default function ToolsPage() {
