@@ -31,14 +31,21 @@ import {
   Cross2Icon,
   DownloadIcon,
   ImageIcon,
+  ReloadIcon,
 } from '@radix-ui/react-icons'
+import { CropDialog, type CropImage } from './crop-dialog'
 
 type ImageItem = {
   id: string
   dataUrl: string
   width: number
   height: number
+  // Snapshot of the pasted/picked image kept so the user can revert any
+  // crop performed via the cross-tool CropDialog flow.
+  original?: { dataUrl: string; width: number; height: number }
 }
+
+type CropTarget = { id: string; image: CropImage }
 
 type StyleId = 'hTight' | 'hGap' | 'vTight' | 'vGap'
 
@@ -59,6 +66,7 @@ export function ImageMergeTool() {
   const [focused, setFocused] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
+  const [cropTarget, setCropTarget] = useState<CropTarget | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pasteAreaRef = useRef<HTMLDivElement>(null)
 
@@ -97,6 +105,56 @@ export function ImageMergeTool() {
 
   const handleRemove = (id: string) => {
     setImages((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  const handleOpenCrop = (img: ImageItem) => {
+    setCropTarget({
+      id: img.id,
+      image: {
+        dataUrl: img.dataUrl,
+        width: img.width,
+        height: img.height,
+      },
+    })
+  }
+
+  const handleConfirmCrop = (result: CropImage) => {
+    if (!cropTarget) return
+    const targetId = cropTarget.id
+    setImages((prev) =>
+      prev.map((p) => {
+        if (p.id !== targetId) return p
+        // Capture the very first paste as `original` so multiple successive
+        // crops still revert to the source, not to a previous crop.
+        const original = p.original ?? {
+          dataUrl: p.dataUrl,
+          width: p.width,
+          height: p.height,
+        }
+        return {
+          ...p,
+          dataUrl: result.dataUrl,
+          width: result.width,
+          height: result.height,
+          original,
+        }
+      }),
+    )
+  }
+
+  const handleRestore = (id: string) => {
+    setImages((prev) =>
+      prev.map((p) => {
+        if (p.id !== id || !p.original) return p
+        return {
+          ...p,
+          dataUrl: p.original.dataUrl,
+          width: p.original.width,
+          height: p.original.height,
+          original: undefined,
+        }
+      }),
+    )
   }
 
   const handleClear = () => setImages([])
@@ -205,6 +263,8 @@ export function ImageMergeTool() {
                     isDragging={dragIdx === idx}
                     isOver={overIdx === idx && dragIdx !== idx}
                     onRemove={() => handleRemove(img.id)}
+                    onOpenCrop={() => handleOpenCrop(img)}
+                    onRestore={() => handleRestore(img.id)}
                     onDragStart={(e) => handleDragStart(e, idx)}
                     onDragOver={(e) => handleDragOver(e, idx)}
                     onDrop={(e) => handleDrop(e, idx)}
@@ -252,6 +312,14 @@ export function ImageMergeTool() {
         onNext={() =>
           setOpenIdx((i) => (i === null ? null : (i + 1) % STYLES.length))
         }
+      />
+
+      <CropDialog
+        open={cropTarget !== null}
+        image={cropTarget?.image ?? null}
+        onOpenChange={(v) => !v && setCropTarget(null)}
+        onConfirm={handleConfirmCrop}
+        confirmTooltip="确认裁切并替换原图"
       />
     </Flex>
   )
@@ -305,6 +373,8 @@ type ThumbCardProps = {
   isDragging: boolean
   isOver: boolean
   onRemove: () => void
+  onOpenCrop: () => void
+  onRestore: () => void
   onDragStart: (e: DragEvent<HTMLDivElement>) => void
   onDragOver: (e: DragEvent<HTMLDivElement>) => void
   onDrop: (e: DragEvent<HTMLDivElement>) => void
@@ -317,14 +387,22 @@ const ThumbCard = ({
   isDragging,
   isOver,
   onRemove,
+  onOpenCrop,
+  onRestore,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
 }: ThumbCardProps) => {
+  const [hovered, setHovered] = useState(false)
+  const isModified = !!img.original
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onRemove()
+  }
+  const handleRestoreClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onRestore()
   }
   return (
     <div
@@ -333,8 +411,12 @@ const ThumbCard = ({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
+      onClick={onOpenCrop}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       role="listitem"
-      aria-label={`第 ${idx + 1} 张图，原尺寸 ${img.width}×${img.height}，可拖动重排`}
+      aria-label={`第 ${idx + 1} 张图，${img.width}×${img.height}${isModified ? '，已裁切' : ''}，点击编辑、拖动重排`}
+      title="单击编辑 · 拖动排序"
       style={{
         position: 'relative',
         width: 104,
@@ -344,9 +426,11 @@ const ThumbCard = ({
         opacity: isDragging ? 0.35 : 1,
         outline: isOver
           ? '2px solid var(--accent-9)'
-          : '1px solid var(--gray-a5)',
+          : isModified
+            ? '1.5px solid var(--accent-a8)'
+            : '1px solid var(--gray-a5)',
         outlineOffset: isOver ? 2 : 0,
-        cursor: 'grab',
+        cursor: 'pointer',
         background: 'var(--gray-a3)',
         transition: 'opacity 120ms, outline-offset 120ms',
         flexShrink: 0,
@@ -369,7 +453,9 @@ const ThumbCard = ({
           position: 'absolute',
           top: 4,
           left: 4,
-          background: 'rgba(0,0,0,.6)',
+          background: isModified
+            ? 'var(--accent-9)'
+            : 'rgba(0,0,0,.6)',
           color: 'white',
           padding: '1px 6px',
           borderRadius: 4,
@@ -379,6 +465,7 @@ const ThumbCard = ({
         }}
       >
         {idx + 1}
+        {isModified && ' ✎'}
       </span>
       <IconButton
         size="1"
@@ -397,6 +484,27 @@ const ThumbCard = ({
       >
         <Cross2Icon />
       </IconButton>
+      {isModified && hovered && (
+        <Tooltip content="复原到粘贴时的原图">
+          <IconButton
+            size="1"
+            variant="solid"
+            color="blue"
+            onClick={handleRestoreClick}
+            aria-label={`复原第 ${idx + 1} 张图`}
+            style={{
+              position: 'absolute',
+              bottom: 4,
+              right: 4,
+              width: 20,
+              height: 20,
+              minWidth: 20,
+            }}
+          >
+            <ReloadIcon />
+          </IconButton>
+        </Tooltip>
+      )}
     </div>
   )
 }

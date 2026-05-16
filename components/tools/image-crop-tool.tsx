@@ -2,66 +2,48 @@
 
 import {
   useCallback,
-  useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
   type ClipboardEvent,
   type KeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
 import {
   Box,
   Button,
   Card,
-  Dialog,
   Flex,
   Grid,
-  IconButton,
   Text,
-  Tooltip,
 } from '@radix-ui/themes'
+import { ImageIcon } from '@radix-ui/react-icons'
 import {
-  CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CopyIcon,
-  Cross2Icon,
-  DownloadIcon,
-  ImageIcon,
-  ReloadIcon,
-} from '@radix-ui/react-icons'
+  CropDialog,
+  type CropImage,
+  type CropStyleId,
+} from './crop-dialog'
 
-type ImageItem = {
-  dataUrl: string
-  width: number
-  height: number
-}
+type StyleId = CropStyleId
 
-type StyleId = 'square' | 'circle' | 'landscape' | 'portrait'
-
-type StyleDef = {
+type StyleChipDef = {
   id: StyleId
   name: string
   hint: string
-  aspect: number // width / height
+  aspect: number
   circle: boolean
 }
 
-const STYLES: StyleDef[] = [
+const STYLE_CHIPS: StyleChipDef[] = [
   { id: 'square', name: '1:1 正方形', hint: '头像 · 社交贴图', aspect: 1, circle: false },
   { id: 'circle', name: '圆形头像', hint: '透明背景圆形 PNG', aspect: 1, circle: true },
   { id: 'landscape', name: '16:9 横屏', hint: '封面 · 缩略图', aspect: 16 / 9, circle: false },
   { id: 'portrait', name: '9:16 全竖屏', hint: 'Stories · Reels', aspect: 9 / 16, circle: false },
 ]
 
-type Rect = { x: number; y: number; w: number; h: number }
-
 export function ImageCropTool() {
-  const [image, setImage] = useState<ImageItem | null>(null)
-  const [openIdx, setOpenIdx] = useState<number | null>(null)
+  const [image, setImage] = useState<CropImage | null>(null)
+  const [openStyle, setOpenStyle] = useState<StyleId | null>(null)
   const [focused, setFocused] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pasteAreaRef = useRef<HTMLDivElement>(null)
@@ -109,8 +91,6 @@ export function ImageCropTool() {
     }
   }
 
-  const open = openIdx !== null
-
   return (
     <Flex direction="column" gap="4">
       <Card>
@@ -119,9 +99,7 @@ export function ImageCropTool() {
             <Text size="2" weight="medium">图片输入</Text>
             <Flex align="center" gap="3" wrap="wrap">
               <Text size="1" color="gray">
-                {image
-                  ? `${image.width}×${image.height}`
-                  : '尚未粘贴图片'}
+                {image ? `${image.width}×${image.height}` : '尚未粘贴图片'}
               </Text>
               <Button
                 size="1"
@@ -181,29 +159,21 @@ export function ImageCropTool() {
       </Card>
 
       <Grid columns={{ initial: '2', sm: '4' }} gap="3">
-        {STYLES.map((s, i) => (
+        {STYLE_CHIPS.map((s) => (
           <StyleChip
             key={s.id}
             styleDef={s}
             disabled={image === null}
-            onClick={() => setOpenIdx(i)}
+            onClick={() => setOpenStyle(s.id)}
           />
         ))}
       </Grid>
 
-      <PreviewDialog
-        open={open}
+      <CropDialog
+        open={openStyle !== null}
         image={image}
-        activeIdx={openIdx ?? 0}
-        onOpenChange={(v) => setOpenIdx(v ? openIdx : null)}
-        onPrev={() =>
-          setOpenIdx((i) =>
-            i === null ? null : (i + STYLES.length - 1) % STYLES.length,
-          )
-        }
-        onNext={() =>
-          setOpenIdx((i) => (i === null ? null : (i + 1) % STYLES.length))
-        }
+        initialStyleId={openStyle ?? undefined}
+        onOpenChange={(v) => setOpenStyle(v ? openStyle : null)}
       />
     </Flex>
   )
@@ -231,7 +201,7 @@ const ImagePreview = ({
   image,
   focused,
 }: {
-  image: ImageItem
+  image: CropImage
   focused: boolean
 }) => (
   <Flex direction="column" align="center" gap="2">
@@ -282,7 +252,7 @@ const StyleChip = ({
   disabled,
   onClick,
 }: {
-  styleDef: StyleDef
+  styleDef: StyleChipDef
   disabled: boolean
   onClick: () => void
 }) => (
@@ -331,8 +301,7 @@ const StyleChip = ({
   </Card>
 )
 
-const ChipPreview = ({ styleDef }: { styleDef: StyleDef }) => {
-  // Render a mini representation of the crop aspect; circle gets a round shape.
+const ChipPreview = ({ styleDef }: { styleDef: StyleChipDef }) => {
   const base = 'var(--gray-12)'
   if (styleDef.circle) {
     return (
@@ -343,7 +312,9 @@ const ChipPreview = ({ styleDef }: { styleDef: StyleDef }) => {
   }
   const isLandscape = styleDef.aspect > 1
   const long = 44
-  const short = Math.round(long / Math.max(styleDef.aspect, 1 / styleDef.aspect))
+  const short = Math.round(
+    long / Math.max(styleDef.aspect, 1 / styleDef.aspect),
+  )
   const w = isLandscape ? long : short
   const h = isLandscape ? short : long
   return (
@@ -351,573 +322,7 @@ const ChipPreview = ({ styleDef }: { styleDef: StyleDef }) => {
   )
 }
 
-type PreviewDialogProps = {
-  open: boolean
-  image: ImageItem | null
-  activeIdx: number
-  onOpenChange: (v: boolean) => void
-  onPrev: () => void
-  onNext: () => void
-}
-
-const PreviewDialog = ({
-  open,
-  image,
-  activeIdx,
-  onOpenChange,
-  onPrev,
-  onNext,
-}: PreviewDialogProps) => {
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        onPrev()
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        onNext()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onPrev, onNext])
-
-  return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Content
-        aria-describedby={undefined}
-        style={{
-          width: '80vw',
-          maxWidth: '80vw',
-          height: '80vh',
-          maxHeight: '80vh',
-          padding: 0,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Dialog.Title style={{ display: 'none' }}>
-          {open ? STYLES[activeIdx].name : '裁切预览'}
-        </Dialog.Title>
-        {open && image && (
-          <DialogBody
-            image={image}
-            activeIdx={activeIdx}
-            onPrev={onPrev}
-            onNext={onNext}
-            onClose={() => onOpenChange(false)}
-          />
-        )}
-      </Dialog.Content>
-    </Dialog.Root>
-  )
-}
-
-type DialogBodyProps = {
-  image: ImageItem
-  activeIdx: number
-  onPrev: () => void
-  onNext: () => void
-  onClose: () => void
-}
-
-const DialogBody = ({
-  image,
-  activeIdx,
-  onPrev,
-  onNext,
-  onClose,
-}: DialogBodyProps) => {
-  const active = STYLES[activeIdx]
-  const [copied, setCopied] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-  const [cropRect, setCropRect] = useState<Rect>(() =>
-    centerCropRect(image.width, image.height, active.aspect),
-  )
-
-  // Reset crop when image or style aspect changes.
-  useEffect(() => {
-    setCropRect(centerCropRect(image.width, image.height, active.aspect))
-    setCopied(false)
-    setErr(null)
-  }, [image, active.aspect])
-
-  const handleReset = () => {
-    setCropRect(centerCropRect(image.width, image.height, active.aspect))
-  }
-
-  const handleDownload = useCallback(async () => {
-    if (busy) return
-    setBusy(true)
-    setErr(null)
-    try {
-      const blob = await cropImageToBlob(image, cropRect, active.circle)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${active.id}-${Date.now()}.png`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      setErr('导出失败')
-      console.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }, [busy, image, cropRect, active])
-
-  const handleCopy = useCallback(async () => {
-    if (busy) return
-    setBusy(true)
-    setErr(null)
-    try {
-      const blob = await cropImageToBlob(image, cropRect, active.circle)
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob }),
-      ])
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch (e) {
-      setErr('当前浏览器不支持复制图片')
-      console.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }, [busy, image, cropRect, active])
-
-  return (
-    <>
-      <Flex
-        align="center"
-        justify="between"
-        px="4"
-        py="3"
-        style={{ borderBottom: '1px solid var(--gray-a4)', flexShrink: 0 }}
-      >
-        <Flex align="center" gap="3">
-          <Tooltip content="上一种风格 (←)">
-            <IconButton
-              size="2"
-              variant="soft"
-              color="gray"
-              onClick={onPrev}
-              aria-label="上一种风格"
-            >
-              <ChevronLeftIcon />
-            </IconButton>
-          </Tooltip>
-          <Flex direction="column">
-            <Text size="3" weight="medium">{active.name}</Text>
-            <Text size="1" color="gray">
-              {activeIdx + 1} / {STYLES.length} · {active.hint} · 输出 {Math.round(cropRect.w)}×{Math.round(cropRect.h)}
-            </Text>
-          </Flex>
-          <Tooltip content="下一种风格 (→)">
-            <IconButton
-              size="2"
-              variant="soft"
-              color="gray"
-              onClick={onNext}
-              aria-label="下一种风格"
-            >
-              <ChevronRightIcon />
-            </IconButton>
-          </Tooltip>
-        </Flex>
-        <Flex align="center" gap="2">
-          {err && (
-            <Text size="1" color="red">
-              {err}
-            </Text>
-          )}
-          <Tooltip content="居中重置">
-            <IconButton
-              size="2"
-              variant="soft"
-              color="gray"
-              onClick={handleReset}
-              aria-label="居中重置"
-            >
-              <ReloadIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content={copied ? '已复制到剪贴板' : '复制图片'}>
-            <IconButton
-              size="2"
-              variant="soft"
-              color={copied ? 'green' : 'gray'}
-              onClick={handleCopy}
-              disabled={busy}
-              aria-label="复制图片"
-            >
-              {copied ? <CheckIcon /> : <CopyIcon />}
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="下载 PNG">
-            <IconButton
-              size="2"
-              variant="soft"
-              color="gray"
-              onClick={handleDownload}
-              disabled={busy}
-              aria-label="下载图片"
-            >
-              <DownloadIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="关闭 (Esc)">
-            <IconButton
-              size="2"
-              variant="soft"
-              color="gray"
-              onClick={onClose}
-              aria-label="关闭"
-            >
-              <Cross2Icon />
-            </IconButton>
-          </Tooltip>
-        </Flex>
-      </Flex>
-      <Box
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'row',
-          overflow: 'hidden',
-          minHeight: 0,
-        }}
-      >
-        <Box
-          style={{
-            flex: 3,
-            padding: 24,
-            overflow: 'hidden',
-            background:
-              'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
-          }}
-        >
-          <CropEditor
-            image={image}
-            cropRect={cropRect}
-            onChange={setCropRect}
-            circle={active.circle}
-          />
-        </Box>
-        <Box
-          style={{
-            flex: 1,
-            minWidth: 0,
-            borderLeft: '1px solid var(--gray-a4)',
-            padding: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
-          <Flex direction="column" gap="1">
-            <Text size="2" weight="medium">实时预览</Text>
-            <Text size="1" color="gray">
-              输出 {Math.round(cropRect.w)}×{Math.round(cropRect.h)}
-            </Text>
-          </Flex>
-          <PreviewPane
-            image={image}
-            cropRect={cropRect}
-            circle={active.circle}
-          />
-        </Box>
-      </Box>
-    </>
-  )
-}
-
-const PreviewPane = ({
-  image,
-  cropRect,
-  circle,
-}: {
-  image: ImageItem
-  cropRect: Rect
-  circle: boolean
-}) => {
-  const ref = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState({ w: 0, h: 0 })
-
-  useEffect(() => {
-    const node = ref.current
-    if (!node) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setSize({ w: width, h: height })
-    })
-    ro.observe(node)
-    return () => ro.disconnect()
-  }, [])
-
-  // Scale = how many displayed px per natural px in the preview pane
-  const scale = useMemo(() => {
-    if (size.w === 0 || size.h === 0) return 0
-    if (cropRect.w === 0 || cropRect.h === 0) return 0
-    return Math.min(size.w / cropRect.w, size.h / cropRect.h)
-  }, [size, cropRect.w, cropRect.h])
-
-  const previewW = cropRect.w * scale
-  const previewH = cropRect.h * scale
-
-  return (
-    <div
-      ref={ref}
-      style={{
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background:
-          'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 10px 10px',
-        borderRadius: 6,
-        padding: 8,
-      }}
-    >
-      {scale > 0 && (
-        <div
-          style={{
-            position: 'relative',
-            width: previewW,
-            height: previewH,
-            overflow: 'hidden',
-            borderRadius: circle ? '50%' : 4,
-            boxShadow: '0 4px 14px rgba(0,0,0,.12)',
-          }}
-        >
-          <img
-            src={image.dataUrl}
-            alt="裁切结果预览"
-            draggable={false}
-            style={{
-              position: 'absolute',
-              width: image.width * scale,
-              height: image.height * scale,
-              left: -cropRect.x * scale,
-              top: -cropRect.y * scale,
-              maxWidth: 'none',
-              display: 'block',
-              userSelect: 'none',
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
-type CropEditorProps = {
-  image: ImageItem
-  cropRect: Rect
-  onChange: (r: Rect) => void
-  circle: boolean
-}
-
-const CropEditor = ({
-  image,
-  cropRect,
-  onChange,
-  circle,
-}: CropEditorProps) => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const frameRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ offsetX: number; offsetY: number } | null>(null)
-  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 })
-
-  useEffect(() => {
-    const node = containerRef.current
-    if (!node) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setContainerSize({ w: width, h: height })
-    })
-    ro.observe(node)
-    return () => ro.disconnect()
-  }, [])
-
-  // scale = displayed pixels per natural pixel
-  const scale = useMemo(() => {
-    if (containerSize.w === 0 || containerSize.h === 0) return 0
-    return Math.min(
-      containerSize.w / image.width,
-      containerSize.h / image.height,
-      1,
-    )
-  }, [containerSize, image.width, image.height])
-
-  const displayW = image.width * scale
-  const displayH = image.height * scale
-
-  const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (scale === 0) return
-    const target = e.currentTarget
-    target.setPointerCapture(e.pointerId)
-    const frameRect = target.getBoundingClientRect()
-    dragRef.current = {
-      offsetX: e.clientX - frameRect.left,
-      offsetY: e.clientY - frameRect.top,
-    }
-  }
-
-  const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current || scale === 0) return
-    const stage = containerRef.current?.querySelector(
-      '[data-stage]',
-    ) as HTMLElement | null
-    if (!stage) return
-    const stageRect = stage.getBoundingClientRect()
-    const newDisplayX = e.clientX - stageRect.left - dragRef.current.offsetX
-    const newDisplayY = e.clientY - stageRect.top - dragRef.current.offsetY
-    const newX = newDisplayX / scale
-    const newY = newDisplayY / scale
-    const clampedX = clamp(newX, 0, image.width - cropRect.w)
-    const clampedY = clamp(newY, 0, image.height - cropRect.h)
-    onChange({ ...cropRect, x: clampedX, y: clampedY })
-  }
-
-  const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId)
-    }
-    dragRef.current = null
-  }
-
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {scale > 0 && (
-        <div
-          data-stage
-          style={{
-            position: 'relative',
-            width: displayW,
-            height: displayH,
-            overflow: 'hidden',
-          }}
-        >
-          <img
-            src={image.dataUrl}
-            alt=""
-            draggable={false}
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'block',
-              userSelect: 'none',
-              pointerEvents: 'none',
-            }}
-          />
-          <div
-            ref={frameRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            role="slider"
-            aria-label="裁切框，拖动可移动选区"
-            aria-valuetext={`水平 ${Math.round(cropRect.x)}, 垂直 ${Math.round(cropRect.y)}, 宽 ${Math.round(cropRect.w)}, 高 ${Math.round(cropRect.h)}`}
-            style={{
-              position: 'absolute',
-              left: cropRect.x * scale,
-              top: cropRect.y * scale,
-              width: cropRect.w * scale,
-              height: cropRect.h * scale,
-              border: '2px solid #ffffff',
-              borderRadius: circle ? '50%' : 4,
-              boxShadow:
-                '0 0 0 9999px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.35)',
-              cursor: 'move',
-              touchAction: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
 // --- helpers ---
-
-const clamp = (v: number, min: number, max: number): number =>
-  Math.max(min, Math.min(max, v))
-
-const centerCropRect = (
-  imgW: number,
-  imgH: number,
-  aspect: number,
-): Rect => {
-  const imgAspect = imgW / imgH
-  let w: number
-  let h: number
-  if (imgAspect > aspect) {
-    h = imgH
-    w = h * aspect
-  } else {
-    w = imgW
-    h = w / aspect
-  }
-  return {
-    x: (imgW - w) / 2,
-    y: (imgH - h) / 2,
-    w,
-    h,
-  }
-}
-
-const cropImageToBlob = async (
-  image: ImageItem,
-  rect: Rect,
-  circle: boolean,
-): Promise<Blob> => {
-  const el = await loadHtmlImage(image.dataUrl)
-  const outW = Math.max(1, Math.round(rect.w))
-  const outH = Math.max(1, Math.round(rect.h))
-  const canvas = document.createElement('canvas')
-  canvas.width = outW
-  canvas.height = outH
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('canvas 2d context unavailable')
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = 'high'
-  if (circle) {
-    ctx.beginPath()
-    ctx.arc(outW / 2, outH / 2, Math.min(outW, outH) / 2, 0, Math.PI * 2)
-    ctx.clip()
-  }
-  ctx.drawImage(el, rect.x, rect.y, rect.w, rect.h, 0, 0, outW, outH)
-  return await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) reject(new Error('canvas toBlob returned null'))
-      else resolve(blob)
-    }, 'image/png')
-  })
-}
-
-const loadHtmlImage = (src: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('image load failed'))
-    img.src = src
-  })
 
 const readFileAsDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {

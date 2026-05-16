@@ -26,8 +26,10 @@ import {
   CopyIcon,
   Cross2Icon,
   DownloadIcon,
+  Pencil2Icon,
 } from '@radix-ui/react-icons'
 import { toBlob, toPng } from 'html-to-image'
+import { CropDialog, blobToCropImage, type CropImage } from './crop-dialog'
 
 const SAMPLE = `把 Claude 在终端里输出的文字粘贴到这里。
 
@@ -63,6 +65,13 @@ const HEAVY_THRESHOLD = 30_000
 export function TextToImageTool() {
   const [text, setText] = useState(SAMPLE)
   const [openIdx, setOpenIdx] = useState<number | null>(null)
+  const [cropImage, setCropImage] = useState<CropImage | null>(null)
+
+  // Closes the style preview and forwards the captured PNG into the crop dialog.
+  const handleEditInCrop = (image: CropImage) => {
+    setOpenIdx(null)
+    setCropImage(image)
+  }
 
   const open = openIdx !== null
   const isHeavy = text.length > HEAVY_THRESHOLD
@@ -125,6 +134,12 @@ export function TextToImageTool() {
         onNext={() =>
           setOpenIdx((i) => (i === null ? null : (i + 1) % STYLES.length))
         }
+        onEditInCrop={handleEditInCrop}
+      />
+      <CropDialog
+        open={cropImage !== null}
+        image={cropImage}
+        onOpenChange={(v) => !v && setCropImage(null)}
       />
     </Flex>
   )
@@ -229,6 +244,7 @@ function PreviewDialog({
   onOpenChange,
   onPrev,
   onNext,
+  onEditInCrop,
 }: {
   open: boolean
   text: string
@@ -236,6 +252,7 @@ function PreviewDialog({
   onOpenChange: (v: boolean) => void
   onPrev: () => void
   onNext: () => void
+  onEditInCrop: (image: CropImage) => void
 }) {
   useEffect(() => {
     if (!open) return
@@ -277,6 +294,7 @@ function PreviewDialog({
             onPrev={onPrev}
             onNext={onNext}
             onClose={() => onOpenChange(false)}
+            onEditInCrop={onEditInCrop}
           />
         )}
       </Dialog.Content>
@@ -290,12 +308,14 @@ function DialogBody({
   onPrev,
   onNext,
   onClose,
+  onEditInCrop,
 }: {
   text: string
   activeIdx: number
   onPrev: () => void
   onNext: () => void
   onClose: () => void
+  onEditInCrop: (image: CropImage) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
@@ -353,6 +373,26 @@ function DialogBody({
     }
   }, [busy])
 
+  const onEditInCropClick = useCallback(async () => {
+    if (!ref.current || busy) return
+    setBusy(true)
+    setErr(null)
+    try {
+      const blob = await toBlob(ref.current, {
+        pixelRatio: 2,
+        cacheBust: true,
+      })
+      if (!blob) throw new Error('blob is null')
+      const cropImage = await blobToCropImage(blob)
+      onEditInCrop(cropImage)
+    } catch (e) {
+      setErr('打开裁切失败')
+      console.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }, [busy, onEditInCrop])
+
   const isStale = deferredText !== text
 
   return (
@@ -405,6 +445,18 @@ function DialogBody({
               渲染中...
             </Text>
           )}
+          <Tooltip content="在图片裁切中编辑">
+            <IconButton
+              size="2"
+              variant="soft"
+              color="gray"
+              onClick={onEditInCropClick}
+              disabled={busy}
+              aria-label="在图片裁切中编辑"
+            >
+              <Pencil2Icon />
+            </IconButton>
+          </Tooltip>
           <Tooltip content={copied ? '已复制到剪贴板' : '复制图片'}>
             <IconButton
               size="2"
