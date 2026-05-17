@@ -62,6 +62,17 @@ const STYLES: { id: StyleId; name: string; hint: string }[] = [
 
 const HEAVY_THRESHOLD = 30_000
 
+// Use the node's intrinsic content-box size so html-to-image captures the
+// full preview even when the modal viewport is narrower or shorter than it.
+// Without this, fit-content / overflow can leave the rendered node smaller
+// than its real content, and the captured PNG ends up truncated.
+const getFullSize = (
+  node: HTMLElement,
+): { width: number; height: number } => ({
+  width: Math.max(node.scrollWidth, node.offsetWidth),
+  height: Math.max(node.scrollHeight, node.offsetHeight),
+})
+
 export function TextToImageTool() {
   const [text, setText] = useState(SAMPLE)
   const [openIdx, setOpenIdx] = useState<number | null>(null)
@@ -337,6 +348,7 @@ function DialogBody({
       const dataUrl = await toPng(ref.current, {
         pixelRatio: 2,
         cacheBust: true,
+        ...getFullSize(ref.current),
       })
       const a = document.createElement('a')
       a.href = dataUrl
@@ -358,6 +370,7 @@ function DialogBody({
       const blob = await toBlob(ref.current, {
         pixelRatio: 2,
         cacheBust: true,
+        ...getFullSize(ref.current),
       })
       if (!blob) throw new Error('blob is null')
       await navigator.clipboard.write([
@@ -381,6 +394,7 @@ function DialogBody({
       const blob = await toBlob(ref.current, {
         pixelRatio: 2,
         cacheBust: true,
+        ...getFullSize(ref.current),
       })
       if (!blob) throw new Error('blob is null')
       const cropImage = await blobToCropImage(blob)
@@ -497,15 +511,49 @@ function DialogBody({
       <Box
         style={{
           flex: 1,
-          overflow: 'auto',
-          padding: 24,
-          background:
-            'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
+          display: 'flex',
+          flexDirection: 'row',
+          overflow: 'hidden',
+          minHeight: 0,
         }}
       >
-        <div ref={ref} style={{ width: 'fit-content', margin: '0 auto' }}>
-          <StyledPreview styleId={active.id} text={deferredText} />
-        </div>
+        <Box
+          style={{
+            flex: 3,
+            padding: 24,
+            overflow: 'auto',
+            background:
+              'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
+            // Flex centering keeps the styled preview horizontally centered
+            // while the inner flex item stays sized to its content (no
+            // max-content / margin-auto, which would inflate the captured
+            // node when inner pre-wrap text has long single lines).
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div ref={ref} style={{ flexShrink: 0 }}>
+            <StyledPreview styleId={active.id} text={deferredText} />
+          </div>
+        </Box>
+        <Box
+          style={{
+            flex: 1,
+            minWidth: 0,
+            borderLeft: '1px solid var(--gray-a4)',
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <Flex direction="column" gap="1">
+            <Text size="2" weight="medium">实时预览</Text>
+            <Text size="1" color="gray">导出即所见 · 缩放至侧栏宽度</Text>
+          </Flex>
+          <LivePreviewPane styleId={active.id} text={deferredText} />
+        </Box>
       </Box>
     </>
   )
@@ -522,6 +570,55 @@ function StyledPreview({ styleId, text }: { styleId: StyleId; text: string }) {
     case 'note':
       return <NoteStyle text={text} />
   }
+}
+
+// All four styled presets render at a fixed natural width of 720px.
+const STYLED_PREVIEW_WIDTH = 720
+
+function LivePreviewPane({
+  styleId,
+  text,
+}: {
+  styleId: StyleId
+  text: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [paneW, setPaneW] = useState(0)
+
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const ro = new ResizeObserver((entries) => {
+      setPaneW(entries[0].contentRect.width)
+    })
+    ro.observe(node)
+    return () => ro.disconnect()
+  }, [])
+
+  // Shrink styled preview to fit pane width; never upscale.
+  const zoom =
+    paneW > 0 ? Math.min(paneW / STYLED_PREVIEW_WIDTH, 1) : 0
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        flex: 1,
+        minHeight: 0,
+        overflow: 'auto',
+        background:
+          'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 10px 10px',
+        borderRadius: 6,
+        padding: 8,
+      }}
+    >
+      {zoom > 0 && (
+        <div style={{ zoom }}>
+          <StyledPreview styleId={styleId} text={text} />
+        </div>
+      )}
+    </div>
+  )
 }
 
 const MONO_STACK =
