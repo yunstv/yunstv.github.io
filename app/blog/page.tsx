@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Flex, Heading, Text } from '@radix-ui/themes'
 import { listAll } from '@/lib/mdx'
 import type { PostMeta } from '@/types/content'
-import { PostList } from '@/components/blog/post-list'
+import { BlogTabs } from '@/components/blog/blog-tabs'
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -17,7 +17,7 @@ export default async function BlogPage() {
         <Heading size="8">Blog</Heading>
         <Text size="3" color="gray">想到什么写什么。共 {posts.length} 篇。</Text>
       </Flex>
-      <PostList items={posts} />
+      <BlogTabs items={posts} />
     </Flex>
   )
 }
