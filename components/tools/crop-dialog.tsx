@@ -389,11 +389,18 @@ const DialogBody = ({
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
+            background: '#1a1a1a',
           }}
         >
           <Flex direction="column" gap="1">
-            <Text size="2" weight="medium">实时预览</Text>
-            <Text size="1" color="gray">
+            <Text
+              size="2"
+              weight="medium"
+              style={{ color: '#fafafa' }}
+            >
+              实时预览
+            </Text>
+            <Text size="1" style={{ color: '#a3a3a3' }}>
               输出 {Math.round(cropRect.w)}×{Math.round(cropRect.h)}
             </Text>
           </Flex>
@@ -585,10 +592,6 @@ const PreviewPane = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background:
-          'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 10px 10px',
-        borderRadius: 6,
-        padding: 8,
       }}
     >
       {scale > 0 && (
@@ -599,7 +602,7 @@ const PreviewPane = ({
             height: previewH,
             overflow: 'hidden',
             borderRadius: circle ? '50%' : 4,
-            boxShadow: '0 4px 14px rgba(0,0,0,.12)',
+            boxShadow: '0 4px 14px rgba(0,0,0,.4)',
           }}
         >
           <img
