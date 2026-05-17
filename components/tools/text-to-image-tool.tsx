@@ -329,6 +329,8 @@ function DialogBody({
   onEditInCrop: (image: CropImage) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [contentSize, setContentSize] = useState({ w: 0, h: 0 })
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -339,6 +341,23 @@ function DialogBody({
     setCopied(false)
     setErr(null)
   }, [activeIdx])
+
+  // Track the styled preview's natural size so the live preview pane can
+  // shrink to fit both axes without ever needing a scrollbar.
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const ro = new ResizeObserver(() => {
+      setContentSize({ w: node.scrollWidth, h: node.scrollHeight })
+    })
+    ro.observe(node)
+    return () => ro.disconnect()
+  }, [])
+
+  // NOTE: The viewport overlay (red box) is no longer driven by React state.
+  // LivePreviewPane subscribes to `scrollRef` directly and positions the
+  // overlay imperatively via rAF + transform, so scrolling a long preview
+  // doesn't pay the cost of re-rendering this dialog every frame.
 
   const onDownload = useCallback(async () => {
     if (!ref.current || busy) return
@@ -518,22 +537,23 @@ function DialogBody({
         }}
       >
         <Box
+          ref={scrollRef}
           style={{
             flex: 3,
             padding: 24,
             overflow: 'auto',
             background:
               'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
-            // Flex centering keeps the styled preview horizontally centered
-            // while the inner flex item stays sized to its content (no
-            // max-content / margin-auto, which would inflate the captured
-            // node when inner pre-wrap text has long single lines).
+            // `margin: 'auto'` on the flex item centers when there's space
+            // and collapses to 0 on overflow — this lets the user scroll to
+            // the true edge when the styled preview is wider/taller than the
+            // viewport (justify-content:center would silently cut off the
+            // leading edge). The flex item still stays sized to its content
+            // because of `flexShrink: 0`.
             display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-start',
           }}
         >
-          <div ref={ref} style={{ flexShrink: 0 }}>
+          <div ref={ref} style={{ flexShrink: 0, margin: 'auto' }}>
             <StyledPreview styleId={active.id} text={deferredText} />
           </div>
         </Box>
@@ -546,13 +566,28 @@ function DialogBody({
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
+            background: '#1a1a1a',
           }}
         >
           <Flex direction="column" gap="1">
-            <Text size="2" weight="medium">实时预览</Text>
-            <Text size="1" color="gray">导出即所见 · 缩放至侧栏宽度</Text>
+            <Text
+              size="2"
+              weight="medium"
+              style={{ color: '#fafafa' }}
+            >
+              实时预览
+            </Text>
+            <Text size="1" style={{ color: '#a3a3a3' }}>
+              导出即所见 · 缩放至侧栏宽度
+            </Text>
           </Flex>
-          <LivePreviewPane styleId={active.id} text={deferredText} />
+          <LivePreviewPane
+            styleId={active.id}
+            text={deferredText}
+            contentSize={contentSize}
+            scrollContainerRef={scrollRef}
+            contentRef={ref}
+          />
         </Box>
       </Box>
     </>
@@ -572,51 +607,147 @@ function StyledPreview({ styleId, text }: { styleId: StyleId; text: string }) {
   }
 }
 
-// All four styled presets render at a fixed natural width of 720px.
-const STYLED_PREVIEW_WIDTH = 720
-
 function LivePreviewPane({
   styleId,
   text,
+  contentSize,
+  scrollContainerRef,
+  contentRef,
 }: {
   styleId: StyleId
   text: string
+  contentSize: { w: number; h: number }
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>
+  contentRef: React.RefObject<HTMLDivElement | null>
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [paneW, setPaneW] = useState(0)
+  const paneRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const [paneSize, setPaneSize] = useState({ w: 0, h: 0 })
 
   useEffect(() => {
-    const node = ref.current
+    const node = paneRef.current
     if (!node) return
     const ro = new ResizeObserver((entries) => {
-      setPaneW(entries[0].contentRect.width)
+      const { width, height } = entries[0].contentRect
+      setPaneSize({ w: width, h: height })
     })
     ro.observe(node)
     return () => ro.disconnect()
   }, [])
 
-  // Shrink styled preview to fit pane width; never upscale.
+  // Fit the styled preview to BOTH axes of the pane (never upscale, never
+  // overflow).
   const zoom =
-    paneW > 0 ? Math.min(paneW / STYLED_PREVIEW_WIDTH, 1) : 0
+    paneSize.w > 0 &&
+    paneSize.h > 0 &&
+    contentSize.w > 0 &&
+    contentSize.h > 0
+      ? Math.min(
+          paneSize.w / contentSize.w,
+          paneSize.h / contentSize.h,
+          1,
+        )
+      : 0
+
+  const previewW = contentSize.w * zoom
+  const previewH = contentSize.h * zoom
+  const previewLeft = (paneSize.w - previewW) / 2
+  const previewTop = (paneSize.h - previewH) / 2
+
+  // Imperatively drive the red viewport box. Skipping React state per scroll
+  // event means: no DialogBody re-render, no reconciliation cost, and we can
+  // ride the compositor by setting transform + width/height directly. rAF
+  // collapses multiple scroll events into a single paint-aligned update.
+  useEffect(() => {
+    const scroll = scrollContainerRef.current
+    const content = contentRef.current
+    const overlay = overlayRef.current
+    if (!scroll || !content || !overlay) return
+    if (zoom === 0) {
+      overlay.style.display = 'none'
+      return
+    }
+
+    let rafId: number | null = null
+
+    const apply = () => {
+      rafId = null
+      const sr = scroll.getBoundingClientRect()
+      const cr = content.getBoundingClientRect()
+      const left = Math.max(0, sr.left - cr.left)
+      const top = Math.max(0, sr.top - cr.top)
+      const right = Math.min(cr.width, sr.right - cr.left)
+      const bottom = Math.min(cr.height, sr.bottom - cr.top)
+      const vw = Math.max(0, right - left)
+      const vh = Math.max(0, bottom - top)
+      if (vw === 0 || vh === 0) {
+        overlay.style.display = 'none'
+        return
+      }
+      overlay.style.display = 'block'
+      overlay.style.transform = `translate(${previewLeft + left * zoom}px, ${previewTop + top * zoom}px)`
+      overlay.style.width = `${vw * zoom}px`
+      overlay.style.height = `${vh * zoom}px`
+    }
+
+    const schedule = () => {
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(apply)
+    }
+
+    apply()
+    scroll.addEventListener('scroll', schedule, { passive: true })
+    const ro = new ResizeObserver(schedule)
+    ro.observe(scroll)
+    ro.observe(content)
+
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      scroll.removeEventListener('scroll', schedule)
+      ro.disconnect()
+    }
+  }, [zoom, previewLeft, previewTop, scrollContainerRef, contentRef])
 
   return (
     <div
-      ref={ref}
+      ref={paneRef}
       style={{
         flex: 1,
         minHeight: 0,
-        overflow: 'auto',
-        background:
-          'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 10px 10px',
-        borderRadius: 6,
-        padding: 8,
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
       {zoom > 0 && (
-        <div style={{ zoom }}>
-          <StyledPreview styleId={styleId} text={text} />
+        <div
+          style={{
+            position: 'absolute',
+            left: previewLeft,
+            top: previewTop,
+            width: previewW,
+            height: previewH,
+          }}
+        >
+          <div style={{ zoom }}>
+            <StyledPreview styleId={styleId} text={text} />
+          </div>
         </div>
       )}
+      <div
+        ref={overlayRef}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          display: 'none',
+          border: '2px solid #ef4444',
+          boxShadow: '0 0 0 1px rgba(239, 68, 68, 0.25)',
+          boxSizing: 'border-box',
+          pointerEvents: 'none',
+          willChange: 'transform, width, height',
+        }}
+      />
     </div>
   )
 }
