@@ -709,6 +709,8 @@ const DialogBody = ({
   onNext,
   onClose,
 }: DialogBodyProps) => {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -717,6 +719,7 @@ const DialogBody = ({
     () => computeLayout(images, active.id),
     [images, active.id],
   )
+  const isHorizontalOutput = layout.isHorizontal
 
   useEffect(() => {
     setCopied(false)
@@ -847,17 +850,221 @@ const DialogBody = ({
       <Box
         style={{
           flex: 1,
-          overflow: 'auto',
-          padding: 24,
-          background:
-            'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
+          display: 'flex',
+          // Horizontal stitch → main on top, pane on bottom (column split).
+          // Vertical stitch → main on left, pane on right (row split).
+          flexDirection: isHorizontalOutput ? 'column' : 'row',
+          overflow: 'hidden',
+          minHeight: 0,
         }}
       >
-        <div style={{ width: 'max-content', margin: '0 auto' }}>
-          <LayoutRender layout={layout} images={images} />
-        </div>
+        <Box
+          ref={scrollRef}
+          style={{
+            flex: 3,
+            padding: 24,
+            overflow: 'auto',
+            background:
+              'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
+            display: 'flex',
+            minWidth: 0,
+            minHeight: 0,
+          }}
+        >
+          {/*
+            `margin: 'auto'` (instead of the container's justify/align) means
+            the item is centered ONLY when there's free space; when content is
+            wider/taller than the viewport the auto margins collapse to 0, so
+            the user can scroll all the way to the actual edge of the image.
+            Centering via `justify-content` instead would cut off the leading
+            edge under flex+overflow:auto.
+          */}
+          <div
+            ref={contentRef}
+            style={{ flexShrink: 0, margin: 'auto' }}
+          >
+            <LayoutRender layout={layout} images={images} />
+          </div>
+        </Box>
+        <Box
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            // Divider lives on whichever edge faces the main pane.
+            borderLeft: isHorizontalOutput
+              ? undefined
+              : '1px solid var(--gray-a4)',
+            borderTop: isHorizontalOutput
+              ? '1px solid var(--gray-a4)'
+              : undefined,
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            background: '#1a1a1a',
+          }}
+        >
+          <Flex direction="column" gap="1">
+            <Text
+              size="2"
+              weight="medium"
+              style={{ color: '#fafafa' }}
+            >
+              实时预览
+            </Text>
+            <Text size="1" style={{ color: '#a3a3a3' }}>
+              导出即所见 ·{' '}
+              {layout.canvasWidth > 0
+                ? `${layout.canvasWidth}×${layout.canvasHeight}`
+                : '尚无图片'}
+            </Text>
+          </Flex>
+          <LivePreviewPane
+            layout={layout}
+            images={images}
+            scrollContainerRef={scrollRef}
+            contentRef={contentRef}
+          />
+        </Box>
       </Box>
     </>
+  )
+}
+
+const LivePreviewPane = ({
+  layout,
+  images,
+  scrollContainerRef,
+  contentRef,
+}: {
+  layout: LayoutResult
+  images: ImageItem[]
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>
+  contentRef: React.RefObject<HTMLDivElement | null>
+}) => {
+  const paneRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const [paneSize, setPaneSize] = useState({ w: 0, h: 0 })
+
+  useEffect(() => {
+    const node = paneRef.current
+    if (!node) return
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect
+      setPaneSize({ w: width, h: height })
+    })
+    ro.observe(node)
+    return () => ro.disconnect()
+  }, [])
+
+  const contentW = layout.canvasWidth
+  const contentH = layout.canvasHeight
+  // Fit-to-both axes; never upscale. Vertical-stitch (tall) layouts hit the
+  // height cap first; horizontal (wide) layouts hit the width cap first.
+  const zoom =
+    paneSize.w > 0 && paneSize.h > 0 && contentW > 0 && contentH > 0
+      ? Math.min(paneSize.w / contentW, paneSize.h / contentH, 1)
+      : 0
+
+  const previewW = contentW * zoom
+  const previewH = contentH * zoom
+  const previewLeft = (paneSize.w - previewW) / 2
+  const previewTop = (paneSize.h - previewH) / 2
+
+  // Imperatively position the red viewport box. No React state per scroll
+  // event — `transform` rides the compositor, rAF aligns updates to paint.
+  useEffect(() => {
+    const scroll = scrollContainerRef.current
+    const content = contentRef.current
+    const overlay = overlayRef.current
+    if (!scroll || !content || !overlay) return
+    if (zoom === 0) {
+      overlay.style.display = 'none'
+      return
+    }
+
+    let rafId: number | null = null
+
+    const apply = () => {
+      rafId = null
+      const sr = scroll.getBoundingClientRect()
+      const cr = content.getBoundingClientRect()
+      const left = Math.max(0, sr.left - cr.left)
+      const top = Math.max(0, sr.top - cr.top)
+      const right = Math.min(cr.width, sr.right - cr.left)
+      const bottom = Math.min(cr.height, sr.bottom - cr.top)
+      const vw = Math.max(0, right - left)
+      const vh = Math.max(0, bottom - top)
+      if (vw === 0 || vh === 0) {
+        overlay.style.display = 'none'
+        return
+      }
+      overlay.style.display = 'block'
+      overlay.style.transform = `translate(${previewLeft + left * zoom}px, ${previewTop + top * zoom}px)`
+      overlay.style.width = `${vw * zoom}px`
+      overlay.style.height = `${vh * zoom}px`
+    }
+
+    const schedule = () => {
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(apply)
+    }
+
+    apply()
+    scroll.addEventListener('scroll', schedule, { passive: true })
+    const ro = new ResizeObserver(schedule)
+    ro.observe(scroll)
+    ro.observe(content)
+
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      scroll.removeEventListener('scroll', schedule)
+      ro.disconnect()
+    }
+  }, [zoom, previewLeft, previewTop, scrollContainerRef, contentRef])
+
+  return (
+    <div
+      ref={paneRef}
+      style={{
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      {zoom > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            left: previewLeft,
+            top: previewTop,
+            width: previewW,
+            height: previewH,
+          }}
+        >
+          <div style={{ zoom }}>
+            <LayoutRender layout={layout} images={images} />
+          </div>
+        </div>
+      )}
+      <div
+        ref={overlayRef}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          display: 'none',
+          border: '2px solid #ef4444',
+          boxShadow: '0 0 0 1px rgba(239, 68, 68, 0.25)',
+          boxSizing: 'border-box',
+          pointerEvents: 'none',
+          willChange: 'transform, width, height',
+        }}
+      />
+    </div>
   )
 }
 
