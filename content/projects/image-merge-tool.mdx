@@ -1,0 +1,335 @@
+---
+name: 图片拼接工具
+description: 粘贴多张图、拖拽排序、横/纵 × 紧凑/间距四种风格一键合成长图——纯前端 Canvas 2D，零图像库依赖。
+date: 2026-05-18
+status: active
+stack: [Next.js, React, TypeScript, "Canvas 2D", "HTML5 DnD"]
+demo: /tools/image-merge
+---
+
+[`/tools/image-merge`](/tools/image-merge) 这个工具要做的事很朴素：
+
+1. 用户**粘贴**或**拖拽**多张图进来
+2. **拖动小卡片**调整顺序
+3. 选一种风格（横/纵 × 紧凑/间距）
+4. 预览满意 → 复制 / 下载
+
+技术栈极简——零外部图像库，全部用浏览器原生 API。这篇拆几个写下来才意识到不那么显然的设计点。
+
+## 一、为什么不用 html-to-image，反而手撸 Canvas？
+
+姊妹篇 [文本转图片工具](/projects/text-to-image-tool) 用了 `html-to-image`：
+DOM 渲染什么样，截图就什么样。那拼接为什么不也这么做？
+
+试了第一版确实是 `html-to-image`——把图们用 flex 排好，截 PNG 出来。
+结果几个问题：
+
+1. **像素抖动**——浏览器对图片的次像素采样和 `<canvas>` 的 `drawImage` 不一致，
+   缩放比例非 1.0 时边缘会出现 1px 的颜色错位
+2. **导出尺寸不可控**——`html-to-image` 是按 DOM 节点的实际像素截，
+   想要"无论预览多大、导出固定 2400px 宽"做不到
+3. **体积虚胖**——内嵌的 PNG 经过 DOM 截图后体积常常比"按原图直接合成"大 1.5–2 倍
+
+`<canvas>` + `ctx.drawImage(...)` 直接解决三个问题：
+**尺寸我说了算、采样我控制、输出最紧凑**。代价是要自己算布局，但布局规则只有 4 种——值得手写。
+
+## 二、输入：让"粘贴图片"真正好用
+
+工具的核心交互是 `⌘V`。看上去 `onPaste` 一行的事，做透了反而细节多。
+
+```tsx
+const handlePaste = (e: ClipboardEvent<HTMLDivElement>) => {
+  const items = e.clipboardData?.items
+  if (!items) return
+  const files: File[] = []
+  for (const item of Array.from(items)) {
+    if (!item.type.startsWith('image/')) continue
+    const file = item.getAsFile()
+    if (file) files.push(file)
+  }
+  if (files.length === 0) return
+  e.preventDefault()
+  void addImages(files)
+}
+```
+
+几点容易漏：
+
+- `clipboardData.items` 里**同时有 image 和 string**（截图工具常常附带一段 HTML）——
+  必须按 `type` 过滤
+- `e.preventDefault()` 只在**真的拿到 image** 后调用——
+  否则用户粘贴纯文本进 textarea 都会失效
+- `for...of` 遍历 `DataTransferItemList` 要先 `Array.from`——
+  这玩意是类数组对象，迭代器协议不稳定
+
+**`<div>` 默认不响应粘贴事件**——必须设置 `tabIndex={0}` 把它变成可聚焦元素，
+事件才会冒泡进来：
+
+```tsx
+<div
+  ref={pasteAreaRef}
+  tabIndex={0}
+  role="region"
+  aria-label="图片粘贴区，按 Cmd+V 或 Ctrl+V 粘贴图片"
+  onPaste={handlePaste}
+  onClick={handleAreaClick}
+  onKeyDown={handleAreaKeyDown}
+  // ...
+/>
+```
+
+附带把键盘 Enter / Space 映射到 "打开文件选择"——
+键盘用户没法粘贴时也有退路。
+
+## 三、缩略图拖拽排序：原生 HTML5 DnD 够用了吗？
+
+候选方案：
+
+- **react-dnd / dnd-kit**：功能全、API 复杂、bundle 大
+- **HTML5 原生 DnD**：API 古老但所有浏览器都支持、零依赖
+
+工具里图片数量通常 3–10 张，**纯一维列表**——
+原生 DnD 完全够用，多写几行换零依赖。
+
+```tsx
+const handleDragStart = (e: DragEvent<HTMLDivElement>, idx: number) => {
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', String(idx))
+  setDragIdx(idx)
+}
+
+const handleDragOver = (e: DragEvent<HTMLDivElement>, idx: number) => {
+  if (dragIdx === null) return
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  if (overIdx !== idx) setOverIdx(idx)
+}
+
+const handleDrop = (e: DragEvent<HTMLDivElement>, target: number) => {
+  e.preventDefault()
+  if (dragIdx !== null && dragIdx !== target) {
+    setImages((prev) => moveItem(prev, dragIdx, target))
+  }
+  setDragIdx(null)
+  setOverIdx(null)
+}
+```
+
+三个容易踩的小坑：
+
+1. **`dragOver` 必须 `preventDefault()`**，否则 `drop` 不会触发
+2. **dragOver 频繁触发**——每次都 setState 会卡，所以 `if (overIdx !== idx)` 早返回
+3. **`<img>` 默认可拖拽**——会和容器的 drag 起冲突，必须 `draggable={false}`
+
+视觉反馈走两层：拖中的卡片 `opacity: 0.35`，被悬停的目标卡片
+`outline: 2px solid var(--accent-9)`。这两条 CSS 把"我在拖什么"和"我会放在哪里"
+表达得足够清楚——不需要更花哨。
+
+## 四、布局计算：跨主轴对齐的"短板"逻辑
+
+四种风格本质是两个维度：
+
+|  | 紧凑 | 间距 |
+| - | - | - |
+| 横向 | `hTight` | `hGap` |
+| 纵向 | `vTight` | `vGap` |
+
+横向布局时**所有图等高**、纵向布局时**所有图等宽**。
+那目标高度（或宽度）取多少？
+
+第一版取所有图的最小值——结果发现一张超高图旁边夹一张超矮图，
+矮图被显著缩水、信息丢失严重。
+
+最终取**最大值**（同时上限 4096px 防止超大输入炸 Canvas）：
+
+```ts
+const MAX_CROSS_AXIS = 4096
+
+const rawCross = isHorizontal
+  ? Math.max(...images.map((i) => i.height))
+  : Math.max(...images.map((i) => i.width))
+const cross = Math.min(rawCross, MAX_CROSS_AXIS)
+```
+
+含义：**质量好的图保持清晰，质量低的图被温柔上采样到对齐**。
+反过来取最小值的话，所有人都被拉低到最差那张的水平——
+拼图工具最怕这个。
+
+布局本体是一个一维累加：
+
+```ts
+const positions: Rect[] = []
+if (isHorizontal) {
+  let x = 0
+  for (const img of images) {
+    const h = cross
+    const w = Math.max(1, Math.round((img.width * h) / img.height))
+    positions.push({ x, y: 0, w, h })
+    x += w + gap
+  }
+  return { canvasWidth: x - gap, canvasHeight: cross, positions, /* ... */ }
+}
+```
+
+每一张图按原始比例换算到目标高度，水平累加 + gap。`Math.max(1, ...)` 防御一种边缘情况：
+极端长宽比的输入算出宽度小于 1px 时给出 1px 的兜底。
+
+## 五、Canvas 合成：`drawImage` + 间隙填白
+
+布局算完，真正合成就剩"按位置画"：
+
+```ts
+const renderLayoutToBlob = async (
+  images: ImageItem[],
+  layout: LayoutResult,
+): Promise<Blob> => {
+  const { canvasWidth, canvasHeight, positions, isGap } = layout
+  const els = await Promise.all(images.map((img) => loadHtmlImage(img.dataUrl)))
+  const canvas = document.createElement('canvas')
+  canvas.width = canvasWidth
+  canvas.height = canvasHeight
+  const ctx = canvas.getContext('2d')!
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+
+  if (isGap) {
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+  }
+
+  for (let i = 0; i < els.length; i++) {
+    ctx.drawImage(els[i], positions[i].x, positions[i].y, positions[i].w, positions[i].h)
+  }
+
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(), 'image/png')
+  })
+}
+```
+
+两件值得注意的事：
+
+1. **`imageSmoothingQuality = 'high'`**——默认是 `'low'`，
+   缩放比例 < 1 时会肉眼可见地糊。改成 `'high'` 才会用更好的采样核
+2. **间距风格要先填白**——`<canvas>` 默认透明，
+   导出 PNG 到深色背景里会看到一格格 alpha 透明区，违和。
+   非间距风格就保留透明（紧凑模式根本没有"间隙"）
+
+`loadHtmlImage` 是一个一行的 Promise 包装：
+
+```ts
+const loadHtmlImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('image load failed'))
+    img.src = src
+  })
+```
+
+注意**先绑 onload 再赋 src**——data URL 在某些浏览器里是同步触发 onload 的，
+顺序反了就漏事件。
+
+## 六、实时预览：让"看的"和"导出的"完全一样
+
+工具有左右两栏：主预览（可滚动看细节）、侧边栏迷你预览（看整张）。
+**这两个预览必须用同一份 `LayoutRender` 渲染**——否则用户会发出"实时预览和实际导出不一样"的吐槽。
+
+```tsx
+// 主预览
+<div ref={contentRef} style={{ flexShrink: 0, margin: 'auto' }}>
+  <LayoutRender layout={layout} images={images} />
+</div>
+
+// 侧栏
+<div style={{ zoom }}>
+  <LayoutRender layout={layout} images={images} />
+</div>
+```
+
+迷你预览靠 CSS `zoom` 缩放——比 `transform: scale` 简单的点是
+**它真的改变盒子尺寸**，不需要外面套一个固定宽高的容器。
+代价是 Firefox 老版本不支持，但工具用户基本都是 Chrome / Safari / Edge。
+
+侧栏上还叠了一个红色 viewport 框，标记主滚动条的当前可视区。
+和 [文本转图片工具](/projects/text-to-image-tool) 一样，
+红框走**命令式 + rAF + transform**——主预览滚 1 万张图都不重渲染 Dialog。
+
+布局响应：横向拼接时主预览天然宽（铺左到右），侧栏放下面更合理；
+纵向拼接时主预览天然高，侧栏放右边。所以这个 flex 方向是动态的：
+
+```tsx
+<Box style={{
+  flex: 1,
+  flexDirection: isHorizontalOutput ? 'column' : 'row',
+}}>
+```
+
+一行三元决定了两种布局的视觉合理性。
+
+<Callout type="info">
+  **实时预览的一致性**有两个不容易做但价值很高的细节：
+  ① 主预览和侧栏共用 render 函数 ② 红框跟随主滚动条而不是用 React state。
+  做到这两条，用户对"所见即所得"的信任度立刻拉满。
+</Callout>
+
+## 七、撤销裁切：保留一份原图快照
+
+工具里每张图都可以点开调起 `CropDialog` 做裁切（下一篇细讲）。
+裁切完图被替换——但用户可能后悔，想要原图。
+
+实现是给每个 `ImageItem` 加一个可选的 `original` 字段：
+
+```ts
+type ImageItem = {
+  id: string
+  dataUrl: string
+  width: number
+  height: number
+  original?: { dataUrl: string; width: number; height: number }
+}
+```
+
+第一次裁切时把 _粘贴时的原图_ 写进 `original`，之后**所有裁切都不动这一份**——
+不管用户裁了几次，复原永远回到最初。
+
+```ts
+const original = p.original ?? {
+  dataUrl: p.dataUrl,
+  width: p.width,
+  height: p.height,
+}
+return { ...p, dataUrl: result.dataUrl, /* ... */, original }
+```
+
+这一行 `p.original ?? ...` 是关键：如果之前已经裁过一次，`original` 已经存在，
+**就不要覆盖它**——否则连续裁两次后再复原，会回到"第一次裁切后的结果"而不是原图。
+
+## 八、什么没做（也不该做）
+
+- **裁掉空白边**：算法易实现但**误判代价高**——
+  自动裁掉了用户想保留的边缘空白是糟糕体验
+- **GIF / 视频**：超出"截图分享"的核心场景，需要的人去找专业工具
+- **任意角度旋转 / 镜像**：保留作未来加法，但目前 4 种布局已经覆盖 90% 拼图需求
+- **服务端存储 / 分享链接**：纯前端 = 零运维 = 永远在线，
+  代价是无法分享一份"工程"——值得
+
+## 总结
+
+回顾这个工具的工程脉络：
+
+- 用 Canvas 而不是 html-to-image，换尺寸可控 + 像素干净
+- 原生 HTML5 DnD 而不是 dnd-kit，换零依赖
+- 跨主轴**取最大值 + 4096px 上限**而不是最小值
+- `imageSmoothingQuality = 'high'` + `isGap` 才填白这种小细节
+- 主预览和侧栏**共用 render 函数**保证一致
+- `original` 快照让裁切可撤销
+
+每条决策单独看都不起眼，叠起来构成了一个**用着不别扭**的工具。
+工具站的体验差距，大多藏在这些"用户感受得到但不会主动说"的细节里。
+
+## 延伸阅读
+
+- 姊妹篇：[文本转图片工具](/projects/text-to-image-tool)
+- 姊妹篇：[图片裁切工具](/projects/image-crop-tool)
+- 工具入口：[/tools/image-merge](/tools/image-merge)
