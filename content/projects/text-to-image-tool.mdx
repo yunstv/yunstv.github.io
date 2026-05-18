@@ -1,0 +1,285 @@
+---
+name: 文本转图片工具
+description: 把终端 Claude 输出粘贴进来，按四种风格导出 PNG——看似 html-to-image 一行调用，做完发现 99% 工作量在预览体验上的工程记录。
+date: 2026-05-18
+status: active
+stack: [Next.js, React, TypeScript, html-to-image, Canvas]
+demo: /tools/text-to-image
+---
+
+[`/tools/text-to-image`](/tools/text-to-image) 这个小工具的需求一句话讲完：
+**把粘进来的一段文本，按四种风格渲染成 PNG**。听上去就是 `html-to-image` 一行调用的事，
+实际写下来代码进了 1000 多行——这篇拆一下时间到底花在了哪里。
+
+## 一、选型：`html-to-image` 还是 Canvas 文字绘制？
+
+第一岔路口是渲染管线：
+
+| 方案 | 优点 | 缺点 |
+| - | - | - |
+| Canvas 2D 直接画文字 | 完全可控、无外部依赖 | 排版、字体回退、Markdown 全部要自己写 |
+| `html-to-image` / `dom-to-image` | 写 DOM 就是写效果，CSS 全能用 | 体积稍大、字体加载有坑、个别 CSS 失真 |
+| `puppeteer` 服务端渲染 | 像素级精准 | 工具站要常驻服务，不在静态部署的可行域里 |
+
+工具站要走 Vercel/Cloudflare Pages 的静态构建——服务端方案直接出局。
+Canvas 自绘文字理论上更轻，但**四种风格**意味着四套排版规则要重写——
+等宽块、渐变卡片、白纸正文、带 Markdown 的便签——
+而 `html-to-image` 的代价就只是"换 CSS"。
+
+最终用 `html-to-image`，但把它**只用在导出这一步**：
+
+```ts
+import { toBlob, toPng } from 'html-to-image'
+
+const dataUrl = await toPng(ref.current, {
+  pixelRatio: 2,
+  cacheBust: true,
+  ...getFullSize(ref.current),
+})
+```
+
+中间的**预览渲染、实时缩略图**全部走原生 React + CSS，不进入截图管线，
+保证交互时不触发 PNG 编码的开销。
+
+## 二、`getFullSize`：为什么导出图老被裁掉一截？
+
+这是第一个非常隐蔽的坑。预览节点放在一个 80vw / 80vh 的 Dialog 里：
+
+```tsx
+<div ref={ref} style={{ flexShrink: 0, margin: 'auto' }}>
+  <StyledPreview styleId={active.id} text={deferredText} />
+</div>
+```
+
+被预览容器 `overflow: auto` 包着——当文本变长时，节点的**真实内容**远大于
+Dialog 的可视区域。`html-to-image` 默认按节点的 `clientWidth/Height` 截，
+结果就是导出图被滚动条切了一刀。
+
+修法是把"内容盒尺寸"显式传进去：
+
+```ts
+const getFullSize = (node: HTMLElement) => ({
+  width: Math.max(node.scrollWidth, node.offsetWidth),
+  height: Math.max(node.scrollHeight, node.offsetHeight),
+})
+```
+
+`scrollWidth/scrollHeight` 才反映节点完整的内容尺寸，
+和 `width/height` 一起塞进 `toPng` 的 options，导出就完整了。
+
+<Callout type="warning">
+  凡是被 `overflow: auto` 包裹的导出节点，**都要手动给 html-to-image 传 width/height**。
+  这条踩过两次坑——不是 html-to-image 的 bug，是默认行为不符合预期。
+</Callout>
+
+## 三、长文本会卡死浏览器吗？`useDeferredValue` 的正确用法
+
+工具的 textarea 没有字符上限。一旦用户粘进 5 万字日志，
+**输入框打字**和**预览渲染**之间的耦合会让每次按键都触发一次完整的预览重排——
+界面立刻肉眼可见地卡。
+
+直觉做法是 debounce，但 React 18 起有更合适的工具：`useDeferredValue`。
+
+```tsx
+const [text, setText] = useState(SAMPLE)
+// 在 PreviewDialog 内部：
+const deferredText = useDeferredValue(text)
+const isStale = deferredText !== text
+
+// 渲染预览时用 deferredText，不是 text
+<StyledPreview styleId={active.id} text={deferredText} />
+
+// 顶部状态条:
+{isStale && <Text size="1" color="gray">渲染中...</Text>}
+```
+
+关键区别：
+
+- `debounce` 是**等一段固定时间**——对短文本浪费、对长文本仍可能卡
+- `useDeferredValue` 是**让 React 在空闲时再渲染**——输入永远是同步的，
+  预览跟不上时自动跳过中间帧
+
+附带福利：`isStale` 标志能拿来在顶栏显示"渲染中"提示，
+用户不会以为程序挂了。
+
+## 四、按需挂载：四张风格卡片不是同时渲染的
+
+四种风格如果同时挂载，每次输入都要触发四次完整渲染。
+所以**风格预览只在打开 Dialog 时才真正渲染**：
+
+```tsx
+const [openIdx, setOpenIdx] = useState<number | null>(null)
+// 卡片只是 onClick={() => setOpenIdx(i)}，本身没渲染任何 StyledPreview
+// 真正的 <StyledPreview /> 在 Dialog 内部
+```
+
+四个卡片本身只画一个 56px 高的色块预览（不进入排版管线），
+点开之后才走 React → DOM → `html-to-image` 的链路。
+
+```tsx
+function chipPreviewStyle(styleId: StyleId): React.CSSProperties {
+  switch (styleId) {
+    case 'terminal':
+      return { background: '#0d1117', border: '1px solid #21262d' }
+    case 'codeCard':
+      return { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
+    // ...
+  }
+}
+```
+
+这等于把"风格选择"从一个渲染问题降级成了**纯 CSS 装饰问题**，
+渲染开销和文本长度脱钩。
+
+## 五、实时预览：跟随主滚动条的红框
+
+Dialog 右侧那一栏"实时预览"是我后期加的——
+主预览区可滚动，但用户想知道**整张图大概什么样、当前看的是哪一部分**。
+
+朴素实现：把主预览缩小贴在侧栏，并用 React state 跟踪 scrollTop，
+每次滚动 → setState → 重新算红框位置 → 重新渲染整个 Dialog。
+2 万字文本时滚动卡到 30fps。
+
+最终方案放弃了 React state，**直接命令式驱动 DOM**：
+
+```tsx
+useEffect(() => {
+  const scroll = scrollContainerRef.current
+  const content = contentRef.current
+  const overlay = overlayRef.current
+  if (!scroll || !content || !overlay) return
+
+  let rafId: number | null = null
+
+  const apply = () => {
+    rafId = null
+    const sr = scroll.getBoundingClientRect()
+    const cr = content.getBoundingClientRect()
+    const left = Math.max(0, sr.left - cr.left)
+    const top = Math.max(0, sr.top - cr.top)
+    const vw = Math.min(cr.width, sr.right - cr.left) - left
+    const vh = Math.min(cr.height, sr.bottom - cr.top) - top
+    overlay.style.transform =
+      `translate(${previewLeft + left * zoom}px, ${previewTop + top * zoom}px)`
+    overlay.style.width = `${vw * zoom}px`
+    overlay.style.height = `${vh * zoom}px`
+  }
+
+  const schedule = () => {
+    if (rafId !== null) return
+    rafId = requestAnimationFrame(apply)
+  }
+
+  apply()
+  scroll.addEventListener('scroll', schedule, { passive: true })
+  // ...
+}, [zoom, previewLeft, previewTop])
+```
+
+三个细节值得拆：
+
+1. **`transform` 而不是 `top/left`**：transform 走合成器线程，
+   不触发 layout 也不触发 paint，能上 60fps。
+2. **rAF 合并事件**：一帧内不管 scroll 触发多少次，只算一次。
+   `if (rafId !== null) return` 这一行是关键。
+3. **没有 React state**：整个 Dialog 不重渲染，
+   避免了 `StyledPreview` 跟着 scroll 抖动的副作用。
+
+<Callout type="success">
+  60fps 的滚动跟随 = `transform` + `requestAnimationFrame` + **绕开 React 状态**。
+  状态变化是 React 的优势，但**视觉跟随**这种高频小改动，命令式更便宜。
+</Callout>
+
+## 六、便签风的极简 Markdown 渲染器
+
+四种风格里只有"便签 / Markdown 风"需要识别 Markdown 标记。
+为了一个工具引入 `react-markdown` + 一堆 remark 插件不划算——
+工具站打开速度是核心指标，全 bundle 多 100KB 不能接受。
+
+写了一个 ~80 行的极简渲染器，**只识别五种结构**：
+
+```tsx
+function MarkdownRender({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const out: ReactNode[] = []
+  let codeBuf: string[] | null = null
+  let ulBuf: ReactNode[] | null = null
+  let olBuf: ReactNode[] | null = null
+  // ... 逐行扫描，识别 ``` 代码块 / # 标题 / - 列表 / 1. 列表 / > 引用
+}
+```
+
+内联标记只识别 `**bold**` 和 `` `code` ``：
+
+```ts
+const re = /(\*\*[^*]+\*\*|`[^`]+`)/g
+```
+
+够用，且**零依赖**。代价是不识别表格、链接、删除线——
+对"贴一段 Claude 输出做截图分享"的场景，刚好命中 80% 用法。
+
+## 七、复制 PNG 到剪贴板：Clipboard API 的兼容性坑
+
+Chrome / Edge / Safari 都支持 `ClipboardItem`，但写法挑剔：
+
+```tsx
+const blob = await toBlob(ref.current, {
+  pixelRatio: 2,
+  cacheBust: true,
+  ...getFullSize(ref.current),
+})
+await navigator.clipboard.write([
+  new ClipboardItem({ 'image/png': blob }),
+])
+```
+
+注意两件事：
+
+1. **必须是 PNG**——`image/jpeg` 在多数浏览器里直接拒。
+2. **必须由用户手势触发**——`onClick` 之后的 await 链里写没问题，
+   定时器里写会被静默丢弃。
+
+Firefox 的 ClipboardItem 支持是 2023 年后才完善的，
+所以这里有一个兜底分支告诉用户"当前浏览器不支持复制图片"——
+失败的代价比静默成功低得多。
+
+## 八、跨工具：从文本转图片直接进裁切
+
+最后一个细节是组合性。把文本渲染成 PNG 之后，
+用户经常想**裁掉边缘空白**或者**截一个 1:1 头像版**——
+本来要"下载 → 上传到裁切工具"两步。
+
+现在的做法：
+
+```tsx
+const onEditInCropClick = async () => {
+  const blob = await toBlob(ref.current, { ...getFullSize(ref.current) })
+  const cropImage = await blobToCropImage(blob)  // 提取尺寸
+  onEditInCrop(cropImage)                         // 直接打开裁切 Dialog
+}
+```
+
+`CropDialog` 是一个**独立组件**——任何工具拿到一个 `{ dataUrl, width, height }`
+都能调起它。这种"组件即工具"的组合模式后面那篇会专门讲。
+
+## 总结：从"调用 html-to-image"到一个真正能用的工具
+
+回头看一千多行代码做了什么：
+
+- 选型：DOM 渲染 + 截图，避免重写四套排版
+- `getFullSize`：让长内容完整导出
+- `useDeferredValue`：长文本不卡输入
+- 按需挂载：风格预览不参与日常重渲染
+- 命令式 rAF：60fps 的实时预览红框
+- 极简 Markdown：80 行换 100KB bundle 体积
+- Clipboard API + 兜底
+- 与裁切 Dialog 的组合调用
+
+一句话概括：**`html-to-image` 是 1% 的工作，剩下 99% 是怎么让用户用着不卡、用着流畅、和别的工具拼起来用**。
+工具站的工程化大多数时候不是算法难题，是**这些藏在缝里的体验问题**叠加起来的工程化。
+
+## 延伸阅读
+
+- 姊妹篇：[图片拼接工具](/projects/image-merge-tool)
+- 姊妹篇：[图片裁切工具](/projects/image-crop-tool)
+- 工具入口：[/tools/text-to-image](/tools/text-to-image)
