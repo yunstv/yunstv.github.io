@@ -3,10 +3,8 @@
 import { useMemo, useState } from 'react'
 import { Box, Flex, SegmentedControl, Text, Tooltip } from '@radix-ui/themes'
 import dayjs from 'dayjs'
-import { PostsDayDialog } from './posts-day-dialog'
-import type { PostMeta } from '@/types/content'
-
-type Item = { slug: string; frontmatter: PostMeta }
+import { DayDialog } from './day-dialog'
+import type { TimelineItem } from './types'
 
 function levelColor(count: number): string {
   if (count === 0) return 'var(--gray-a3)'
@@ -19,11 +17,17 @@ function levelColor(count: number): string {
 const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
 const WEEKDAY_LABELS: Array<string | null> = [null, '一', null, '三', null, '五', null]
 
-export function ActivityView({ items }: { items: Item[] }) {
+export function ActivityView({
+  items,
+  unit = '篇',
+}: {
+  items: TimelineItem[]
+  unit?: string
+}) {
   const byDate = useMemo(() => {
-    const map = new Map<string, Item[]>()
+    const map = new Map<string, TimelineItem[]>()
     for (const it of items) {
-      const d = dayjs(it.frontmatter.date).format('YYYY-MM-DD')
+      const d = dayjs(it.date).format('YYYY-MM-DD')
       const arr = map.get(d) ?? []
       arr.push(it)
       map.set(d, arr)
@@ -34,7 +38,7 @@ export function ActivityView({ items }: { items: Item[] }) {
   const years = useMemo(() => {
     const set = new Set<number>()
     for (const it of items) {
-      set.add(dayjs(it.frontmatter.date).year())
+      set.add(dayjs(it.date).year())
     }
     if (set.size === 0) set.add(dayjs().year())
     return Array.from(set).sort((a, b) => b - a)
@@ -82,7 +86,7 @@ export function ActivityView({ items }: { items: Item[] }) {
     <Box>
       <Flex align="center" justify="between" mb="3" wrap="wrap" gap="3">
         <Text size="2" color="gray">
-          {year} 年共发布 <Text style={{ color: 'var(--accent-11)' }}>{total}</Text> 篇
+          {year} 年共 <Text style={{ color: 'var(--accent-11)' }}>{total}</Text> {unit}
         </Text>
         {years.length > 1 && (
           <SegmentedControl.Root
@@ -101,7 +105,6 @@ export function ActivityView({ items }: { items: Item[] }) {
 
       <Box style={{ overflowX: 'auto' }}>
         <Box style={{ display: 'inline-block', minWidth: 'max-content' }}>
-          {/* Month markers */}
           <Flex gap="1" mb="1" style={{ paddingLeft: 20 }}>
             {columns.map((_, idx) => {
               const marker = monthMarkers.find((m) => m.col === idx)
@@ -118,7 +121,6 @@ export function ActivityView({ items }: { items: Item[] }) {
           </Flex>
 
           <Flex gap="1">
-            {/* Weekday labels */}
             <Flex direction="column" gap="1" mr="1" style={{ width: 16 }}>
               {WEEKDAY_LABELS.map((label, i) => (
                 <Box
@@ -160,7 +162,7 @@ export function ActivityView({ items }: { items: Item[] }) {
                   return (
                     <Tooltip
                       key={cell.date}
-                      content={`${cell.date} · ${cell.count} 篇`}
+                      content={`${cell.date} · ${cell.count} ${unit}`}
                     >
                       {cellBox}
                     </Tooltip>
@@ -193,13 +195,14 @@ export function ActivityView({ items }: { items: Item[] }) {
         </Text>
       </Flex>
 
-      <PostsDayDialog
+      <DayDialog
         open={activeDate !== null}
         onOpenChange={(o) => {
           if (!o) setActiveDate(null)
         }}
         date={activeDate ?? ''}
         items={activeDate ? byDate.get(activeDate) ?? [] : []}
+        unit={unit}
       />
     </Box>
   )

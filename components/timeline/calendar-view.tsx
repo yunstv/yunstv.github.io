@@ -4,17 +4,22 @@ import { useMemo, useState } from 'react'
 import { Box, Flex, Heading, IconButton, Text, Tooltip } from '@radix-ui/themes'
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons'
 import dayjs, { type Dayjs } from 'dayjs'
-import { PostsDayDialog } from './posts-day-dialog'
-import type { PostMeta } from '@/types/content'
+import { DayDialog } from './day-dialog'
+import type { TimelineItem } from './types'
 
-type Item = { slug: string; frontmatter: PostMeta }
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
-export function CalendarView({ items }: { items: Item[] }) {
+export function CalendarView({
+  items,
+  unit = '篇',
+}: {
+  items: TimelineItem[]
+  unit?: string
+}) {
   const byDate = useMemo(() => {
-    const map = new Map<string, Item[]>()
+    const map = new Map<string, TimelineItem[]>()
     for (const it of items) {
-      const d = dayjs(it.frontmatter.date).format('YYYY-MM-DD')
+      const d = dayjs(it.date).format('YYYY-MM-DD')
       const arr = map.get(d) ?? []
       arr.push(it)
       map.set(d, arr)
@@ -23,7 +28,7 @@ export function CalendarView({ items }: { items: Item[] }) {
   }, [items])
 
   const initial = useMemo(() => {
-    const first = items[0]?.frontmatter.date
+    const first = items[0]?.date
     return first ? dayjs(first).startOf('month') : dayjs().startOf('month')
   }, [items])
 
@@ -128,7 +133,7 @@ export function CalendarView({ items }: { items: Item[] }) {
           return (
             <Box key={cell.key}>
               {has ? (
-                <Tooltip content={`${list.length} 篇 · 点击查看`}>{inner}</Tooltip>
+                <Tooltip content={`${list.length} ${unit} · 点击查看`}>{inner}</Tooltip>
               ) : (
                 inner
               )}
@@ -137,13 +142,14 @@ export function CalendarView({ items }: { items: Item[] }) {
         })}
       </Box>
 
-      <PostsDayDialog
+      <DayDialog
         open={activeDate !== null}
         onOpenChange={(o) => {
           if (!o) setActiveDate(null)
         }}
         date={activeDate ?? ''}
         items={activeDate ? byDate.get(activeDate) ?? [] : []}
+        unit={unit}
       />
     </Box>
   )

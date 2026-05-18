@@ -4,17 +4,22 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Badge, Box, Button, Card, Flex, Heading, Text } from '@radix-ui/themes'
 import dayjs from 'dayjs'
-import { PostsDayDialog } from './posts-day-dialog'
-import type { PostMeta } from '@/types/content'
+import { DayDialog } from './day-dialog'
+import type { TimelineItem } from './types'
 
-type Item = { slug: string; frontmatter: PostMeta }
 const MAX_PER_DAY = 3
 
-export function TimelineView({ items }: { items: Item[] }) {
+export function TimelineView({
+  items,
+  unit = '篇',
+}: {
+  items: TimelineItem[]
+  unit?: string
+}) {
   const grouped = useMemo(() => {
-    const map = new Map<string, Item[]>()
+    const map = new Map<string, TimelineItem[]>()
     for (const it of items) {
-      const d = dayjs(it.frontmatter.date).format('YYYY-MM-DD')
+      const d = dayjs(it.date).format('YYYY-MM-DD')
       const arr = map.get(d) ?? []
       arr.push(it)
       map.set(d, arr)
@@ -29,7 +34,7 @@ export function TimelineView({ items }: { items: Item[] }) {
   )
 
   if (grouped.length === 0) {
-    return <Text color="gray">还没有文章。</Text>
+    return <Text color="gray">还没有内容。</Text>
   }
 
   return (
@@ -57,26 +62,26 @@ export function TimelineView({ items }: { items: Item[] }) {
                   {date}
                 </Heading>
                 <Text size="1" color="gray">
-                  {list.length} 篇
+                  {list.length} {unit}
                 </Text>
               </Flex>
               <Flex direction="column" gap="2">
                 {visible.map((it) => (
                   <Card key={it.slug} asChild variant="surface">
                     <Link
-                      href={`/blog/${it.slug}`}
+                      href={it.href}
                       style={{ textDecoration: 'none', color: 'inherit' }}
                     >
                       <Flex direction="column" gap="1">
-                        <Text weight="medium">{it.frontmatter.title}</Text>
-                        {it.frontmatter.description && (
+                        <Text weight="medium">{it.title}</Text>
+                        {it.description && (
                           <Text size="2" color="gray">
-                            {it.frontmatter.description}
+                            {it.description}
                           </Text>
                         )}
-                        {it.frontmatter.tags && it.frontmatter.tags.length > 0 && (
+                        {it.tags.length > 0 && (
                           <Flex gap="2" wrap="wrap" mt="1">
-                            {it.frontmatter.tags.map((t) => (
+                            {it.tags.map((t) => (
                               <Badge key={t} variant="soft" color="gray" radius="full">
                                 {t}
                               </Badge>
@@ -103,13 +108,14 @@ export function TimelineView({ items }: { items: Item[] }) {
           )
         })}
       </Box>
-      <PostsDayDialog
+      <DayDialog
         open={activeDate !== null}
         onOpenChange={(o) => {
           if (!o) setActiveDate(null)
         }}
         date={activeDate ?? ''}
         items={activeItems}
+        unit={unit}
       />
     </Box>
   )
