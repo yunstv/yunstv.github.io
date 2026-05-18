@@ -1,0 +1,355 @@
+---
+name: 图片裁切工具
+description: 拖拽选定区域，按 1:1 / 圆形 / 16:9 / 9:16 四种比例导出——核心是一个被其他工具复用的 CropDialog 组件。
+date: 2026-05-18
+status: active
+stack: [Next.js, React, TypeScript, "Pointer Events", "Canvas 2D"]
+demo: /tools/image-crop
+---
+
+[`/tools/image-crop`](/tools/image-crop) 这个工具的实现核心其实是一个**独立的 `CropDialog` 组件**——
+它既是裁切工具的全部，也被嵌进了 [文本转图片工具](/projects/text-to-image-tool) 和
+[图片拼接工具](/projects/image-merge-tool) 里复用。
+这篇拆它的几个关键点。
+
+## 一、四种预设而不是任意比例
+
+第一个产品决策：**不做"自由比例"**。
+
+`react-image-crop` 这类库都默认允许自由拖拽四角，可任意 aspect。
+但实际场景里 99% 的裁切落在四种用途：
+
+| 风格 | 比例 | 场景 |
+| - | - | - |
+| `square` | 1:1 | 头像、贴图 |
+| `circle` | 1:1 + 圆形蒙版 | 圆形头像 PNG |
+| `landscape` | 16:9 | 文章封面、缩略图 |
+| `portrait` | 9:16 | 短视频封面、Stories |
+
+**比例锁死**带来一连串简化：
+
+- 不需要画四角/八边的 resize handle，整个选区只能"平移"
+- 不需要处理"宽 < 最小阈值"这类边缘 case
+- 切风格 = 切预设，零自定义 = 零误用
+
+代价是不能裁出 4:3 / 3:2——但有这种需求的用户去用 Photoshop / Affinity，
+工具站不必什么都做。
+
+## 二、坐标系换算：UI 坐标 ↔ 图像原始坐标
+
+裁切操作里的核心难点是**两套坐标系**：
+
+- **UI 坐标**：用户在屏幕上拖到了哪——单位是 CSS 像素，受容器缩放影响
+- **图像原始坐标**：要传给 `ctx.drawImage` 的真实裁切框——单位是图像本身的像素
+
+设计上把状态**永远存原始坐标**，UI 层按 `scale` 换算：
+
+```ts
+const scale = Math.min(
+  containerSize.w / image.width,
+  containerSize.h / image.height,
+  1,  // 不放大，只缩小
+)
+
+const displayW = image.width * scale
+const displayH = image.height * scale
+```
+
+`Math.min(..., 1)` 这一行非常关键——
+**永远不放大原图**。小图就让它居中占一部分容器，
+而不是被 CSS 拉伸成马赛克。
+
+拖动时 UI 坐标转回原始坐标：
+
+```ts
+const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+  if (!dragRef.current || scale === 0) return
+  const stage = containerRef.current?.querySelector('[data-stage]') as HTMLElement
+  const stageRect = stage.getBoundingClientRect()
+  const newDisplayX = e.clientX - stageRect.left - dragRef.current.offsetX
+  const newDisplayY = e.clientY - stageRect.top - dragRef.current.offsetY
+  const newX = newDisplayX / scale  // 关键：UI → 原始
+  const newY = newDisplayY / scale
+  onChange({
+    ...cropRect,
+    x: clamp(newX, 0, image.width - cropRect.w),
+    y: clamp(newY, 0, image.height - cropRect.h),
+  })
+}
+```
+
+四个小细节：
+
+1. **`offsetX/Y` 在 `pointerdown` 时记一次**——
+   保证拖动从光标当前位置开始，而不是把选区角对齐到光标
+2. **`clamp(0, image.width - cropRect.w)`**——
+   选区不能跑出图外
+3. **状态存原始像素**——这样切风格、resize 窗口都不丢精度
+4. **`scale === 0` 防御**——首屏 `ResizeObserver` 还没量出尺寸时退出
+
+## 三、Pointer Events + `setPointerCapture`：被忽视的标配
+
+很多前端代码至今还在 `mousedown / mousemove / mouseup` 上做拖拽——
+然后处理"鼠标移出窗口仍然要响应""触摸屏不工作"两个老掉牙的 bug。
+
+Pointer Events 一统江湖（鼠标、触摸、笔），而 `setPointerCapture` 解决了
+**"鼠标移出元素后还能继续拖"**：
+
+```ts
+const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+  if (scale === 0) return
+  const target = e.currentTarget
+  target.setPointerCapture(e.pointerId)
+  // ...
+}
+
+const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+  if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }
+  dragRef.current = null
+}
+```
+
+`setPointerCapture` 告诉浏览器：**这个 pointer 的所有事件都发给这个元素**——
+即使光标飞到屏幕外、飞到 iframe 里、用户切窗口又切回来，
+`pointermove` 还是会一路打给这个元素。
+
+不用 `pointercancel` 单独处理：上面把 `handlePointerUp` 也绑给 `onPointerCancel`。
+两条路径汇总到同一个清理逻辑——心智负担小一半。
+
+## 四、圆形头像：`ctx.clip()` 而不是 CSS `border-radius`
+
+预览圆形头像时 CSS `border-radius: 50%` 就够了，
+但**导出**圆形 PNG 必须在 Canvas 里做。
+
+```ts
+const cropImageToBlob = async (image, rect, circle) => {
+  const el = await loadHtmlImage(image.dataUrl)
+  const outW = Math.max(1, Math.round(rect.w))
+  const outH = Math.max(1, Math.round(rect.h))
+  const canvas = document.createElement('canvas')
+  canvas.width = outW
+  canvas.height = outH
+  const ctx = canvas.getContext('2d')!
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+
+  if (circle) {
+    ctx.beginPath()
+    ctx.arc(outW / 2, outH / 2, Math.min(outW, outH) / 2, 0, Math.PI * 2)
+    ctx.clip()
+  }
+
+  ctx.drawImage(el, rect.x, rect.y, rect.w, rect.h, 0, 0, outW, outH)
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(), 'image/png')
+  })
+}
+```
+
+三件值得说的事：
+
+1. **`ctx.clip()` 在 `drawImage` 之前**——clip 设置裁剪区，之后所有绘制操作都被限制在这个区域内
+2. **PNG 而不是 JPEG**——JPEG 不支持 alpha 通道，圆形之外的透明区会变成白色
+3. **`drawImage` 的 9 参数形式**——`(image, sx, sy, sw, sh, dx, dy, dw, dh)`，
+   一次完成"从原图取 rect 区域 + 缩到目标尺寸 + 落到 canvas 原点"
+
+```text
+完整签名：
+ctx.drawImage(
+  image,           // 源
+  sx, sy, sw, sh,  // 源裁切矩形（图像原始坐标）
+  dx, dy, dw, dh,  // 目标矩形（canvas 坐标）
+)
+```
+
+学会这一个调用，半个图像处理工具就写出来了。
+
+## 五、四遮罩 vs 单 `box-shadow` 蒙版
+
+裁切框外要变暗。两种做法：
+
+**做法 A**：画四个半透明 `<div>` 围住裁切框（上下左右四块）
+- 优点：每块都能精确控制尺寸
+- 缺点：要算四个矩形的位置，resize 时四块都要更新
+
+**做法 B**：单个 div 用巨大的 `box-shadow` 把外面糊住
+- 优点：一个 CSS 属性搞定
+- 缺点：`box-shadow` 不裁剪——视觉上需要遮罩范围足够大
+
+最后选了 B：
+
+```tsx
+<div style={{
+  left: cropRect.x * scale,
+  top: cropRect.y * scale,
+  width: cropRect.w * scale,
+  height: cropRect.h * scale,
+  border: '2px solid #ffffff',
+  borderRadius: circle ? '50%' : 4,
+  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.35)',
+}} />
+```
+
+`0 0 0 9999px rgba(0, 0, 0, 0.55)` 这一行就是全部蒙版逻辑——
+向外 9999 像素都蒙上 55% 黑。
+父容器 `overflow: hidden` 把溢出部分剪掉，**视觉效果完美**，
+代码维护简单。
+
+`inset 0 0 0 1px rgba(0, 0, 0, 0.35)` 在裁切框内边缘加一条深色细线，
+让白边在亮图上也清晰。两条 shadow 合在一个属性里，一次绘制。
+
+## 六、`<Dialog>` 的真正价值：跨工具复用
+
+`CropDialog` 不是裁切页面内部的私有组件。它的 props 设计是这样：
+
+```ts
+type CropDialogProps = {
+  open: boolean
+  image: CropImage | null      // { dataUrl, width, height }
+  initialStyleId?: StyleId
+  onOpenChange: (open: boolean) => void
+  onConfirm?: (result: CropImage, blob: Blob) => void
+  confirmTooltip?: string
+}
+```
+
+**只需要一个 `CropImage` 就能调起**——任何工具拿到 PNG 都能用。
+
+裁切页面是最简单的消费者：传 image 进去，不传 `onConfirm`——
+用户在 Dialog 内部点"下载 / 复制"自己处理。
+
+[图片拼接工具](/projects/image-merge-tool) 的消费方式有 `onConfirm`：
+
+```tsx
+<CropDialog
+  open={cropTarget !== null}
+  image={cropTarget?.image ?? null}
+  onOpenChange={(v) => !v && setCropTarget(null)}
+  onConfirm={handleConfirmCrop}     // 替换列表里的对应图
+  confirmTooltip="确认裁切并替换原图"
+/>
+```
+
+[文本转图片工具](/projects/text-to-image-tool) 是先把 DOM 截成 PNG，再传给 `CropDialog`：
+
+```tsx
+const blob = await toBlob(ref.current, { /* ... */ })
+const cropImage = await blobToCropImage(blob)
+setCropImage(cropImage)  // 触发 <CropDialog open image={cropImage}/>
+```
+
+`blobToCropImage` 这个工具函数顺手把 Blob 转回 `{ dataUrl, width, height }`：
+
+```ts
+export const blobToCropImage = async (blob: Blob): Promise<CropImage> => {
+  const dataUrl = await blobToDataUrl(blob)
+  const el = await loadHtmlImage(dataUrl)
+  return { dataUrl, width: el.naturalWidth, height: el.naturalHeight }
+}
+```
+
+<Callout type="success">
+  组件的真正复用价值不在"换皮肤"，在于**用 props 做契约**：
+  上游只需要 `{ dataUrl, width, height }` 就能调起裁切；
+  下游可选地接收 `onConfirm` 把结果传回上游。
+  契约干净，三个工具就能自然组合。
+</Callout>
+
+## 七、风格切换时居中重置：贴心的小细节
+
+从 1:1 切到 16:9 时，原来的裁切框大概率装不下新比例——
+比如选了图片正中心 500×500 的方框，切 16:9 应该变成什么？
+
+最自然的做法是**自动重新居中 + 占满**：
+
+```ts
+const centerCropRect = (imgW: number, imgH: number, aspect: number): Rect => {
+  const imgAspect = imgW / imgH
+  let w: number
+  let h: number
+  if (imgAspect > aspect) {
+    // 图比目标更"宽"，限定高度撑满
+    h = imgH
+    w = h * aspect
+  } else {
+    // 图比目标更"窄"，限定宽度撑满
+    w = imgW
+    h = w / aspect
+  }
+  return { x: (imgW - w) / 2, y: (imgH - h) / 2, w, h }
+}
+
+// 风格切换时触发
+useEffect(() => {
+  setCropRect(centerCropRect(image.width, image.height, active.aspect))
+}, [image, active.aspect])
+```
+
+这套逻辑保证：
+
+- 切风格永远从"居中 + 占满"开始，用户少做一次定位
+- 不需要手动 reset 按钮——但还是放了一个"居中重置"按钮（`<ReloadIcon>`），
+  万一拖跑偏了能一键回到原点
+
+## 八、键盘左右切换风格 + Esc 关闭
+
+最后一组细节：所有 Dialog（文本转图片、图片拼接、图片裁切）都共享同一组键盘约定：
+
+- `←` / `→`：切换风格
+- `Esc`：关闭 Dialog（Radix Dialog 默认支持）
+
+```tsx
+useEffect(() => {
+  if (!open) return
+  const handleKey = (e: globalThis.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      onPrev()
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      onNext()
+    }
+  }
+  window.addEventListener('keydown', handleKey)
+  return () => window.removeEventListener('keydown', handleKey)
+}, [open, onPrev, onNext])
+```
+
+`if (!open) return` 保证 Dialog 关闭时不挂载监听——
+否则同时打开多个工具页面会出现"按方向键所有 Dialog 都跳"的诡异行为。
+
+## 总结：UI 工程占了 80%
+
+回头看裁切工具的工程脉络：
+
+- **比例锁死的四种预设**——产品决策简化了一半实现
+- **状态存原始像素**——UI 层按 scale 换算，切风格不丢精度
+- **Pointer Events + `setPointerCapture`**——一套代码搞定鼠标 / 触摸 / 笔
+- **`ctx.clip()` + arc**——浏览器里画圆形 PNG 的标准姿势
+- **`box-shadow: 0 0 0 9999px`**——单属性实现"外暗内亮"蒙版
+- **Props 契约 = 跨工具复用**——`CropDialog` 是裁切工具，也是另外两个工具的内嵌组件
+- **`centerCropRect` + `Math.min(..., 1)`**——切风格自动居中，不放大原图
+- **键盘约定**——`←/→/Esc` 三个工具完全一致
+
+真正的"图像处理"只有 `cropImageToBlob` 那 15 行 Canvas 代码——
+**剩下 80% 全是 UI 工程**。这是大多数图像工具的真实成本结构。
+
+## 三篇小结
+
+三个工具拆完，回过头看共同模式：
+
+1. **Dialog + 风格切换**——所有工具都用同一种 `Dialog (80vw × 80vh) + 左右切风格 + 顶栏操作按钮` 的布局
+2. **主预览 + 侧边迷你预览**——同一份 render 函数渲染两次，红框命令式跟随主滚动条
+3. **Clipboard + Download**——所有导出按钮都是同一对（复制 PNG / 下载 PNG）
+4. **零外部依赖**——`html-to-image` 只有文本转图片一处用到，其他全靠原生 Canvas / Image / Pointer / Clipboard
+
+这种"工具站家族"的一致性不是先设计出来的，是写完第二个工具后**主动从第一个里抽出来的**。
+对工具站来说，**一致性 = 用户的学习迁移成本 = 一次教育、三次受益**。
+
+## 延伸阅读
+
+- 姊妹篇：[文本转图片工具](/projects/text-to-image-tool)
+- 姊妹篇：[图片拼接工具](/projects/image-merge-tool)
+- 工具入口：[/tools/image-crop](/tools/image-crop)
