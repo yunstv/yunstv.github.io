@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Card, Flex, Heading, Text } from '@radix-ui/themes'
+import { Flex, Heading, Text } from '@radix-ui/themes'
+import { ToolsList, type ToolItem } from '@/components/tools/tools-list'
 
 export const metadata: Metadata = {
   title: 'Tools',
   description: '一些自用的小工具。',
 }
 
-const TOOLS = [
+const TOOLS: ToolItem[] = [
   {
     href: '/tools/text-to-image',
     name: '文本转图片',
@@ -31,19 +31,11 @@ export default function ToolsPage() {
       <Flex direction="column" gap="2">
         <Heading size="8">Tools</Heading>
         <Text size="3" color="gray">一些自用的小工具。共 {TOOLS.length} 个。</Text>
+        <Text size="2" color="gray" id="busuanzi_container_page_pv" style={{ display: 'none' }}>
+          访问 <span id="busuanzi_value_page_pv">--</span> 次
+        </Text>
       </Flex>
-      <Flex direction="column" gap="3">
-        {TOOLS.map((t) => (
-          <Link key={t.href} href={t.href} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Card>
-              <Flex direction="column" gap="1">
-                <Text size="4" weight="medium">{t.name}</Text>
-                <Text size="2" color="gray">{t.desc}</Text>
-              </Flex>
-            </Card>
-          </Link>
-        ))}
-      </Flex>
+      <ToolsList tools={TOOLS} />
     </Flex>
   )
 }
