@@ -1,4 +1,4 @@
-### Hi there, I'm yunstv
+### Hi there, I'm Yuns
 
 > about: A speck of dust in the universe
 

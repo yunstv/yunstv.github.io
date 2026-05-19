@@ -14,7 +14,7 @@ export function SiteFooter() {
         <Flex align="center" justify="between" py="5" wrap="wrap" gap="3">
           <Flex align="center" gap="3" wrap="wrap">
             <Text size="2" color="gray">
-              © {new Date().getFullYear()} yunstv. Built with Next.js + MDX.
+              © {new Date().getFullYear()} Yuns. Built with Next.js + MDX.
             </Text>
             {/*
               busuanzi populates these spans once the count arrives. The

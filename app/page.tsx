@@ -18,7 +18,7 @@ export default async function HomePage() {
     <Flex direction="column" gap="8" py="6">
       <section>
         <Flex direction="column" gap="3">
-          <Heading size="9">Hi, I&apos;m yunstv 👋</Heading>
+          <Heading size="9">Hi, I&apos;m Yuns 👋</Heading>
           <Text size="4" color="gray" style={{ maxWidth: '42rem' }}>
             软件工程师 · 业余写作者 · 偶尔折腾点东西。
             这里是我的博客与作品集——记录代码、想法和一些没什么用的实验。

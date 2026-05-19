@@ -14,13 +14,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://yunstv.github.io'
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'yunstv',
-    template: '%s · yunstv',
+    default: 'Yuns',
+    template: '%s · Yuns',
   },
   description: '个人博客与作品集 — 用 Next.js + MDX 写的。',
   openGraph: {
     type: 'website',
-    siteName: 'yunstv',
+    siteName: 'Yuns',
     locale: 'zh_CN',
     url: SITE_URL,
   },

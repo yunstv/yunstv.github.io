@@ -24,7 +24,7 @@ export function SiteHeader() {
       <Container size="3">
         <Flex align="center" justify="between" py="3">
           <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Text weight="bold" size="4">yunstv</Text>
+            <Text weight="bold" size="4">Yuns</Text>
           </Link>
           <Flex align="center" gap="5">
             {NAV.map((n) => (

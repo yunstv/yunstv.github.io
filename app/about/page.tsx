@@ -33,7 +33,7 @@ export default async function AboutPage() {
         <Avatar
           src={AVATAR_URL}
           fallback="Y"
-          alt="yunstv 的 GitHub 头像"
+          alt="Yuns 的 GitHub 头像"
           size="6"
           radius="full"
         />
