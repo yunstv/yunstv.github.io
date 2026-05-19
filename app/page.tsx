@@ -12,9 +12,7 @@ export default async function HomePage() {
     listAll<ProjectMeta>('projects'),
   ])
   const recentPosts = [...posts]
-    .sort((a, b) =>
-      String(b.frontmatter.date ?? '').localeCompare(String(a.frontmatter.date ?? ''))
-    )
+    .sort((a, b) => +new Date(b.frontmatter.date) - +new Date(a.frontmatter.date))
     .slice(0, 3)
   const featuredProjects = projects.filter((p) => p.frontmatter.featured).slice(0, 4)
 

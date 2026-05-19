@@ -44,11 +44,15 @@ export async function listAll<T>(
       (it) => process.env.NODE_ENV === 'development' || !(it.frontmatter as { draft?: boolean }).draft
     )
     .sort((a, b) => {
-      const fa = a.frontmatter as { date?: unknown; updated?: unknown }
-      const fb = b.frontmatter as { date?: unknown; updated?: unknown }
-      const da = String(fa.date ?? fa.updated ?? '')
-      const db = String(fb.date ?? fb.updated ?? '')
-      return db.localeCompare(da)
+      // YAML parses bare `date: 2026-05-18` into a JS Date object, so we
+      // can't rely on String() lexical compare (would produce
+      // "Mon May 18 2026 ..." and sort by weekday name). Normalize via
+      // Date.getTime() — accepts both Date and ISO string inputs.
+      const fa = a.frontmatter as { date?: Date | string; updated?: Date | string }
+      const fb = b.frontmatter as { date?: Date | string; updated?: Date | string }
+      const ta = new Date(fa.date ?? fa.updated ?? 0).getTime()
+      const tb = new Date(fb.date ?? fb.updated ?? 0).getTime()
+      return tb - ta
     })
 }
 
