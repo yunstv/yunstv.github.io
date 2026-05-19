@@ -1,0 +1,37 @@
+---
+name: Claude Code 源码研究系列
+description: 对 @anthropic-ai/claude-code v2.1.88 反编译产物的 10 篇拆解——从项目总览、目录、引擎、工具、任务到 Plan Mode、构建系统与 KAIROS 等未上线机制，覆盖工程层全栈。
+date: 2026-05-12
+status: archived
+stack: [Claude Code, TypeScript, React, Ink, Bun, esbuild]
+featured: true
+---
+
+## 这是什么
+
+基于 `@anthropic-ai/claude-code` v2.1.88 npm 包反编译产物的一手研究。
+**不是教程，是把"黑盒里的代码"梳理出来给自己看**——10 篇按模块拆，每篇能独立读，但合起来才是工程全貌。
+
+读完你会知道：
+
+- Claude Code 内部用什么调度模型、工具是怎么注册的、Plan Mode 在工程层做了什么
+- 为什么 `npm install` 之后**跑不起来**——构建脚本依赖 Bun 编译期内联，缺 108 个未开源模块
+- KAIROS、Numbat、Undercover 这些**未上线/半上线**的机制到底是什么样
+
+## 十篇目录
+
+1. [项目总览](/blog/claude-code-source-01-overview) — 这是个什么仓库？为什么不可重建？技术栈是什么？
+2. [目录结构速查](/blog/claude-code-source-02-directory-layout) — `src/` 下 53 个子目录、200+ 文件按职责分层的速查表
+3. [核心引擎：QueryEngine 与 query 主循环](/blog/claude-code-source-03-core-engine) — 两层 AsyncGenerator 嵌套、stop_reason 状态机、taskBudget 跨压缩追踪
+4. [工具系统：43 个内置工具与权限链路](/blog/claude-code-source-04-tool-system) — Tool 接口契约、ToolSearch 懒加载、AgentTool 子代理派生
+5. [任务系统：7 种 Task 与多态生命周期](/blog/claude-code-source-05-task-system) — 极薄多态接口、base36 防爆破 ID、输出落盘 + symlink 增量读取
+6. [命令系统与 UI：100+ 斜杠命令、自研 ink fork](/blog/claude-code-source-06-commands-and-ui) — 为什么要 fork ink、144 个 React 组件、Vim 模式
+7. [服务与远程：bridge、远控、双层 feature gate](/blog/claude-code-source-07-services-and-remote) — bridge/ 30 文件远程会话核心、remoteManagedSettings 轮询
+8. [推理逻辑：thinking 块、Plan Mode、4 种正交拆分](/blog/claude-code-source-08-reasoning) — Claude Code 本身不推理，它是调度器；ultrathink 关键字触发
+9. [构建系统：为什么不能完整重建](/blog/claude-code-source-09-build-system) — Bun 编译期内联 vs esbuild、4 个构建脚本、108 个缺失模块清单
+10. [关键发现：Numbat、KAIROS、卧底模式与未来路线图](/blog/claude-code-source-10-key-findings) — 模型代号体系、KAIROS 自主代理、Undercover 卧底机制、远程 killswitch
+
+## 一句话总结
+
+**Claude Code 是一个被 Bun 编译期内联、未开源、靠 GrowthBook 双层 gate 驱动的工程化代理调度器**——
+模型负责"想"，工程负责"调度 + 落盘 + 远控 + 安全网"。10 篇研究尝试还原工程那一半。
