@@ -376,12 +376,23 @@ function DialogBody({
   // overlay imperatively via rAF + transform, so scrolling a long preview
   // doesn't pay the cost of re-rendering this dialog every frame.
 
+  // Pin the export width to the natural styled-preview width (720) and let
+  // height grow with content. Using scrollWidth instead would inflate the
+  // canvas when text fails to wrap inside html-to-image's foreignObject
+  // clone, producing the "frame is 720 but text bleeds off the right" PNG.
+  const exportSize = (
+    node: HTMLElement,
+  ): { width: number; height: number } => ({
+    width: STYLED_PREVIEW_WIDTH,
+    height: Math.max(node.scrollHeight, node.offsetHeight),
+  })
+
   const onDownload = useCallback(async () => {
     if (!ref.current || busy) return
     setBusy(true)
     setErr(null)
     try {
-      const size = getFullSize(ref.current)
+      const size = exportSize(ref.current)
       const dataUrl = await toPng(ref.current, {
         pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
@@ -404,7 +415,7 @@ function DialogBody({
     setBusy(true)
     setErr(null)
     try {
-      const size = getFullSize(ref.current)
+      const size = exportSize(ref.current)
       const blob = await toBlob(ref.current, {
         pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
@@ -429,7 +440,7 @@ function DialogBody({
     setBusy(true)
     setErr(null)
     try {
-      const size = getFullSize(ref.current)
+      const size = exportSize(ref.current)
       const blob = await toBlob(ref.current, {
         pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
@@ -826,6 +837,7 @@ function TerminalStyle({ text }: { text: string }) {
           padding: '18px 22px',
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
+          overflowWrap: 'anywhere',
           background: 'transparent',
           fontFamily: MONO_STACK,
         }}
@@ -876,6 +888,7 @@ function CodeCardStyle({ text }: { text: string }) {
             lineHeight: 1.7,
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
+            overflowWrap: 'anywhere',
             background: 'transparent',
           }}
         >
@@ -901,7 +914,13 @@ function MinimalStyle({ text }: { text: string }) {
         lineHeight: 1.8,
       }}
     >
-      <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+      <div
+        style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          overflowWrap: 'anywhere',
+        }}
+      >
         {text}
       </div>
     </div>
