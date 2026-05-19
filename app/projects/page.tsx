@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Flex, Heading, Text } from '@radix-ui/themes'
+import { GridIcon } from '@radix-ui/react-icons'
 import { listAll } from '@/lib/mdx'
 import type { ProjectMeta } from '@/types/content'
 import { ProjectGrid } from '@/components/projects/project-grid'
@@ -24,6 +25,7 @@ export default async function ProjectsPage() {
         items={timelineItems}
         listSlot={<ProjectGrid items={projects} />}
         listLabel="网格"
+        listIcon={<GridIcon />}
         unit="个"
       />
     </Flex>
