@@ -32,11 +32,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="zh-CN" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <SiteHeader />
-          <Container size="3" py="6">
-            <main>{children}</main>
-          </Container>
-          <SiteFooter />
+          <div className="site-shell">
+            <SiteHeader />
+            <Container size="3" py="6" className="site-main-wrap">
+              <main>{children}</main>
+            </Container>
+            <SiteFooter />
+          </div>
         </ThemeProvider>
         <Analytics />
       </body>

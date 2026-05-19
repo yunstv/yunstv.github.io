@@ -5,6 +5,26 @@
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Sticky footer: header + main + footer fill at least the viewport height,
+   so when page content is short the footer still sits at the bottom edge.
+   Applied to a dedicated wrapper — NOT .radix-themes — because Radix Themes
+   reuses that class on portal wrappers (Tooltip/Dialog), and turning those
+   into flex columns squeezes their content. */
+.site-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.site-main-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.site-main-wrap > main {
+  flex: 1 1 auto;
+}
+
 /* Refractor / Prism token colours — minimal, inherits site colour via currentColor */
 .refractor {
   font-family: var(--font-mono);
