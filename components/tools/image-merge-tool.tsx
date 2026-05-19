@@ -867,21 +867,22 @@ const DialogBody = ({
             background:
               'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
             display: 'flex',
+            alignItems: 'flex-start',
             minWidth: 0,
             minHeight: 0,
           }}
         >
           {/*
-            `margin: 'auto'` (instead of the container's justify/align) means
-            the item is centered ONLY when there's free space; when content is
-            wider/taller than the viewport the auto margins collapse to 0, so
-            the user can scroll all the way to the actual edge of the image.
-            Centering via `justify-content` instead would cut off the leading
-            edge under flex+overflow:auto.
+            `alignItems: flex-start` keeps the item top-anchored so a tall
+            vertical-stitch output is never offset down out of capture range.
+            `marginInline: auto` on the item handles horizontal centering and
+            collapses to 0 on overflow, so wide horizontal stitches can be
+            scrolled to the true left edge (justify-content:center would clip
+            the leading edge under flex+overflow:auto).
           */}
           <div
             ref={contentRef}
-            style={{ flexShrink: 0, margin: 'auto' }}
+            style={{ flexShrink: 0, marginInline: 'auto' }}
           >
             <LayoutRender layout={layout} images={images} />
           </div>

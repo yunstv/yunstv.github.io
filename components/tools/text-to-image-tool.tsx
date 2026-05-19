@@ -73,6 +73,23 @@ const getFullSize = (
   height: Math.max(node.scrollHeight, node.offsetHeight),
 })
 
+// All four styled presets render at a fixed natural width.
+const STYLED_PREVIEW_WIDTH = 720
+
+// Browsers cap canvas (and the SVG backing html-to-image) at a max pixel
+// dimension. Safari / iOS sit around 8192 px on either axis; beyond that the
+// output gets silently cropped. Cap the effective pixel ratio so the worst
+// axis stays within the safe range.
+const MAX_CANVAS_DIM = 8192
+const safePixelRatio = (
+  size: { width: number; height: number },
+  ideal: number,
+): number => {
+  const byW = MAX_CANVAS_DIM / Math.max(1, size.width)
+  const byH = MAX_CANVAS_DIM / Math.max(1, size.height)
+  return Math.max(1, Math.min(ideal, byW, byH))
+}
+
 export function TextToImageTool() {
   const [text, setText] = useState(SAMPLE)
   const [openIdx, setOpenIdx] = useState<number | null>(null)
@@ -364,10 +381,11 @@ function DialogBody({
     setBusy(true)
     setErr(null)
     try {
+      const size = getFullSize(ref.current)
       const dataUrl = await toPng(ref.current, {
-        pixelRatio: 2,
+        pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
-        ...getFullSize(ref.current),
+        ...size,
       })
       const a = document.createElement('a')
       a.href = dataUrl
@@ -386,10 +404,11 @@ function DialogBody({
     setBusy(true)
     setErr(null)
     try {
+      const size = getFullSize(ref.current)
       const blob = await toBlob(ref.current, {
-        pixelRatio: 2,
+        pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
-        ...getFullSize(ref.current),
+        ...size,
       })
       if (!blob) throw new Error('blob is null')
       await navigator.clipboard.write([
@@ -410,10 +429,11 @@ function DialogBody({
     setBusy(true)
     setErr(null)
     try {
+      const size = getFullSize(ref.current)
       const blob = await toBlob(ref.current, {
-        pixelRatio: 2,
+        pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
-        ...getFullSize(ref.current),
+        ...size,
       })
       if (!blob) throw new Error('blob is null')
       const cropImage = await blobToCropImage(blob)
@@ -544,16 +564,20 @@ function DialogBody({
             overflow: 'auto',
             background:
               'repeating-conic-gradient(var(--gray-a3) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
-            // `margin: 'auto'` on the flex item centers when there's space
-            // and collapses to 0 on overflow — this lets the user scroll to
-            // the true edge when the styled preview is wider/taller than the
-            // viewport (justify-content:center would silently cut off the
-            // leading edge). The flex item still stays sized to its content
-            // because of `flexShrink: 0`.
-            display: 'flex',
           }}
         >
-          <div ref={ref} style={{ flexShrink: 0, margin: 'auto' }}>
+          {/*
+            Block layout with an explicit pixel width matches the cloned DOM
+            inside html-to-image's foreignObject 1:1 (flex sizing rules can
+            diverge between flex and block contexts and cause subtle width
+            drift in the capture). `margin: 0 auto` centers when there's free
+            space and collapses to 0 on overflow, so the user can still scroll
+            to the true leading edge.
+          */}
+          <div
+            ref={ref}
+            style={{ width: STYLED_PREVIEW_WIDTH, margin: '0 auto' }}
+          >
             <StyledPreview styleId={active.id} text={deferredText} />
           </div>
         </Box>
