@@ -1,11 +1,15 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Flex, Heading } from '@radix-ui/themes'
+import { Avatar, Flex, Heading } from '@radix-ui/themes'
 import { getBySlug } from '@/lib/mdx'
 import type { PageMeta } from '@/types/content'
 import { MDXContent } from '@/components/mdx/mdx-content'
 
 const SLUG = 'about'
+// GitHub serves the current avatar for any public user at `<user>.png`,
+// redirecting to avatars.githubusercontent.com. No API token, no rate limit
+// for cached image fetches.
+const AVATAR_URL = 'https://github.com/yunstv.png'
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -25,7 +29,14 @@ export default async function AboutPage() {
   }
   return (
     <article>
-      <Flex direction="column" gap="3" py="4" mb="4">
+      <Flex align="center" gap="4" py="4" mb="4" wrap="wrap">
+        <Avatar
+          src={AVATAR_URL}
+          fallback="Y"
+          alt="yunstv 的 GitHub 头像"
+          size="6"
+          radius="full"
+        />
         <Heading size="8">{page.frontmatter.title}</Heading>
       </Flex>
       <MDXContent code={page.code} />
