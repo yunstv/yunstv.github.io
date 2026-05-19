@@ -53,6 +53,9 @@ export default async function PostPage({ params }: { params: Params }) {
           {frontmatter.updated && (
             <Text size="2" color="gray">· updated <Time value={frontmatter.updated} /></Text>
           )}
+          <Text size="2" color="gray" id="busuanzi_container_page_pv" style={{ display: 'none' }}>
+            · 阅读 <span id="busuanzi_value_page_pv">--</span> 次
+          </Text>
           {frontmatter.tags?.map((t) => <Tag key={t} name={t} />)}
         </Flex>
       </Flex>

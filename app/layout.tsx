@@ -7,6 +7,7 @@ import { Container } from '@radix-ui/themes'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SiteHeader } from '@/components/layout/site-header'
 import { SiteFooter } from '@/components/layout/site-footer'
+import { Analytics } from '@/components/analytics'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://yunstv.github.io'
 
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </Container>
           <SiteFooter />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )

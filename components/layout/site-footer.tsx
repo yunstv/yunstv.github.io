@@ -11,10 +11,23 @@ export function SiteFooter() {
       }}
     >
       <Container size="3">
-        <Flex align="center" justify="between" py="5">
-          <Text size="2" color="gray">
-            © {new Date().getFullYear()} yunstv. Built with Next.js + MDX.
-          </Text>
+        <Flex align="center" justify="between" py="5" wrap="wrap" gap="3">
+          <Flex align="center" gap="3" wrap="wrap">
+            <Text size="2" color="gray">
+              © {new Date().getFullYear()} yunstv. Built with Next.js + MDX.
+            </Text>
+            {/*
+              busuanzi populates these spans once the count arrives. The
+              `busuanzi_container_*` wrapper stays hidden until then to
+              avoid a "0 次" flash.
+            */}
+            <Text size="2" color="gray" id="busuanzi_container_site_pv" style={{ display: 'none' }}>
+              · 访问 <span id="busuanzi_value_site_pv">--</span> 次
+            </Text>
+            <Text size="2" color="gray" id="busuanzi_container_site_uv" style={{ display: 'none' }}>
+              · <span id="busuanzi_value_site_uv">--</span> 位访客
+            </Text>
+          </Flex>
           <Flex align="center" gap="4">
             <a
               href={SOCIAL.github}

@@ -15,6 +15,9 @@ export default function TextToImagePage() {
         <Text size="3" color="gray">
           把终端里 Claude 的输出复制过来粘贴到左侧，右侧会同步出现几种风格的预览，点右上角的按钮即可下载或复制 PNG。
         </Text>
+        <Text size="2" color="gray" id="busuanzi_container_page_pv" style={{ display: 'none' }}>
+          使用 <span id="busuanzi_value_page_pv">--</span> 次
+        </Text>
       </Flex>
       <TextToImageTool />
     </Flex>

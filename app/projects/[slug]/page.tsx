@@ -43,7 +43,7 @@ export default async function ProjectPage({ params }: { params: Params }) {
             <Badge key={s} variant="outline" color="gray" radius="full">{s}</Badge>
           ))}
         </Flex>
-        <Flex gap="3" wrap="wrap">
+        <Flex gap="3" wrap="wrap" align="center">
           {frontmatter.github && (
             <RLink href={frontmatter.github} target="_blank" rel="noopener noreferrer" size="2">
               GitHub →
@@ -54,6 +54,9 @@ export default async function ProjectPage({ params }: { params: Params }) {
               Demo →
             </RLink>
           )}
+          <Text size="2" color="gray" id="busuanzi_container_page_pv" style={{ display: 'none' }}>
+            · 阅读 <span id="busuanzi_value_page_pv">--</span> 次
+          </Text>
         </Flex>
       </Flex>
       <MDXContent code={code} />
