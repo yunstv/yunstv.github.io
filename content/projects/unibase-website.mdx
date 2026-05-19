@@ -1,0 +1,148 @@
+---
+name: Unibase 官网
+description: Unibase——面向 AI Agent 的高性能去中心化记忆层——的品牌与产品官网，全静态 SSG 部署到 Vercel，承载 Membase / AIP / DA / Pay 四条产品线的对外叙事。
+date: 2023-11-20
+status: active
+stack: [Next.js, React, TypeScript, Tailwind, Zustand, framer-motion, Turbopack]
+demo: https://www.unibase.com
+---
+
+## 一、业务背景：在卖什么
+
+[Unibase](https://www.unibase.com) 把自己定位为"首个高性能去中心化 AI 记忆层"——给 AI Agent
+提供**持久化记忆 + ERC-8004 身份 + 无许可互通 + x402 支付**，对外口号是 *Open Agent Internet* 的基础设施层。
+
+官网（这个项目）不承担任何业务功能，它就是一件事：**把这套尚未广泛被认知的东西讲清楚**。
+所以页面信息密度非常高，叙事被拆成了四条产品线 + 一条主线：
+
+| 路由 | 卖的东西 |
+| - | - |
+| `/` | 总叙事：定位、四大组件预告、流程图、用例、Roadmap、合作伙伴、博客 teaser |
+| `/membase` | Membase——Agent 的记忆层 |
+| `/aip` | AIP——Agent Interoperability Protocol（互通协议） |
+| `/da` | Unibase DA——数据可用性层 |
+| `/pay` | Unibase Pay——基于 x402 的 Agent 支付 |
+| `/blogs` | 博客索引（条目来自 `lib/enumeration` 静态枚举） |
+
+首页本身被拆成 11 个独立 Section 组件（banner / introduce / core-comps / flow / use-cases /
+advantage / road-map / partners / blog / participate / ball-animation），每一块都是一个独立可替换的叙事单元——
+对一个营销站来说这很关键，市场和产品的话术每过几周就要改。
+
+## 二、为什么 SSG：营销站点的"零运行时"原则
+
+整个站点**没有任何运行时 server 代码**，`pnpm build` 直接把每一条路由 prerender 成 HTML：
+
+- SEO 友好：HTML 里就是完整内容，爬虫不用 JS 也能拿到
+- 边缘部署：Vercel 上 cache 命中率拉满，全球访问延迟稳定
+- 唯一动态片段是 `vercel.json` + `next.config.ts` 里的 `/api/:path*` rewrite——
+  把 API 流量转到上游 `NEXT_PUBLIC_API_URL`，不在前端项目里背 server 责任
+
+```ts
+// next.config.ts
+async rewrites() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://52.220.254.5:8080'
+  return [{ source: '/api/:path*', destination: `${apiUrl}/api/:path*` }]
+}
+```
+
+这个分工很重要：**前端项目只对"内容 + 视觉 + 性能"负责**，业务接口由后端服务承载，
+通过反向代理保持同源——同时让前端可以独立发版、独立回滚。
+
+## 三、技术栈选择的几个判断
+
+### 1. Next.js 16 App Router + Turbopack
+
+App Router 在营销站这种"多路由、Section 复用度高、SEO 敏感"的场景里收益明显——
+布局可以分层组合，`(home)` 和 `(modules)` 两个 route group 让首页和产品线页面共享外壳但
+各自独立维护。
+
+### 2. Tailwind 3 + `cn()` + 自定义 token
+
+样式策略很克制：
+
+- 只用 Tailwind utilities，组件不写 `.css` 文件
+- 设计 token（色板、字号、间距）统一沉到 `tailwind.config.ts`
+- 所有 className 通过 `cn(clsx, tailwind-merge)` 合并，避免冲突
+
+后果是营销站常见的"设计师改一个色，要在 10 个组件里替换"问题被收敛到 config 一行。
+
+### 3. 状态管理用 Zustand 而不是 Context
+
+营销站状态非常少（主要是导航开关、滚动状态），但 Context 一旦多了仍然容易触发 re-render。
+Zustand 的 `useStore(selector)` 模式天然按需订阅，对营销站的"高频滚动 + 低频状态变更"场景刚好。
+
+### 4. 动效不是装饰，是叙事节奏
+
+- `framer-motion`：分段进入动效
+- `typed.js`：banner 区域的打字机效果
+- `shuffle-text`：标题切换的字符洗牌
+- `react-element-in-viewport`：滚动到视口时触发分段动画
+- Three.js WebGPU 银河——通过 `iframe` 加载，**严格隔离**主 bundle 不被 WebGPU shader 拖大
+
+iframe 隔离这一点很关键：营销站首屏体积是死线，一个 Three.js demo 不该拖累
+整个首页加载速度——独立 iframe 既保留视觉冲击，又把代价限定在该模块。
+
+## 四、目录与代码分层
+
+```text
+app/                  # 路由
+├── (home)/           # 首页 + 11 个 Section 组件
+├── (modules)/        # aip / membase / da / pay 四个产品线
+├── blogs/            # 博客索引
+├── manifest.ts       # PWA + Android 图标集
+└── sitemap.ts        # 自动生成 sitemap
+
+components/
+├── basic/            # 域无关：animation / button / cards / icon / layout ...
+└── business/         # 域相关：404 / community / empty
+
+lib/
+├── utils/            # cn / date / DOM
+├── hooks/            # 共享 React hooks
+└── enumeration/      # 静态枚举（博客条目、合作伙伴...）
+```
+
+最值得说的是 `lib/enumeration/`——博客条目、合作伙伴列表、Roadmap 节点这类
+"内容即数据"全部放在静态枚举里，**不走 CMS、不走 API**。
+理由很务实：营销站内容更新频率低（一个季度一次），但每次更新都要走代码 review，
+反而比 CMS 更可控、更可追溯。
+
+路径别名用了相对克制的策略：
+
+| Alias | 指向 |
+| - | - |
+| `@/*` | 项目根 |
+| `@comps`, `@comps/*` | `components/basic` |
+| `@biz`, `@biz/*` | `components/business` |
+| `@hooks` / `@utils` | `lib/hooks` / `lib/utils` |
+
+子路径导入（`@comps/icon`）比 barrel 导入更利于 tree-shaking——这一点在静态站点上的 bundle 节省立竿见影。
+
+## 五、一些藏在缝里的工程化
+
+- **`X-Frame-Options: SAMEORIGIN`** 写在 `next.config.ts` 的 `headers()`：禁止被任意域嵌入 iframe，
+  对一个有"加密 / 钱包 / 资产"语义的项目，反钓鱼是基础线
+- **Manifest + PWA 图标**：`app/manifest.ts` 完整提供 Android 图标集，让营销站也能"添加到主屏幕"
+- **`template.tsx`**：跨路由的过渡动画放在 template 而不是 layout——layout 不重渲染、template 每次路由切换重渲染，刚好契合"页面进入动画"的语义
+- **`global-error.tsx` + `not-found.tsx` + `loading.tsx`**：三件套都有，错误兜底走品牌设计，而不是 Next 默认的白页
+
+## 六、时间线
+
+- **2023-11** 项目初始化，第一版站点上线
+- 中间经历 Next.js 12 → 13 → 14 → 16 的多次升级，迁到 App Router、迁到 Turbopack
+- 文案、产品线、合作伙伴持续随业务节奏迭代
+- **至今（2026）** 仍在维护，迭代节奏跟着产品发布走
+
+## 总结：营销站的"克制"
+
+一个营销站点项目的工程化诱惑特别多：上 MDX、上 CMS、上 i18n、上 A/B 框架……
+这个项目最终做的取舍是：
+
+- **内容** 用静态枚举，不要 CMS
+- **路由** 用 SSG，不要 SSR
+- **API** 用 rewrite 转给后端，不要在前端项目里写 server 代码
+- **动效** 用现成库，不要自己造 motion 引擎
+- **样式** 用 Tailwind + cn，不要写一行 .css 文件
+
+留下的就是真正属于"营销站"的工作：**讲一个还在被市场理解中的产品**——
+而这件事的难点是叙事，不是技术。
