@@ -1,0 +1,201 @@
+---
+name: Unibase Explorer
+description: Unibase 网络的区块链浏览器——8 类链上资源（agent / memory / file / piece / replica / edge node / owner / proof）的列表、详情、跨类型搜索，前端隐藏 4 个上游服务的同源代理层。
+date: 2023-11-13
+status: active
+stack: [Next.js, React, TypeScript, TanStack Query, ECharts, Radix UI, ethers, daisyUI, Tailwind]
+github: https://github.com/unibaseio/unibase-explorer
+demo: https://www.explorer.unibase.com
+featured: true
+---
+
+## 一、业务背景：在浏览什么
+
+[Unibase Explorer](https://www.explorer.unibase.com) 是 Unibase 网络的"以太坊 Etherscan"——
+但被浏览的不是普通的交易和合约，而是这套网络独有的**8 类资源**：
+
+| 路由 | 资源 |
+| - | - |
+| `/agents` | AI Agent（链上身份） |
+| `/memory` | Memory Bucket（Agent 的记忆容器） |
+| `/storage/file` | 文件 |
+| `/storage/piece` | 文件分片 |
+| `/storage/replica` | 副本 |
+| `/storage/edge` | 边缘节点 |
+| `/owner/[address]` | 某地址名下的全部资源 |
+| `/search?q=` | 跨类型聚合搜索 |
+
+首页是"总览大屏"——核心统计卡片 + 一张 ECharts 的 daily-stats 时间序列，
+让用户一眼看出"网络当前规模 + 最近一周活跃度"。
+
+业务本质：**一套对外可信的、可追溯的、可分享的链上数据视图**。
+浏览器本身不写入数据，所有内容都是把后端的真实状态以人类可读的方式呈现出来。
+
+## 二、数据流架构：4 个上游 + 1 个同源代理
+
+链上浏览器最特殊的一件事是**数据源是多个**——身份、存储、链扫描、边缘统计分别由不同后端服务承担。
+直接让浏览器调 4 个 host 意味着 4 套 CORS、4 套 host 配置、4 套环境切换地狱。
+
+方案：在 `next.config.js` 用 rewrites 收口到 4 个同源前缀。
+
+```text
+浏览器只看到这 4 个前缀：
+  /api_v2/_scan/*   →  unibasechain-scan ELB（链扫描）
+  /api_v2/*         →  testnet.gateway.membase.io（Membase 网关）
+  /api_hub/*        →  identity stats hub（身份统计）
+  /api_gateway/*    →  edge stats gateway（边缘统计）
+```
+
+收益是真实的：
+
+- 浏览器代码全程**同源**，不存在 CORS
+- 上游 host 集中在一处，环境切换（mainnet / testnet / staging）只动 env
+- 任一上游迁移 host 也不需要改前端代码
+
+`STAGING=1` 这个 env switch 就是配合 rewrites 的——一行环境变量切换全部上游目标。
+
+## 三、`api/` 目录：一个文件一个资源
+
+整个网络层的组织非常克制：
+
+```text
+api/
+├── http.ts        # fetch 包装：Resp<T> 类型 / 错误映射 / 默认值兜底
+├── client.ts      # TanStack Query 的 HTTP client
+├── list.ts        # 分页列表的通用 hook
+├── search.ts      # 跨资源聚合搜索
+├── home.ts        edge.ts files.ts piece.ts replica.ts memeory.ts
+├── stats.ts       space.ts model.ts proof.ts service.ts user.ts gpu.ts
+└── types/         # ambient global types（脚本式 .ts，无 export）
+```
+
+设计原则：
+
+- **一个文件 = 一类资源**。`agents.ts` 只关心 agent 的列表/详情/owner-by-address；
+  跨资源的事（搜索）单独有 `search.ts`
+- **`http.ts` 是唯一通道**。所有请求都过它——错误处理、空值兜底、类型约束集中在一处
+- **`types/` 用 ambient 而不是 export**。这是个有意识的选择：链上数据类型用得太频繁，
+  全局可见省去到处 `import { Agent } from '@/api/types'`，配合 ESLint 关掉对应 `no-unused-vars`
+
+## 四、TanStack Query + SWR：迁移现实下的共存
+
+`package.json` 同时存在 `@tanstack/react-query` 和 `swr`，看起来是冗余——但其实是**迁移中的现实**。
+项目早期用 SWR，后来在 TanStack Query 5 上做了一次升级评估：
+
+| 维度 | SWR | TanStack Query 5 |
+| - | - | - |
+| 缓存粒度 | 单 key，扁平 | queryKey 数组，天然多维 |
+| 列表 + 分页 | 自己做 | `placeholderData: keepPreviousData` 原生 |
+| 失效控制 | mutate | invalidateQueries 模式更强 |
+| DevTools | 简陋 | 独立面板，链上数据调试很有用 |
+
+最终结论：新写的资源（agents / search / 大表）全部走 TanStack Query，
+**遗留的 SWR 路径不主动改写**——这是务实的迁移策略，不是技术债的借口。
+共存期成本是多了一个包，收益是任何时候都能渐进推进，不需要一个"重写 PR"。
+
+## 五、几个领域细节
+
+### 1. 地址、哈希、大数
+
+`ethers` 6 + `bignumber.js` 是链上场景的常客：
+
+- **地址校验**：`ethers.isAddress(input)` 做搜索入口的判别——长得像地址的走地址聚合页，否则走全局搜索
+- **大数显示**：存储字节数、累计 gas 这种动辄 20 位的数字必须用 `BigNumber`，
+  原生 `number` 在 2^53 之后就开始丢精度——展示一份"错的状态"对一个浏览器来说是 unrecoverable 的信任问题
+
+### 2. ECharts 用于首页 daily-stats
+
+首页那张时间序列图选 ECharts 而不是 recharts / visx，因为：
+
+- 链上数据经常单点跳动大（某天 +1 万个文件），ECharts 的 dataZoom 内建支持
+- 鼠标 hover 多 series 联动 tooltip 是 ECharts 的强项
+- bundle 体积虽大，但**只有首页用**，路由级 code-split 后影响有限
+
+### 3. 全局搜索：跨资源类型聚合
+
+`search.ts` 不是简单的"调一个后端搜索接口"——它要在前端把多种资源类型的搜索结果归并：
+
+```text
+用户输入 "0x..."  → 同时查 agent owner / file uploader / replica holder
+用户输入 hash     → 同时查 file CID / piece CID / replica ID
+用户输入 自由文本 → 走后端的全文索引
+```
+
+前端的责任是**判别 + 并发 + 合并**，让用户在一个搜索框里得到统一的结果列表。
+
+### 4. `proxy.ts` 在根目录
+
+不是 Next.js 标准约定的 middleware 位置，但用作"路由 gating / rewrite glue"——
+和 `next.config.js` 的 rewrites 配合处理一些动态情形。
+（保留这个细节是因为容易和官方 middleware.ts 混淆，看代码时要注意）
+
+## 六、UI 层：daisyUI + Radix + Floating UI 的组合
+
+不是单一组件库吃天下，而是按场景选：
+
+| 选型 | 用在哪 |
+| - | - |
+| **daisyUI 4** | 基础组件（按钮、徽章、卡片）——配 Tailwind 用得快 |
+| **Radix UI primitives** | DropdownMenu / HoverCard / Slot——需要无障碍 + 键盘交互的场景 |
+| **Floating UI** | 自定义浮层定位（地址 hover 卡、长字段截断 tooltip） |
+| **lucide-react** | 图标 |
+| **ECharts** | 图表 |
+
+这种"组件碎片化"在中型项目里反而是优势——daisyUI 解决 80% 的快开发，剩下 20% 用 Radix / Floating UI
+保证无障碍和精度。没有一个库被强行拿来做它不擅长的事。
+
+## 七、目录与代码分层
+
+```text
+app/
+├── (home)/            # 首页 stat cards + DailyStatsChart
+├── (explorer)/        # 探索器主区，共享 layout
+│   ├── agents/        # Agent 列表 + 详情
+│   ├── memory/        # Memory bucket 列表 + 详情
+│   ├── owner/[address]/   # 地址聚合页
+│   └── storage/
+│       ├── edge/  file/  piece/  replica/
+├── search/            # 全局搜索结果
+└── layout.tsx         # 根布局：QueryProvider + Toaster + Footer
+
+components/
+├── business/          # Hash / Footer / Nav / GlobalSearch
+├── home/              # DailyStatsChart
+├── ui/                # 低层原语（Table / Button / HoverCard）
+├── Pagination/        # 列表 + 分页外壳
+└── emptyState/ search/ text/
+
+lib/
+├── hooks/             # useClientFetchData 等
+├── utils/             # utils.ts / dayjs.ts / ethers.ts / bignumber.ts
+└── constants/ types/
+
+config/                # 环境派生的 URL builder（链浏览器外链等）
+context/               # QueryProvider
+icons/ public/icons/   # SVG 图标
+```
+
+路径别名：`@ui` / `@comps` / `@hooks` / `@utils`——和姊妹项目 [unibase 官网](/projects/unibase-website) 保持一致。
+
+## 八、时间线
+
+- **2023-11** 项目初始化，与 [unibase 官网](/projects/unibase-website) 几乎同期启动
+- **2024 - 2025** 资源类型从最初的"agent + file"逐步扩展到目前的 8 类，每加一类就是一组 list + detail + owner-by 视图
+- **Next.js 12 → 13 → 14 → 16 / Turbopack** 多次升级
+- **数据层** 从 SWR 切到 TanStack Query 5（共存策略）
+- **至今（2026）** 423 个 commit、54+ PR、持续随网络规模迭代
+
+## 总结：链上浏览器的"克制"
+
+营销站 [unibase-website](/projects/unibase-website) 的工程化诱惑是动效，
+浏览器项目的工程化诱惑是**抽象**——
+8 类资源每类都有 list + detail + by-owner，看起来就该有一个"通用资源 CRUD 框架"。
+
+但实际做下来选择了**克制的复用**：
+
+- `http.ts`、`Pagination`、`Hash`、`useClientFetchData` 这些**确定会被复用**的抽象
+- 每类资源的列表页和详情页仍然各自写——因为每类资源的字段语义、关联跳转、空状态文案都不一样
+- 三个看起来很像的列表，**用类型约束**保证字段不会错位，**不用一套引擎**强行收口
+
+对一个长期演化的浏览器项目来说，**保留每类资源的独立性** 比 **每行代码都要复用** 重要得多——
+后者会让"加一类资源"变成动框架，而不是写一个页面。
