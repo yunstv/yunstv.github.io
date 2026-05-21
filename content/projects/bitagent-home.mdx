@@ -1,0 +1,190 @@
+---
+name: BitAgent 官网
+description: BitAgent Protocol 的品牌与门户站，承担"对外讲清楚"+"按环境分流到 app 子域"两件事。中间件根据 NEXT_PUBLIC_ENV 把深链路由分发到 mainnet 或 testnet app，本身只保留 about / skill / login / disclaimer 四个内容页。
+date: 2025-09-27
+status: active
+stack: [Next.js, React, TypeScript, Tailwind, Radix Portal, Framer Motion, Swiper, react-element-in-viewport]
+github: https://github.com/unibaseio/bitagent-home
+demo: https://www.bitagent.io
+featured: true
+---
+
+## 一、为什么 app 之外要单独有一个 home
+
+[BitAgent 主应用](/projects/bitagent-frontend) 已经够复杂——15 条业务路由、2968 个 commit、
+钱包 / 链调用 / 聊天 / 质押全在一个仓库里。继续把"营销门户"塞进去，会带来两个具体问题：
+
+- **首屏体积**：app 的 bundle 已经背着 viem + ethers + Privy + chatui + 图表库，
+  一个用户**只是想看看 BitAgent 是什么** 不该被迫加载这些
+- **发版节奏**：营销文案改一句话不该走 app 的 CI + 全量回归，
+  营销页面**应该独立发版**
+
+所以 `bitagent-home` 作为**门户层**单独存在。它的责任只有两件事：
+
+1. **对外讲清楚**：about（协议是什么）、skill（生态合作伙伴）、disclaimer（法律声明）、login（入口）
+2. **路由分流**：通过中间件，把 `/agents`、`/create`、`/stake`、`/terminal` 这些**深链**重定向到对应的 app 子域（mainnet 或 testnet）
+
+用户进 `www.bitagent.io/agents` 不会得到 404——会被 `proxy.ts` 透明地送到 `app.bitagent.io/agents`（或 testnet 对应域），URL bar 自然切换。
+这是 SEO 友好的做法：搜索引擎 / 老链接 / 分享出去的链接全部归到主域，落地后再分流。
+
+## 二、`proxy.ts` 中间件：项目的核心
+
+整个 home 项目最有"工程价值"的代码就是它——一个 30 行不到的 Next.js middleware：
+
+```ts
+// proxy.ts（思路示意）
+const APP_PATHS = ['/agents', '/projects', '/rankings', '/stake', '/create', '/aip', '/terminal', /* ... */]
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+  if (APP_PATHS.some((p) => pathname.startsWith(p))) {
+    const env = process.env.NEXT_PUBLIC_ENV ?? 'mainnet'
+    const target = env === 'testnet'
+      ? 'https://testnet.app.bitagent.io'
+      : 'https://app.bitagent.io'
+    return NextResponse.redirect(`${target}${pathname}${req.nextUrl.search}`, 308)
+  }
+  return NextResponse.next()
+}
+```
+
+**为什么是 308 而不是 302**：
+
+- 308 = Permanent Redirect & **保留 method**——POST / PUT 不会被降级成 GET
+- 浏览器和爬虫都会按"永久"缓存这个映射，下次直接走目标域
+- SEO 上把权重统一传到 app 域
+
+`NEXT_PUBLIC_ENV` 让同一份代码可以部署成 mainnet 入口或 testnet 入口——
+testnet 那一份只需要环境变量改一行，不需要分支也不需要构建参数。
+
+## 三、技术栈：极度克制
+
+`package.json` 的 `dependencies` 区**只有 13 条**——比 [BitAgent app](/projects/bitagent-frontend) 的 50+ 少了一个数量级。每一条都对得起自己的位置：
+
+| 依赖 | 用途 |
+| - | - |
+| `next` 16 / `react` 19 | App Router + Turbopack |
+| `@radix-ui/react-portal` | 唯一需要的 Radix 原语（modal / dropdown 都没有）|
+| `lucide-react` | 图标 |
+| `motion` (Framer Motion 12) | 个别需要复杂运动曲线的 section |
+| `react-element-in-viewport` ^2.0.0 | scroll-triggered 入场动画——**这是我自己写的包** |
+| `swiper` | 合作伙伴轮播、Hero 走马灯 |
+| `clsx` + `classnames` + `tailwind-merge` | className 合并 |
+| `qs` | URL query 解析（深链分流时要保留 query） |
+| `@next/third-parties` | Google Analytics 注入（env-gated） |
+| `tailwindcss-animate` | Tailwind 动画 utilities |
+
+**没有 zustand**、没有 TanStack Query、没有 axios、没有 Radix Themes、没有 daisyUI——
+营销站不需要客户端状态、不需要服务器状态缓存、不需要表单库。
+**砍依赖是营销站的核心工程能力**，每一个不该有的依赖都会变成首屏几 KB 的代价。
+
+> 自己写的 [react-element-in-viewport](/projects/react-element-in-viewport) 在这里**第二次** real-world 验证——
+> 第一次是 [Unibase 官网](/projects/unibase-website) 用 v1.x，这里直接升到 v2.0.0（含 `'use client'`、ESM exports）。
+> 自己的开源包在自己的项目里持续被消费，远比"发出去等社区"更能保持 API 健康。
+
+## 四、四个内容页
+
+```text
+/about       # 协议总览
+  components/   Hero / Build / AIP / Vision / CTA
+  data/         build-list 等就地静态数据
+
+/skill       # 技能生态合作伙伴
+  components/   Hero / Partners grid / CTA
+  data/         partners.ts —— 38 个合作伙伴 + 分类色板 + 图标解析
+
+/login       # 登录引导（实际 connect 在 app 域，home 这边只是入口动效）
+  components/   BackgroundGradient / LoginContent / ConnectButton
+  hooks/        useLoginAuth.ts
+
+/disclaimer  # 法律免责
+  content.ts    # HTML 正文与视图分离
+```
+
+设计上每个页面都有**自己的 `components/` + `data/` + 可选 `hooks/`**——
+路由内自治，跨页面共享的只下沉到 `components/basic` 和 `components/business`。
+这条规矩避免了营销站常见的"早期一个 page.tsx 写一切，半年后 2000 行"。
+
+### `/skill` 页的数据驱动
+
+38 个合作伙伴用 `partners.ts` 一个静态数组承载，每一条带：
+
+```ts
+{
+  id: string
+  name: string
+  category: 'data' | 'wallet' | 'infra' | ...   // 决定卡片色板
+  url: string
+  logo: string | ReactNode                       // 字符串走 next/image，组件直接渲染
+}
+```
+
+数据 + 分类色板 + 图标解析器**全部在一处**——加合作伙伴是 `partners.ts` 加一行，不需要碰组件代码。
+这种"数据驱动 + 视觉策略集中"是营销站频繁改动场景下唯一可持续的写法。
+
+## 五、`next.config.js` 里的几个小心思
+
+虽然项目很轻，`next.config.js` 反而藏了不少工程化细节：
+
+1. **Dify API 反代**：rewrites 把 `/api/dify/*` 转到 Dify 上游，`DIFY_API_KEY` **只在 server 端**，浏览器永远拿不到
+2. **AIP / mainnet / testnet API 反代**：同源前缀策略，和 [Unibase Explorer](/projects/unibase-explorer) 一致
+3. **Pinata 反代**：IPFS 元数据走自己的域名，规避公共网关的速率限制
+4. **安全头**：`X-Frame-Options: SAMEORIGIN` + 一系列 CSP 头
+5. **Turbopack SVG loader**：让 SVG 既能当组件 import，也能当 url import——避免普通 svg-as-component 在某些边界（CSS `background-image` URL）失效
+
+## 六、scripts/clean-deps.js：unused dep 守门
+
+`pnpm clean:deps` 跑 `depcheck`，标出 `package.json` 里没人 import 的依赖。
+对一个营销站，这条命令的真实价值是**抵抗依赖膨胀**——
+每个无用依赖都是构建期 + 节点 modules 体积 + 安全审计噪声的累积。
+定期跑一遍，能让 dependencies 一直保持在"刚好够用"的水位。
+
+## 七、目录结构
+
+```text
+app/
+├── about / skill / login / disclaimer   # 4 个内容页
+├── layout.tsx          # 根布局：metadata + GA + 全局 Header / Layout
+├── template.tsx        # 路由切换动画占位
+├── global-error.tsx    # 错误兜底
+├── not-found.tsx       # 404
+├── loading.tsx         # 顶层 Suspense fallback
+├── sitemap.ts          # 静态 sitemap
+└── manifest.ts         # PWA manifest
+
+components/
+├── basic/              # 通用 UI 原语：button / dropdown / icon / layout / skeleton / web-component
+└── business/           # 业务组件：header / footer / 404 / community
+
+lib/
+├── hooks/              # useIsMobile / useImageLoad / useLazyVideo
+├── utils/              # env helpers（getAppEnv / getAppBaseUrl）+ cn()
+├── store/              # 轻量 store（暂未深度使用）
+└── queries/            # 数据获取辅助
+
+providers/              # React Provider 层
+proxy.ts                # 路由中间件（环境感知深链分流）← 项目核心
+next.config.js          # rewrites + 安全头 + Turbopack SVG loader
+scripts/clean-deps.js   # depcheck 包装
+```
+
+## 八、时间线
+
+- **2025-09-27** 项目初始化——前两个 commit 是 *"Optimize the project files and retain only the home and related references"* 和 *"Continue to optimize the code and delete redundant code"*，说明这个 repo 是从 [bitagent-frontend](/projects/bitagent-frontend) **拆分出来**的，只保留与营销 / 门户相关的部分
+- 持续 8 个月 165 个 commit，节奏比 app 慢一个数量级——这正是分离的意义
+- **至今（2026）** 仍在维护，每次品牌迭代、合作伙伴新增都从这里发版
+
+## 总结：营销站的"两件事"
+
+这个项目最值得记的两件事：
+
+**第一**，明确划分 *门户* 和 *应用* 的责任。营销和业务不该在同一个 bundle、同一个仓库、同一个发版节奏里。
+分离的代价是**多一个中间件**，收益是两边各自能专注、各自能优化、各自能频繁发版而不影响对方。
+
+**第二**，依赖控制是营销站的核心工程能力。13 条 dependencies 不是"功能少"，是**克制**——
+每一个想加的依赖都先问一句"营销站真的需要它吗"。
+当大多数同类项目轻轻松松 50+ 依赖时，13 条已经构成了一种竞争优势。
+
+这种"门户 + 应用"的两层架构不是 BitAgent 独有——
+[Unibase 官网](/projects/unibase-website) 和 [Unibase Explorer](/projects/unibase-explorer) 的关系一样。
+**营销和业务分仓**是 Web3 项目里被反复验证的最佳实践。
