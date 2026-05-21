@@ -1,0 +1,189 @@
+---
+name: react-element-in-viewport
+description: 一个开源 React 组件包，把"元素滚入视口时触发入场动画"这件事收敛到一个组件 + 一个 prop，内置 90+ 动画，零运行时依赖，发布到 npm 自用也供他人用。
+date: 2023-10-25
+status: active
+stack: [TypeScript, React, IntersectionObserver, microbundle, Sass, Jest]
+github: https://github.com/yunstv/react-element-in-viewport
+demo: https://yunstv.github.io/react-element-in-viewport/
+featured: true
+---
+
+## 一、为什么造这个轮子
+
+scroll-triggered 入场动画在营销站、长落地页里几乎是标配。但每次徒手写都要重复同一套：
+
+```ts
+// 又来一次：
+const ref = useRef(null)
+useEffect(() => {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('animate-fade-in-up')
+        observer.unobserve(e.target) // 不要忘了
+      }
+    })
+  }, { threshold: 0.1 })
+  if (ref.current) observer.observe(ref.current)
+  return () => observer.disconnect()
+}, [])
+// ……然后还要写 CSS keyframes、还要管理 .animate-* 类名……
+```
+
+每个项目都重新写一遍这 30 行 + 一堆 keyframes，**就是这个包想消灭的事**。
+目标只有一个：让"元素入场动画"变成一行 JSX。
+
+```jsx
+<ElementInViewport animation="fadeInUp">
+  <Card />
+</ElementInViewport>
+```
+
+包内置了 90+ 个 animate.css 风格的动画名（bounce / fade / slide / zoom / rotate /
+flip / lightspeed / jello / jackInTheBox / hinge …），覆盖了 99% 的"我就是想让卡片从下面飘上来"。
+
+## 二、API 设计的几个判断
+
+### 1. 组件式，不是 hook 式
+
+社区里有 `react-intersection-observer`（hook），也有 `react-animate-on-scroll`（组件）。
+这个包选**组件式**，理由：
+
+- Hook 的责任是给你 `isIntersecting` 这个状态，**动画还是要自己写**——没收敛多少东西
+- 组件能把"观察 + 动画类名 + 一次性"全包，使用方零认知负担
+- 但 *escape hatch* 也要留——`children` 可以是 `(isIntersecting) => ReactNode`，复杂情况退化成 render-prop
+
+这种"默认极简，复杂场景退化"的 API 形状是设计上的核心权衡——
+**不让简单的事情变难，也不让难的事情变不可能**。
+
+### 2. 一次性观察，触发后自动 unobserve
+
+绝大多数入场动画**只想触发一次**——卡片飘进来一次就好，反复滚动不该反复抖。
+所以内部逻辑是 `isIntersecting === true` 后立刻 `observer.unobserve(target)`，
+释放观察器、不再触发 re-render——对长列表（几十个卡片）的性能差距是数量级的。
+
+如果用户真的想要**反复触发**，给个 `repeat` prop 退化回常驻观察——又是"默认正确，需要时可关"的设计。
+
+### 3. 配置项透传，不重复造轮子
+
+`IntersectionObserver` 本身已经提供了 `root` / `rootMargin` / `threshold` 三个核心配置，
+还有 `animate.css` 的 CSS 变量（`--animate-duration` / `--animate-delay`）。
+包里**不再造一套**自己的 prop 名映射，而是**直接透传**：
+
+```jsx
+<ElementInViewport
+  animation="fadeInUp"
+  threshold={0.3}
+  rootMargin="0px 0px -100px 0px"
+  style={{ ['--animate-duration' as any]: '1.5s' }}
+>
+  ...
+</ElementInViewport>
+```
+
+学过 `IntersectionObserver` 的人零成本上手，没有"看完 README 再看官方文档对照"的负担。
+
+## 三、构建管线：microbundle + style2js 的多格式打包
+
+发布到 npm 上的包要同时满足：
+
+- 老项目 CommonJS `require`
+- 新项目 ESM `import`
+- 浏览器 CDN UMD（unpkg）
+- TypeScript 类型声明
+- CSS 既能用户单独引入，也能内联到 JS 里"零配置"使用
+
+整个 `build` 脚本被拆成 4 步流水线：
+
+```bash
+npm run clean              # rimraf dist
+npm run build:core         # microbundle 出三种格式 + .d.ts
+npm run pack-and-extract   # yarn pack 后解到本地 node_modules 自检
+npm run style              # sass → cssnano → style2js（CSS 转 JS 字符串）
+```
+
+**`style2js` 这一步是关键**：把压缩后的 CSS 转成一个 `injectStyle()` JS 模块，
+用户可以选择：
+
+```js
+// 方案 A：传统 CSS 引入
+import 'react-element-in-viewport/dist/ReactElementInViewport.css'
+
+// 方案 B：零配置，自动注入到 <head>
+import 'react-element-in-viewport/inject-style'
+```
+
+方案 B 对 Next.js App Router 用户特别友好——RSC 边界上不需要手动 import CSS。
+代价是 +几 KB JS 体积，但换来"装完就能用"的体验，对一个小工具包很值。
+
+`microbundle` 而不是 tsup / unbuild 的理由：成熟稳定，对 React 组件包这种简单场景配置最少，
+`exports` 字段一键生成，能直接产出 `umd:main` 字段所需的 UMD 格式。
+
+## 四、Next.js App Router 兼容
+
+React Server Components 在 2023 年还在快速演化，第三方组件库要么不管，要么手动让用户加 `'use client'`。
+这个包**在 v2.0 的源码顶部预先加了 `'use client'` 指令**，发布到 dist 里——
+用户在 App Router 项目里 `import` 就能直接当客户端组件用，不需要在自己代码里包一层。
+
+这是个 *小而正确* 的决策——一旦 RSC 普及，没做这件事的组件库会反复被用户提 issue。
+
+## 五、测试与发布纪律
+
+- `jest` + `@testing-library/react` 跑组件行为测试（IntersectionObserver 用 `mock` 注入）
+- `@testing-library/jest-dom` 提供更可读的断言
+- 每次 release 更新 `CHANGELOG.md`，遵循 SemVer
+- `peerDependencies: { react: ">=16" }` —— 不绑死 React 版本，老项目也能装
+
+对一个**自己写自己用、顺便公开**的包来说，这些纪律的真实价值不是给外部用户的承诺，
+而是**未来的自己**升级、回退、定位 bug 时的安全网。
+
+## 六、目录结构
+
+```text
+src/
+├── components/       # ElementInViewport 主组件
+├── types/            # 类型定义（animation 名、props 等）
+├── utils/            # className 拼接、observer 工厂
+└── index.ts          # 公开导出
+
+scss/
+└── main.scss         # 90+ 动画的 keyframes 源文件（编译后 → dist/*.css）
+
+example/              # Vite 起的本地 demo + 文档站源码
+├── components/       # 演示卡片
+├── data/             # 动画名清单
+└── ...               # 部署到 yunstv.github.io/react-element-in-viewport/
+
+dist/                 # 构建产物（CJS / ESM / UMD / .d.ts / .css / inject-style）
+```
+
+`example/` 既是开发时的"边写边看"环境，也是用户的文档站——
+GitHub Pages 直接托管，[在线 demo](https://yunstv.github.io/react-element-in-viewport/) 一键可达。
+
+## 七、谁在用
+
+这个包不只是"发出去自我安慰"——[unibase 官网](/projects/unibase-website) 的 `package.json` 里
+就静静躺着一行 `"react-element-in-viewport": "1.1.0"`，
+首页那些卡片飘入、Section 渐显都是它做的。
+
+**自己写、自己先用一年，确认 API 顺手、bug 修干净后再发版本**——这是开源能避免"为社区写代码"陷阱的方式。
+
+## 八、时间线
+
+- **2023-10-25** 初始化
+- **v1.x** 打磨 API、补完动画、稳定 IntersectionObserver 边界条件
+- **v2.0.0** 升级到 React 19、加 `'use client'`、构建管线切到 microbundle 主线、补全 ESM exports map
+- **至今（2026）** 仍在迭代，主要随 React / Next.js 大版本升级走
+
+## 总结：一个小包的"克制"
+
+90+ 动画听起来像功能堆叠，但回头看做对的几件事都是**减法**：
+
+- API 表面只有 1 个组件 + 1 个必填 prop（其它都有默认值）
+- 配置项不另造，**直接透传** IntersectionObserver 原生选项
+- 默认一次性观察，**默认正确**而不是"默认灵活"
+- 多格式打包 + style2js 注入，**用户零配置**
+
+一个小工具包真正的价值在**"装上不用学"**——
+不让用户读 README 也能拼出最常见的用法。
