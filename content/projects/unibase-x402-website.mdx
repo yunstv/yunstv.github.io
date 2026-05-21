@@ -1,0 +1,235 @@
+---
+name: Unibase Pay (x402)
+description: BNB Chain 上首个 x402 协议 facilitator + XUSD 稳定币 wrap/unwrap dApp 二合一站点。x402 是 HTTP 402 复兴的支付协议，让 AI Agent 能通过纯 HTTP 完成搜索、购买、支付。
+date: 2025-10-26
+status: active
+stack: [Next.js, React, TypeScript, Tailwind, daisyUI, wagmi, viem, RainbowKit, Privy, TanStack Query, Zustand, react-hook-form, zod]
+github: https://github.com/unibaseio/x402-website
+demo: https://www.x402.unibase.com
+featured: true
+---
+
+## 一、业务背景：x402 是什么
+
+HTTP 402 *"Payment Required"* 是 1997 年 HTTP/1.1 规范里留下的"占位状态码"——
+当年没人知道它该用来做什么，于是空悬了快 30 年。
+[x402](https://x402.org) 是把 402 实际启用起来的协议：**让请求方在被服务器要求付费时，
+直接在同一个 HTTP 往返里完成链上结算**——不跳转、不弹窗、不离开 HTTP 语义。
+
+这件事在 *AI Agent 时代* 突然变得重要：
+
+- 传统 API 付费要 OAuth + 信用卡 + 账单——Agent 没有信用卡
+- 钱包扫码这套是给人的——Agent 不开浏览器
+- Agent 需要的是"用 HTTP 调一次，钱付了，结果回来"——**402 + 链上签名 + 一次 HTTP** 刚好契合
+
+[Unibase Pay](https://www.x402.unibase.com) 是 **BNB Chain 上首个 x402 facilitator**——
+对外提供 `verify` / `settle` / `monitor` / `gate` / `micropayments` 这套 v1/v2 API，
+让任何 HTTP 服务都能 *"加一行 middleware 就能收链上钱"*。
+
+## 二、一仓装下两件事：营销 + dApp
+
+这个项目和 [BitAgent 把营销和 app 拆成两个仓](/projects/bitagent-home) 走的是**相反**的路：
+营销站点 `(home)` 和 `xusd` dApp **共存在一个 Next.js 项目里**。
+
+为什么不分？
+
+| 维度 | 拆 | 不拆 |
+| - | - | - |
+| dApp 复杂度 | BitAgent 15 条路由 | 这里只有 wrap / unwrap 两个 form |
+| 营销与 dApp 共享品牌组件 | 多份维护 | 单源 |
+| 钱包栈对营销页的影响 | 营销页变重 | 接受 ~50KB 代价 |
+| 发版节奏 | 各自独立 | 同步发版反而更简单 |
+
+**判断准则**：当 dApp 真的只是"两个表单 + 几个合约调用"时，多仓的成本（CI / 发布 / 共享组件）大于收益。
+[BitAgent](/projects/bitagent-frontend) 那个体量的 dApp 才值得拆。
+
+```
+app/
+├── (home)/    # x402 协议讲解、v1 vs v2 API、Permit2 proxy、合约地址、生态
+└── xusd/      # USDC ↔ XUSD 1:1 wrap / unwrap dApp
+```
+
+## 三、XUSD：为 x402 量身定做的稳定币
+
+直接用 USDC 做 x402 settlement 有个技术问题：USDC 的 `transferFrom` 需要先 `approve`——
+意味着每次支付要 2 个交易（approve + transfer），不符合"一次 HTTP 完成结算"的目标。
+
+XUSD 是 **USDC 的 ERC-3009 兼容包装**：
+
+- 1:1 wrap：用户存 1 USDC → 拿到 1 XUSD
+- 1:1 unwrap：用户烧 1 XUSD → 拿回 1 USDC
+- **核心特性**：XUSD 支持 `transferWithAuthorization`——预签名一次，receiver 自己提交，**一笔交易完成支付**
+
+```text
+ERC-3009 的好处对 x402 的意义：
+
+  传统 ERC-20:  approve  →  transferFrom        （2 交易、需要 ETH 付 gas）
+  ERC-3009:    sign off-chain  →  submit on-chain （1 交易、receiver 付 gas）
+```
+
+后者完美匹配 x402 的"一次 HTTP 完成结算"承诺——AI Agent 不需要持有 BNB 也能付款，
+gas 由 facilitator 或 receiver 承担。
+
+UI 上，wrap / unwrap 两个 tab **共用同一个 [TokenSwapForm](https://github.com/unibaseio/x402-website/blob/main/app/xusd/components/token-swap-form.tsx) 组件**——
+只是合约调用方向（`mint` vs `burn`）不同。这种"两个看起来像的表单共用一个组件 + 反向参数化"
+是 dApp 设计里反复出现的范式，比"复制粘贴两个组件"省一半的维护成本。
+
+## 四、钱包栈：RainbowKit + Privy 并存
+
+```
+WagmiProvider → QueryClientProvider → RainbowKitProvider → ToastProvider
+```
+
+为什么 RainbowKit 和 Privy 都要？
+
+| 入口 | 适合谁 |
+| - | - |
+| **RainbowKit** | 已有钱包（MetaMask / Rabby / Coinbase Wallet）的 Web3 老用户——熟悉的 modal、熟悉的"connect wallet"按钮 |
+| **Privy** | 没装钱包的人——邮箱 / 社交登录，背后给你托管嵌入钱包 |
+
+对一个 *AI Agent 时代* 的产品，**两条路都要**：
+
+- 给已有 Web3 用户的钱包入口是基础线
+- 给"想试试 x402 但没装钱包"的开发者一条社交登录通路，是把 protocol 推到 *AI Agent 工程师* 这群人最务实的路径
+
+[BitAgent Frontend](/projects/bitagent-frontend) 是同一套思路——
+**Web3 产品的获客优化 = 让没钱包的人也能进来**。
+
+## 五、网络切换的单一来源
+
+mainnet / testnet 切换是 dApp 的"复杂度放大器"——稍不注意就会"前端在 testnet，合约地址写成 mainnet"。
+
+这个项目把所有合约地址收敛到 `config/contracts.ts` 的 **`getContractAddress(name, env)`** 一个函数：
+
+```ts
+// 思路示意
+export const CONTRACTS = {
+  mainnet: { USDC: '0x...', XUSD: '0x...', MINTER: '0x...' },
+  testnet: { USDC: '0x...', XUSD: '0x...', MINTER: '0x...' },
+}
+
+export function getContractAddress(name: keyof typeof CONTRACTS.mainnet) {
+  const env = process.env.NEXT_PUBLIC_APP_ENV === 'production' ? 'mainnet' : 'testnet'
+  return CONTRACTS[env][name]
+}
+```
+
+收益是：**全项目调用合约的地方都是同一个入口**——
+切环境只需要 `NEXT_PUBLIC_APP_ENV` 一个变量，**永远不会出现地址错配**。
+
+`lib/wagmi.ts` 配套：BSC mainnet (chainId `56`) 和 BSC testnet (chainId `97`) 同时声明，
+让 RainbowKit 的 chain switcher 能让用户自由切换。
+
+## 六、API 反代：facilitator 的同源前缀
+
+x402 facilitator 的实际后端在独立服务：
+
+```
+api.x402.unibase.com/v1
+api.x402.unibase.com/v2
+```
+
+浏览器代码不直接调这个域——通过 `next.config.ts` rewrites 把 `/api/*` 反代到 upstream，
+和 [Unibase Explorer](/projects/unibase-explorer) / [BitAgent Home](/projects/bitagent-home) 是同一个套路：
+
+- 浏览器全程同源，零 CORS
+- upstream host 集中管理，环境切换只动 env
+
+`api/http.ts` 暴露一个 `baseApi()`，**在 server 用绝对 URL，在 client 用 `/api`**——
+让同一个 fetch 调用既能在 Server Component 里跑，也能在 useEffect 里跑，调用方不感知。
+
+## 七、表单：react-hook-form + zod 4
+
+wrap / unwrap 表单的校验比想象的复杂：
+
+- 输入数值不能超过钱包余额
+- 输入数值不能小于最小单位（防止精度丢失）
+- 必须先连钱包
+- 必须在支持的链上
+- 必须先 approve（如果是 USDC → XUSD 方向）
+
+这些规则全部用 zod schema 表达：
+
+```ts
+const schema = z.object({
+  amount: z.string()
+    .refine((v) => Number(v) > 0, 'Must be > 0')
+    .refine((v) => parseUnits(v, 6) <= balance, 'Exceeds balance'),
+})
+```
+
+zod 4 相比 3 的改进是**性能 + 错误信息可读性**——大型 dApp 表单尤其受益。
+配 `react-hook-form` 的 `zodResolver`，校验、错误显示、提交锁定全部自动联动。
+
+## 八、营销侧：自家组件包的复用
+
+`(home)` 用了不少营销页面常见的动效套件：
+
+- `typed.js` ——打字机效果（标题区）
+- `shuffle-text` ——字符洗牌（数据 badge）
+- `framer-motion` 11 ——分段进入
+- **`react-element-in-viewport` 1.1.0** —— **我自己写的[那个包](/projects/react-element-in-viewport)**，做 scroll-triggered 入场
+
+[react-element-in-viewport](/projects/react-element-in-viewport) 在这里是第三次 real-world 验证——
+第一次 [Unibase 官网](/projects/unibase-website)、第二次 [BitAgent Home](/projects/bitagent-home)、这里是第三次。
+版本停在 1.1.0 是合理的选择：营销页面不需要 RSC，没必要为了 v2 的 `'use client'` 升级。
+
+## 九、目录结构
+
+```text
+app/
+├── (home)/             # x402 协议讲解 + v1/v2 API + 合约地址 + 生态合作
+├── xusd/               # USDC ↔ XUSD wrap / unwrap dApp
+│   ├── components/
+│   │   ├── token-swap-form.tsx    # 共享表单
+│   │   ├── wrap-form.tsx          # USDC → XUSD
+│   │   └── unwrap-form.tsx        # XUSD → USDC
+│   └── page.tsx                   # tab 切换器
+├── layout.tsx          # Wagmi / RainbowKit / TanStack Query / Toast providers
+├── manifest.ts         # PWA
+└── sitemap.ts          # SEO
+
+components/
+├── basic/              # 设计系统原语：button / card / header / layout
+├── business/           # 业务复合件：cards / empty / theme picker
+└── ui/                 # shadcn 风格的共享控件
+
+abi/                    # ERC20ABI + MinterABI
+config/contracts.ts     # USDC / XUSD / Minter 地址（按网络） + getContractAddress()
+lib/
+├── wagmi.ts            # RainbowKit + wagmi 配置（BSC mainnet / testnet）
+├── enumeration/        # chain / token registry / social links
+├── hooks/              # useIsMobile / useToLinks
+└── utils/              # date / 交叉观察器 / 格式化
+
+api/
+├── http.ts             # fetch wrapper + baseApi() server/client 双解析
+└── types/              # 请求 / 响应类型
+
+providers/              # ToastProvider 等
+proxy.ts                # 可选的环境感知 redirect map
+next.config.ts          # CSP 头 + /api/* 反代到 facilitator upstream
+```
+
+路径别名 `@comps` / `@biz` / `@hooks` / `@utils` 跟 [Unibase 官网](/projects/unibase-website) / [Explorer](/projects/unibase-explorer) 保持一致——
+这是跨项目沉淀下来的统一约定。
+
+## 十、时间线
+
+- **2025-10-26** 项目初始化，几个开头 commit 直接搭出 home 框架
+- 持续 7 个月 85 个 commit，节奏稳——一个 facilitator 协议站不需要每天迭代营销文案，
+  关键是 **API、合约、文档对齐** 而不是页面动效堆叠
+- 期间多次同步 wagmi / viem / RainbowKit 大版本升级
+- **至今（2026）** mainnet 已上线，BSC chainId 56 真实可用
+
+## 总结：一个为 AI Agent 设计的支付前端
+
+回头看这个项目最有意思的几件事：
+
+- **协议层选择**：x402 不是新发明轮子，是把 HTTP 标准里 30 年悬空的状态码激活。
+  *最好的协议都是已经在那里、只是没人用* 的那种
+- **稳定币定制**：XUSD 不是 USDC 的复刻，是为 *一次 HTTP 完成结算* 这件事**专门特征化** 的封装（ERC-3009）
+- **架构尺度匹配**：dApp 体量小到不需要拆仓，就**不拆**——这条经验跟 [BitAgent](/projects/bitagent-home) 的 *拆* 互为镜像
+- **wallet 双入口**：RainbowKit 给老 Web3 用户，Privy 给"AI Agent 开发者但没装钱包"的新人
+
+**协议先行，UI 围着协议建** —— 这是这个项目和普通"dApp 套个壳"的根本区别。
