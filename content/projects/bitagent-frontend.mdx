@@ -1,0 +1,230 @@
+---
+name: BitAgent
+description: BitAgent Protocol 的官方 Web 客户端——一个让用户在链上发现、铸造、注资、质押、对话 "on-chain immortal agents" 的产品，覆盖 agent 市场、创建流程、Butler 聊天终端、质押与奖励、推广任务系统的完整闭环。
+date: 2023-10-09
+status: active
+stack: [Next.js, React, TypeScript, Tailwind, shadcn/ui, daisyUI, Privy, viem, ethers, TanStack Query, Zustand, react-hook-form, zod, vis-network, lightweight-charts]
+github: https://github.com/unibaseio/bitagent-frontend
+demo: https://app.bitagent.io
+featured: true
+---
+
+## 一、业务背景：什么是 BitAgent
+
+[BitAgent Protocol](https://app.bitagent.io) 把自己叫做 *"Assembly of Synthetic Minds"*——
+一句话说，就是**把 AI Agent 当成链上资产来运营**的协议层。
+用户在这里能做这么几件不一样的事：
+
+- **Discover**：在 agent 市场里浏览所有 on-chain agent
+- **Mint**：铸造一个属于自己的 agent
+- **Fund**：给 agent 注资（背后是 token 经济）
+- **Stake**：质押、锁仓、投票、领取奖励
+- **Converse**：在 Butler 终端里和 agent 对话
+
+这不是又一个 chat 套壳——它是把"Agent 是什么"、"谁拥有这个 Agent"、"使用 Agent 是谁付费"、
+"贡献 Agent 能力的人怎么分成"这一整套问题搬到了链上。
+所以前端的职责远远超过"做几个页面"——它要承载一个完整的 *on-chain agent economy* 的所有交互。
+
+## 二、业务路由地图
+
+```text
+/agents          Agent 市场（列表 + 详情）
+/create          Agent 创建流程（多步表单）
+/terminal        Butler 聊天终端
+/stake           质押 / 锁仓 / 投票 / 奖励
+/earn            收益看板
+/rankings        排行榜
+/tasks           任务中心
+/referral        推广系统
+/projects        项目列表
+/wallet          钱包管理
+/(profile)/...   用户资料路由组
+/testnet-faucet  测试网水龙头
+/aip             AIP API 代理（server-side JWT 签名）
+/aws-upload      S3 / Pinata 上传端点
+```
+
+15 条一级路由——这个数字本身就说明了项目体量。
+其中 **`/aip` 和 `/aws-upload` 是 Server-side route handler**，不是用户页面：
+前者负责帮浏览器签 JWT 调上游 AIP API（**私钥永远不出 server**），
+后者代理 S3 / Pinata 上传，让前端不直接接触对象存储凭证。
+这种"server 做凭证活，client 做交互活"的分工，是 Web3 产品里安全的基础线。
+
+## 三、最复杂的部分：钱包与登录
+
+Web3 产品的"Hello World" 不是 `console.log`，而是**让用户能登进来**。这套站集成了多种入口：
+
+| 方案 | 用途 |
+| - | - |
+| [@privy-io/react-auth](https://www.privy.io/) | 内嵌钱包 + 邮箱 / 社交登录——给"没有 MetaMask 的人"的入口 |
+| [SIWE](https://login.xyz/) (Sign-In With Ethereum) | 钱包用户的标准签名登录，前后端验证统一 |
+| [@binance/w3w-utils](https://www.npmjs.com/package/@binance/w3w-utils) | Binance Web3 Wallet 适配 |
+| viem / wagmi | 浏览器签名、链调用、合约读写 |
+
+**Privy 是核心**——它让"没装 MetaMask 的用户也能进来"成为可能，
+背后给用户托管一个嵌入钱包。这对 Web3 产品的获客是**质的差距**——
+传统钱包入口能筛掉 70% 的潜在用户，Privy 那条社交登录入口把这条门槛降到接近 Web2。
+
+## 四、ethers v5 + v6 + viem 三套共存的现实
+
+`package.json` 里同时存在 `"ethers": "5.7.2"`、`viem`，README 又提到 ethers v6。
+看起来像技术债——其实是**生态现实**：
+
+- `@pancakeswap/smart-router` 锁死 ethers v5
+- `@opensea/seaport-js` 用 ethers v6
+- 自己写的合约调用、签名、event 监听用 viem（更现代、tree-shake 友好）
+
+三套共存的代价是 bundle 体积，收益是**不用为了"统一"等谁先升级**。
+这个权衡跟 [Unibase Explorer](/projects/unibase-explorer) 里 SWR + TanStack Query 共存一个套路：
+**生态成熟之前，统一是奢侈品，可用是必需品**。
+
+> 共存不是没有计划——共存的同时把"自己写的合约调用"全部走 viem，
+> 让两个旧库未来下线时的工作量限制在依赖升级，而不是业务代码重写。
+
+## 五、UI 层：三层组件库的复合
+
+这是我见过最"杂食"的 UI 栈：
+
+| 选型 | 用在哪 | 为什么 |
+| - | - | - |
+| **Radix UI primitives**（13 个） | Dialog / Dropdown / Popover / Tabs / Slider / Switch 等 | 无障碍、键盘、ARIA 全部内建 |
+| **shadcn/ui** | 把 Radix 包装成 Tailwind 风格的可复制组件 | 不被 npm 包绑死，需要时直接改源码 |
+| **daisyUI 4** | 卡片、徽章、按钮等"配 Tailwind 用得快"的基础原语 | 快速搭出能用的形态 |
+| **@chatui/core** | Terminal 聊天界面 | 聊天气泡 / 输入框 / 滚动这些细节阿里那套已经打磨得很好 |
+| **vaul** | 移动端 Drawer | Radix 没有原生 drawer，vaul 填这个洞 |
+| **react-rnd** | Terminal 浮窗的拖拽 + 缩放 | Butler 聊天可以变成桌面浮窗 |
+
+三层 + 专门工具——看起来杂，但**每一层都解决一个具体问题**。
+关键是有规矩：**不允许同一个交互在不同地方用不同库实现**。
+Dialog 一律 Radix，Drawer 一律 vaul，Chat 一律 @chatui/core——
+**碎片化在选型上，统一在使用上**。
+
+## 六、数据可视化：两个特殊场景
+
+### 1. `lightweight-charts`：交易级图表
+
+agent 注资、stake、token 流动这些场景需要**专业级金融图表**——
+就是 TradingView 用户熟悉的那种 k 线 + 指标 + crosshair + 时间轴缩放。
+`lightweight-charts` 是 TradingView 官方开源的轻量版，bundle 体积合理、性能够看大数据集。
+社区可选项里没有第二个达到这个水位的。
+
+### 2. `vis-network`：Agent 关系图
+
+Agent 之间存在调用、引用、衍生关系——平面列表表达不了"谁依赖谁"。
+`vis-network` 提供 force-directed graph + 自定义节点 / 边渲染 + 物理引擎，
+非常适合做 agent 网络图。
+代价是它**不是 React-first**——要在 useEffect 里命令式接管 DOM，
+跟 React 状态同步的边界需要小心处理。
+
+## 七、表单 + 校验：react-hook-form + zod
+
+Agent 创建是一套**多步表单 + 上传 + 链上交易**的复合流程。直接用 useState 写 ≈ 自杀：
+
+```tsx
+// 真实代码风格示意
+const schema = z.object({
+  name: z.string().min(2).max(40),
+  description: z.string().max(280),
+  modelId: z.string().uuid(),
+  avatar: z.instanceof(File).optional(),
+  // ...
+})
+
+const form = useForm<z.infer<typeof schema>>({
+  resolver: zodResolver(schema),
+})
+```
+
+zod 让运行时校验和 TS 类型**单一来源**——
+schema 写一次，前端验证、表单类型推导、后端 contract（如果共享 schema）全部自动同步。
+这是个老技术组合，但对 *字段多 + 字段约束多 + 跨步骤校验* 的复杂表单依然是当前最优。
+
+## 八、聊天 / Markdown / 安全
+
+Terminal 是 Butler agent 的入口，聊天内容是 AI 输出——意味着：
+
+- **Markdown 渲染**：`react-markdown` + `remark-gfm`（表格、删除线、任务列表）
+- **代码高亮**：`react-syntax-highlighter`，Butler 经常给代码示例
+- **HTML 消毒**：`dompurify` 兜底——AI 输出不可信，必须经过 sanitize 才能 dangerouslySetInnerHTML
+- **轻量版 marked**：少数预渲染场景（性能优先）
+
+`dompurify` 不是装饰——AI 模型偶尔会输出 `<script>` 标签或者奇怪的事件处理器，
+没有 sanitize 等于在产品里开了一个 XSS 入口。这条线绝对不能省。
+
+## 九、数据层：TanStack Query 5 + Zustand 4 + 两套 HTTP 客户端
+
+- **TanStack Query** 处理服务器状态（agent 列表、价格、订单、stake 状态）
+- **Zustand** 处理客户端状态（钱包连接、Drawer 开关、临时表单暂存）
+- **`ky`** 处理大部分新接口（轻量、原生 fetch、Hooks 友好）
+- **`axios`** 处理遗留接口（interceptor 写得熟、暂时不动）
+- **`mitt`** 提供跨组件事件总线——React 不擅长跨树通信，mitt 一行解决
+
+这套组合在大型项目里非常稳：
+**服务器状态 / 客户端状态 / HTTP 客户端 / 事件总线**各司其职，
+新人进来一周内就能找到"我这个功能该用哪个工具"。
+
+## 十、目录结构
+
+```text
+app/                  # Next.js App Router
+├── (profile)/        # 用户资料路由组
+├── _components/      # 共享 Provider 与外壳
+├── agents/           # Agent 市场
+├── aip/              # AIP API 代理（server-side JWT 签名）
+├── aws-upload/       # 对象存储上传端点
+├── create/           # Agent 创建流程
+├── earn/             # 收益看板
+├── projects/         # 项目列表
+├── rankings/         # 排行榜
+├── referral/         # 推广
+├── stake/            # 质押 / 锁仓 / 投票 / 奖励
+├── tasks/            # 任务中心
+├── terminal/         # Butler 终端
+├── testnet-faucet/   # 测试网水龙头
+└── wallet/           # 钱包管理
+
+api/                  # REST clients（一文件一资源）
+├── http.ts           # 统一 fetch wrapper
+├── account / agent / aip / butler / chat / datasets /
+├── earn / faucet / filtration / gauges / mining / model /
+└── order / referral / space / stakes / user
+
+components/           # 业务组件 + UI 组件
+providers/            # Provider 层（Privy / wagmi / TanStack Query）
+lib/                  # utils / hooks / constants
+types/                # 共享类型
+proxy.ts              # 路由代理 / 中间件粘合
+```
+
+`api/` 的 "一文件一资源" 套路和 [Unibase Explorer](/projects/unibase-explorer) 完全一致——
+这是从那个项目沉淀下来的习惯。
+
+## 十一、时间线
+
+- **2023-10-09** 项目初始化
+- 2024 - 2025 业务持续扩张，从最初的 agent 市场 / 创建，长到 stake / earn / rankings / referral / tasks 的完整经济
+- **多次大版本升级**：Next.js 13 → 14 → 16、React 18 → 19、ethers v5 → v6（共存）
+- **至今（2026）** **2968 个 commit**——大约平均每天 3-4 个 commit，是这批项目里迭代密度最高的
+
+## 总结：Web3 × AI Agent 的"复杂度上限"
+
+一个普通的 Web3 项目就够复杂了；一个普通的 AI 产品也够复杂了。
+这个项目把两者叠在一起，业务面同时承载：
+
+- 钱包 / 登录 / 多链 / 多钱包适配
+- 表单 / 上传 / 多步流程 / 链上交易
+- 实时聊天 / Markdown / 安全消毒
+- K 线 / 关系图 / 排行榜
+- 质押 / 投票 / 奖励 / 推广
+
+技术上能让这么多东西**不打架**，靠的不是"用最先进的栈"，
+而是**让每个职责只有一个出口**：
+
+- Dialog 只走 Radix
+- 链调用新代码只走 viem
+- 服务器状态只走 TanStack Query
+- 表单只走 react-hook-form + zod
+- 凭证不出 server
+
+碎片化是允许的，**碎到无序**才是要避免的。
+2968 个 commit 的体量没有让项目崩盘，靠的就是这个"每个职责只有一个出口"的纪律。
