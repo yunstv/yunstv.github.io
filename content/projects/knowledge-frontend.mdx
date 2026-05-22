@@ -1,0 +1,189 @@
+---
+name: TwinX (Knowledge Frontend)
+description: 一个去中心化知识库 + 个性化 agent 平台的前端——让任何人为任何主题创建一个能被对话、被订阅、能产生收益的知识 agent。主页发现 / 个人主页 / agent 个性化 / chat 四块构成完整产品闭环。
+date: 2025-04-21
+status: active
+stack: [Next.js, React, TypeScript, Tailwind, Radix Themes, Privy, viem, TanStack Query, TanStack Table, Zustand, ChatUI]
+github: https://github.com/unibaseio/knowledge-frontend
+demo: https://twinx.fun
+---
+
+## 一、业务背景：TwinX 在做什么
+
+[TwinX](https://twinx.fun) 把自己定位为 *"Create a Decentralized Knowledge Base for Anyone and Anything"*——
+让任何人围绕任何主题创建一个**知识 agent**，这个 agent 可以被别人对话、被订阅、并为创建者产生收益。
+
+把它拆成产品闭环看：
+
+```text
+创建者：训练知识 agent  → 设置个性化 → 上架
+消费者：发现 agent      → 与之对话    → 付费 / 订阅
+创建者：拿到收益分成     → withdrawal
+```
+
+四个一级路由组刚好对应这个闭环：
+
+| 路由组 | 职责 |
+| - | - |
+| `(home)` | 落地页 + 全局发现入口 |
+| `(explore)` | 浏览所有公开知识 agent |
+| `(chat)` | 与 agent 对话 + 创建 agent + 个性化 |
+| `profile/[id]` | 用户主页 + `withdrawal-history`（提现记录） |
+
+`withdrawal-history` 这个路由是关键信号——
+说明这个产品不只是"chat with bot"，而是带**真实经济闭环**的内容平台。
+
+## 二、和姊妹项目的关系
+
+这个产品在 [unibaseio](https://github.com/unibaseio) 组织里的位置很特别：
+
+- [BitAgent Frontend](/projects/bitagent-frontend) 是 *把 agent 当链上资产* 的协议层
+- [Unibase 官网](/projects/unibase-website) 的 Membase 模块是 *为 agent 提供记忆层*
+- **TwinX = 把这些底层能力包装成普通用户能用的 UGC 平台**
+
+技术栈上选择也明显 *轻量化*——
+没有 wagmi、没有 RainbowKit、没有 ethers——
+只用了 `viem` + `@privy-io/react-auth`，把 *拥有钱包* 这件事的复杂度对普通用户彻底隐藏。
+这是面向 *写作者 / 知识工作者*，而不是面向 *Web3 老用户* 的产品做的取舍。
+
+## 三、技术栈：和我的个人博客同源
+
+这个项目让我感到熟悉——它的 UI 栈和 [yunstv.github.io](/projects/yunstv) 几乎一模一样：
+
+| 选型 | TwinX | 个人博客 |
+| - | - | - |
+| **Tailwind 4** | ✅ `@tailwindcss/postcss` | ✅ |
+| **Radix Themes 3** | ✅ 全套 Themes | ✅ |
+| Radix primitives | alert-dialog / checkbox / dialog / scroll-area / select | 按需 |
+| 图标 | lucide-react | lucide-react |
+
+这是工程上的小确幸——**把同一套设计系统选型在不同体量的项目上跑通**，
+意味着 Radix Themes + Tailwind 4 这条路在 *个人静态站* 到 *中型 UGC 产品* 都能 hold 住，
+不需要为不同体量切栈。
+
+与之并行的"chat 专用栈"：
+
+- **`@chatui/core` 3.0.0** —— 阿里出品的聊天 UI 组件库；气泡、滚动、输入框、Quick Replies 全套
+- **`marked`** —— markdown 渲染（性能优先于 react-markdown 的灵活）
+- **`dompurify`** —— AI 输出必经的 HTML 消毒；和 [BitAgent](/projects/bitagent-frontend) 同一条安全线
+- **`react-fast-marquee`** —— 落地页 / 发现页的水平滚动行（展示热门 agent）
+
+## 四、钱包与认证：Privy + 服务端 token 路由
+
+```text
+浏览器：Privy 登录（社交 / 邮箱 / 钱包均可）
+   ↓ 拿到 Privy ID token
+浏览器：POST /api/token （Next.js Route Handler）
+   ↓ server 端验证 Privy token，签发自家 JWT
+浏览器：拿自家 JWT 调 upstream API
+```
+
+`app/api/token/` 是这条链路的核心——**Privy 的 ID token 不直接给后端**，
+中间走自家 server 换一次自家 JWT。好处：
+
+- 后端只需要识别一种 token 格式（自家 JWT），不需要懂 Privy
+- 自家 JWT 里可以塞 *业务字段*（用户角色、订阅状态、收益账户）
+- Privy 换供应商时只动 `/api/token` 这一个路由，业务后端零改动
+
+这是 *"server 层做凭证转换"* 的典型套路，和 [BitAgent Frontend](/projects/bitagent-frontend) 的 `/aip` JWT 签名路由是同一个思路。
+
+## 五、(chat) 路由组：产品的核心
+
+```text
+app/(chat)/
+├── chat/                  # 实际对话界面
+├── agent/                 # agent 创建 / 管理
+├── agentPersonalization/  # 个性化设置（语气 / 知识来源 / 头像）
+├── components/            # 共用聊天组件
+├── hooks.ts               # 路由组级 hooks
+├── layout.tsx             # 聊天专用布局（侧栏 + 聊天主区）
+└── template.tsx           # 路由切换动画
+```
+
+`agentPersonalization` 是产品最重的差异化点——一个 agent 是否好用，
+80% 取决于创建者能不能**调出自己想要的语气、知识范围、回应风格**。
+把它从 `agent/edit` 这种 CRUD 思路抽出来变成一级路由，
+说明产品团队把 *个性化* 当成核心动作而非附属设置。
+
+UI 上 chat 区用 `@chatui/core` 的现成组件，省下了"实现聊天气泡 + 自动滚到底部 + 输入框自适应"这些
+经典的细节地狱——对一个 *产品而非技术演示* 的项目来说这是正确的选择。
+
+## 六、`build --webpack`：早期 Next.js 16 的实用主义
+
+```json
+"dev":   "next dev --turbopack",
+"build": "next build --webpack"
+```
+
+注意这个 *拧巴* 的搭配——开发跑 Turbopack（快），生产构建走 webpack（稳）。
+原因是项目启动时（2025-04）Next.js 16 的 Turbopack build 还在 beta，
+某些依赖（`@chatui/core` / `react-fast-marquee` / Tailwind 4 这套组合）
+有概率在 turbopack 生产构建里失败。
+
+这种 *"在不同阶段用不同工具"* 的取舍很务实——不为了 *全栈 Turbopack* 的纯粹性
+牺牲生产构建的可靠性。等 Turbopack build 稳定后再切回去是几行 script 的事，
+当下能稳定上线才是关键。
+
+## 七、数据层：TanStack Query + TanStack Table
+
+- **`@tanstack/react-query` 5** —— 服务器状态、聊天历史拉取、agent 列表
+- **`@tanstack/react-table` 8** —— `withdrawal-history` 这种"收益流水"页面的核心
+- **`zustand` 5** —— 客户端状态（当前对话上下文、UI toggle）
+- **`axios`** —— HTTP 客户端；项目早期选定，没有走 [BitAgent Frontend](/projects/bitagent-frontend) 那种 `axios + ky` 共存的路线
+
+TanStack Table 用在 `withdrawal-history` 上是关键决定——
+提现流水这种 *分页 + 排序 + 过滤 + 多列对齐* 的表格场景，
+自己写 `<table>` + 手撸排序很快会变成 500 行 spaghetti。
+TanStack Table 把 *table state* 和 *渲染* 解耦，让排序/过滤/分页变成几行配置。
+
+## 八、目录结构
+
+```text
+app/
+├── (home)/             # 落地页 + 全局入口
+├── (explore)/          # 公开 agent 浏览
+├── (chat)/             # chat / agent / agentPersonalization
+├── profile/            # 用户主页 + [id] 详情 + withdrawal-history
+├── api/token/          # 服务端 token 换签（Privy → 自家 JWT）
+├── layout.tsx          # 根布局
+├── manifest.ts         # PWA
+└── sitemap.ts          # SEO
+
+api/                    # 浏览器侧 REST clients
+├── http.ts             # fetch / axios wrapper
+├── chat.ts             # 对话 API
+├── conversation.ts     # 会话管理
+├── user.ts             # 用户
+└── types/              # 共享类型
+
+components/             # 业务 + 通用组件
+lib/                    # utils / hooks / constants
+proxy.ts                # 中间件
+next.config.ts          # rewrites / 安全头
+```
+
+`api/` 一文件一资源的套路——和这一族所有项目（[Explorer](/projects/unibase-explorer) / [BitAgent](/projects/bitagent-frontend) / [x402](/projects/unibase-x402-website)）保持一致，是跨项目沉淀下来的强约定。
+
+## 九、时间线
+
+- **2025-04-21** 项目初始化（Create Next App 起步）
+- 持续 8 个月高密度迭代，**293 个 commit**——按节奏算月均 35+ commit，
+  是典型 *快速验证 + 频繁打磨* 的 0→1 产品节奏
+- **2026-01 前后** 进入相对稳态——线上服务持续运行，但代码侧迭代频率下降
+- *至今（2026）* `twinx.fun` 仍在线，进入产品的"维护 + 观察"阶段
+
+> 一个真实的产品周期不可能 *永远高强度*——*该慢的时候慢下来* 也是工程纪律的一部分。
+
+## 总结：UGC 知识平台的"反复出现的取舍"
+
+回头看 TwinX 在工程上的几个关键判断：
+
+- **目标用户决定钱包栈**：写作者 / 知识工作者用 Privy 一条社交登录就够，
+  不需要 wagmi + RainbowKit 那一套——*越简单的钱包入口越能拓宽用户面*
+- **Server 层做凭证转换**：自家 JWT 隔离外部认证供应商，让业务后端独立演化
+- **chat 用现成轮子**：`@chatui/core` 把聊天 UI 这件 *看起来简单实则全是坑* 的事一次解决
+- **生产构建保守、开发激进**：`dev --turbopack` + `build --webpack` 是早期 Next.js 16 时代的标准答案
+- **设计系统跨体量复用**：Radix Themes + Tailwind 4 从个人博客到 UGC 产品都能 hold
+
+**一个产品级前端的成功标准，不是用了多少新技术，而是用对了多少老技术** ——
+TwinX 在这一点上做得比较朴实。
