@@ -1,0 +1,572 @@
+---
+title: Pretext 源码分析：为什么浏览器需要一个"绕开 DOM 的文本测量库"
+date: 2026-05-19
+description: chenglou（前 React 核心组）发布的 Pretext 把"测一段文字会换几行"这件事从一次 DOM reflow（30ms+）压到了 0.0002ms。这篇基于真实源码拆开它的两阶段架构、缓存策略、跨浏览器差异处理，以及它解决的"web UI 最后一块拼图"。
+tags: [pretext, performance, text-layout, canvas, source-code, frontend]
+---
+
+<Callout type="info">
+  Pretext 是 [chenglou](https://github.com/chenglou)（Cheng Lou，前 React 核心组、Reason React 作者）的新库，
+  目的只有一个：**在不触发浏览器 layout reflow 的前提下，准确知道一段文字会占多大空间**。
+  听起来朴素，但它解决了过去十年所有"虚拟列表 / 富文本 / Canvas 渲染"绕不开的痛点。
+  本文基于真实源码（`src/layout.ts`、`measurement.ts`、`line-break.ts`）。
+</Callout>
+
+## 一、为什么火：它解决了什么
+
+### 1.1 你以为 `offsetHeight` 是"读"，其实是"写"
+
+任何接触过性能优化的人都被 layout thrashing 坑过：
+
+```js
+// 想知道这段文字会占几行
+const el = document.createElement('div')
+el.textContent = '一段长文…'
+el.style.cssText = 'width: 320px; font: 16px Inter'
+document.body.appendChild(el)
+const height = el.offsetHeight  // ⚠️ 触发整个文档的 reflow
+document.body.removeChild(el)
+```
+
+`getBoundingClientRect()` / `offsetHeight` / `clientWidth` **每一次调用都可能强制浏览器同步 layout**——
+当你在 React 里 500 个组件各自这样测一遍，每帧的开销可以轻松到 **30ms+**，
+直接把交互拖到 30fps 以下。
+
+Pretext 源码注释把这一点点得很清楚（[`src/measurement.ts`](https://github.com/chenglou/pretext/blob/main/src/measurement.ts) 顶端）：
+
+```ts
+// Problem: DOM-based text measurement (getBoundingClientRect, offsetHeight)
+// forces synchronous layout reflow. When components independently measure text,
+// each measurement triggers a reflow of the entire document. This creates
+// read/write interleaving that can cost 30ms+ per frame for 500 text blocks.
+```
+
+### 1.2 它做到的事情
+
+```ts
+import { prepare, layout } from '@chenglou/pretext'
+
+const prepared = prepare('AGI 春天到了. بدأت الرحلة 🚀', '16px Inter')
+const { height, lineCount } = layout(prepared, 320, 20)
+// ↑ 纯算术。No DOM reflow.
+```
+
+按作者自述，`layout()` 在准备好之后**每次调用约 0.0002ms**。
+对比一次 DOM 测量（毫秒级 + 全局 reflow），这是**四五个数量级的差距**。
+
+### 1.3 解锁的场景（来自 README）
+
+- **真正的虚拟化 / 遮挡裁剪**——以前要么估算，要么先渲染再测，现在可以**渲染前知道高度**
+- **JS 驱动的奇异布局**：瀑布流、自定义 flex、嵌套 wrap
+- **AI 时代特别有意义**：开发期就能验证按钮 label 不会换行，**不用启浏览器跑**
+- **避免 layout shift**：新文字加载时提前知道高度，scroll 不抖
+- **国际化全覆盖**：英中阿日韩 + RTL + Emoji，"web UI 最后一块拼图"
+
+<Callout type="success">
+  这就是它最近火的真正原因——
+  不是"又一个 DOM 替代"，而是**真正补上了 web 平台一个长达十年的空白**：
+  **同步、廉价、跨语言的文本测量**。
+  从 React Native 时代 Yoga 就在做类似的事，但只有移动端有；浏览器一直没有对应物。
+</Callout>
+
+## 二、源码核心：两阶段架构
+
+打开 [`src/`](https://github.com/chenglou/pretext/tree/main/src)，结构非常克制：
+
+| 文件 | 角色 |
+|---|---|
+| `layout.ts` | 对外 API 入口（`prepare` / `layout` / `prepareWithSegments` / `walkLineRanges` …）|
+| `measurement.ts` | Canvas `measureText` 包装 + 缓存 + 浏览器差异校准 |
+| `analysis.ts` | 文本分段（Intl.Segmenter）+ CJK / 标点 / 引号规则 |
+| `line-break.ts` | 折行算法（包括 letter-spacing、tab 停靠、soft hyphen）|
+| `line-text.ts` | 行字符串构建与缓存 |
+| `bidi.ts` | 双向文本（RTL）层级计算 |
+| `rich-inline.ts` | 富文本流式辅助（chip / mention 等）|
+
+### 2.1 核心思路：把"一次贵的活"和"很多次便宜的活"分开
+
+整个库的最大设计决策就一句话：
+
+> **`prepare()` 一次性做完所有 DOM/canvas 接触；`layout()` 之后纯算术。**
+
+源码对应到这里（[`src/measurement.ts`](https://github.com/chenglou/pretext/blob/main/src/measurement.ts) 顶端注释）：
+
+```ts
+// Solution: two-phase measurement centered around canvas measureText.
+//   prepare(text, font) — segments text via Intl.Segmenter, measures each word
+//     via canvas, caches widths, and does one cached DOM calibration read per
+//     font when emoji correction is needed. Call once when text first appears.
+//   layout(prepared, maxWidth, lineHeight) — walks cached word widths with pure
+//     arithmetic to count lines and compute height. Call on every resize.
+//     ~0.0002ms per text.
+```
+
+翻译成工程语言：
+
+```text
+文本 + font  →  prepare()  →  PreparedText (一堆 number 数组)
+                                          ↓
+                       resize / max-width 改变 → layout() → height
+                                          ↓
+                                      纯算术
+```
+
+`PreparedText` 是 **opaque handle**（不可见的具体结构），但实际定义可以看到（精简版）：
+
+```ts
+type PreparedCore = {
+  widths: number[]                       // 每段的宽度
+  lineEndFitAdvances: number[]           // 行尾收纳宽度
+  lineEndPaintAdvances: number[]         // 行尾绘制宽度（不含 letter-spacing）
+  kinds: SegmentBreakKind[]              // 每段的换行行为类型
+  simpleLineWalkFastPath: boolean        // 是否走 fast path（普通文本走快路径）
+  segLevels: Int8Array | null            // 双向文本层级（仅富渲染用）
+  breakableFitAdvances: (number[]|null)[]// 可断词内部每字形宽度
+  breakablePreferredBreaks: (number[]|null)[]
+  letterSpacing: number
+  spacingGraphemeCounts: number[]
+  discretionaryHyphenWidth: number
+  tabStopAdvance: number
+  chunks: PreparedLineChunk[]            // 硬换行预切块
+}
+```
+
+注意**全是 `number[]` 和 `Int8Array`**——
+没有对象数组，没有嵌套 record。这是后续 `layout()` 能做到 0.0002ms 的物理基础：
+**CPU cache 友好 + JIT 友好**。
+
+### 2.2 Canvas measureText：唯一接触浏览器引擎的地方
+
+测宽度的地方只有一处（`src/measurement.ts`）：
+
+```ts
+let measureContext:
+  | CanvasRenderingContext2D
+  | OffscreenCanvasRenderingContext2D
+  | null = null
+
+export function getMeasureContext() {
+  if (measureContext !== null) return measureContext
+  if (typeof OffscreenCanvas !== 'undefined') {
+    measureContext = new OffscreenCanvas(1, 1).getContext('2d')!
+    return measureContext
+  }
+  if (typeof document !== 'undefined') {
+    measureContext = document.createElement('canvas').getContext('2d')!
+    return measureContext
+  }
+  throw new Error('Text measurement requires OffscreenCanvas or a DOM canvas context.')
+}
+
+export function getSegmentMetrics(seg: string, cache: Map<string, SegmentMetrics>): SegmentMetrics {
+  let metrics = cache.get(seg)
+  if (metrics === undefined) {
+    const ctx = getMeasureContext()
+    metrics = {
+      width: ctx.measureText(seg).width,
+      containsCJK: isCJK(seg),
+    }
+    cache.set(seg, metrics)
+  }
+  return metrics
+}
+```
+
+关键点：
+
+1. **优先 OffscreenCanvas**：连 DOM 都不挂。彻底脱离主线程 layout 风险
+2. **每段都缓存**：同一个字符串 + 同一种字体，永远只调 `measureText` 一次
+3. **缓存按 font 分桶**：`segmentMetricCaches: Map<font, Map<seg, metrics>>`
+
+<Callout type="info">
+  `OffscreenCanvas` 这一行决定了 Pretext 可以 **在 Worker 里跑**——
+  这意味着主线程可以异步把文本测量完全甩出去。
+  这是它比所有 DOM-based 测量方案天然多出来的一档性能。
+</Callout>
+
+### 2.3 浏览器差异校准：`getEngineProfile()`
+
+Pretext 不假装"浏览器都一样"。打开 `measurement.ts` 中段：
+
+```ts
+export function getEngineProfile(): EngineProfile {
+  if (cachedEngineProfile !== null) return cachedEngineProfile
+
+  const ua = navigator.userAgent
+  const vendor = navigator.vendor
+  const isSafari =
+    vendor === 'Apple Computer, Inc.' &&
+    ua.includes('Safari/') &&
+    !ua.includes('Chrome/') && !ua.includes('Chromium/') &&
+    !ua.includes('CriOS/') && !ua.includes('FxiOS/') &&
+    !ua.includes('EdgiOS/')
+  const isChromium =
+    ua.includes('Chrome/') || ua.includes('Chromium/') ||
+    ua.includes('CriOS/') || ua.includes('Edg/')
+
+  cachedEngineProfile = {
+    lineFitEpsilon: isSafari ? 1 / 64 : 0.005,
+    carryCJKAfterClosingQuote: isChromium,
+    breakKeepAllAfterPunctuation: !isSafari,
+    preferPrefixWidthsForBreakableRuns: isSafari,
+    preferEarlySoftHyphenBreak: isSafari,
+  }
+  return cachedEngineProfile
+}
+```
+
+这是一段 **"老前端的智慧浓缩"**——
+不同浏览器引擎对**容差精度（lineFitEpsilon）、引号后是否携带 CJK、断词偏好**都有微妙差别。
+Pretext 不用 `if (isSafari) doX` 散落各处，而是抽出一个 profile 对象，
+所有折行逻辑统一查表。
+
+**值得一提**：Safari 的容差是 `1/64`（约 0.0156），而 Chromium 是 `0.005`——
+这是 Safari 字体光栅化的实际离散精度（**1 像素分 64 份**），不是随便选的数字。
+
+### 2.4 Emoji 校准：Canvas 和 DOM 不一样
+
+源码注释里这段是真的精彩（`measurement.ts`）：
+
+```ts
+// Emoji correction: Chrome/Firefox canvas measures emoji wider than DOM at font
+//   sizes <24px on macOS (Apple Color Emoji). The inflation is constant per emoji
+//   grapheme at a given size, font-independent. Auto-detected by comparing canvas
+//   vs actual DOM emoji width (one cached DOM read per font). Safari canvas and
+//   DOM agree (both wider than fontSize), so correction = 0 there.
+```
+
+翻译：
+- macOS 上 Chrome/Firefox 的 canvas 把 emoji 测得**比 DOM 实际显示宽**
+- 偏差是**常数 per grapheme**，和字体无关
+- 解法：**每种 font 做一次 DOM 校准读**，把偏差缓存下来
+- Safari 不存在这个问题（canvas 和 DOM 一致），correction = 0
+
+这是一个**"为了准确肯付一次代价"** 的设计典范——
+不假装精确，而是定位偏差源、给出一次性校准。
+
+### 2.5 折行算法：fast path vs full path
+
+`src/line-break.ts` 里有一个非常有意思的分支：
+
+```ts
+type PreparedLineBreakData = {
+  widths: number[]
+  // ...
+  simpleLineWalkFastPath: boolean   // 普通文本走快路径
+  // ...
+}
+```
+
+判断逻辑是："这段文本是不是纯西文 + 空格断行 + 无 letter-spacing + 无 tab + 无 soft hyphen？"
+是 → 一个紧凑的循环就能算完；
+不是 → 进入功能完整但慢一点的路径。
+
+这种 **"99% 简单 case 用 fast path，1% 复杂 case 用完整路径"** 的设计，
+和 V8 的 hidden class、React 的 fast path schedule 思路是一脉相承的。
+
+## 三、使用场景与 demo
+
+### Demo 1：测高度，无 DOM
+
+最常见的用法。**虚拟列表场景**特别合适：
+
+```ts
+import { prepare, layout } from '@chenglou/pretext'
+
+// 列表里每条评论
+function getCommentHeight(text: string, width: number) {
+  const prepared = prepare(text, '14px Inter')
+  const { height } = layout(prepared, width, 20)
+  return height + 16 // 加上 padding
+}
+
+const heights = comments.map(c => getCommentHeight(c.text, 600))
+// 一次性算完几千条，0 reflow
+```
+
+对比 react-virtual / react-window 之前不得不"先估再调"，
+现在可以**精确把每条高度预算好**。
+
+### Demo 2：textarea 高度自适应
+
+```ts
+import { prepare, layout } from '@chenglou/pretext'
+
+textarea.addEventListener('input', () => {
+  const prepared = prepare(
+    textarea.value,
+    '16px Inter',
+    { whiteSpace: 'pre-wrap' }  // 保留空格 / 换行
+  )
+  const { height } = layout(prepared, textarea.clientWidth, 24)
+  textarea.style.height = `${Math.max(48, height + 16)}px`
+})
+```
+
+`{ whiteSpace: 'pre-wrap' }` 让它和 textarea 视觉一致——
+**包括 tabs 和 `\n` 硬换行**。
+
+### Demo 3：消息气泡 shrinkwrap（这是真正的杀手锏）
+
+iMessage / Slack 那种"气泡宽度恰好包住最长那行"的效果，
+在 web 上**过去几乎做不到**。Pretext 这样做：
+
+```ts
+import { prepareWithSegments, walkLineRanges, layoutWithLines } from '@chenglou/pretext'
+
+const prepared = prepareWithSegments(message, '15px Inter')
+
+// 第 1 遍：找到最大行宽（不实际生成行字符串）
+let maxW = 0
+walkLineRanges(prepared, MAX_BUBBLE_WIDTH, line => {
+  if (line.width > maxW) maxW = line.width
+})
+
+// 第 2 遍：用这个最贴合的宽度生成行
+const { lines, height } = layoutWithLines(prepared, maxW, 22)
+
+// → 气泡宽度 = maxW + padding, 高度 = height
+```
+
+`walkLineRanges` 的妙处在于**它不构造每行的字符串**——
+只返回 `width / start / end`，避免不必要的内存分配。
+
+### Demo 4：图文混排（文字绕图）
+
+```ts
+import {
+  prepareWithSegments,
+  layoutNextLineRange,
+  materializeLineRange,
+  type LayoutCursor,
+} from '@chenglou/pretext'
+
+const prepared = prepareWithSegments(article, '16px Inter')
+let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 0 }
+let y = 0
+
+while (true) {
+  // 图片底部以下走全宽，以上让出图片宽度
+  const width = y < image.bottom
+    ? columnWidth - image.width
+    : columnWidth
+
+  const range = layoutNextLineRange(prepared, cursor, width)
+  if (range === null) break
+
+  const line = materializeLineRange(prepared, range)
+  ctx.fillText(line.text, 0, y)
+
+  cursor = range.end
+  y += 22
+}
+```
+
+每行宽度可以**动态变**，这是常规 CSS 做不到的（CSS shape-outside 接近，但兼容性差）。
+
+### Demo 5：富文本流（chip / mention）
+
+`@chenglou/pretext/rich-inline` 是给"内联富文本"准备的专用子包：
+
+```ts
+import {
+  prepareRichInline,
+  walkRichInlineLineRanges,
+  materializeRichInlineLineRange,
+} from '@chenglou/pretext/rich-inline'
+
+const prepared = prepareRichInline([
+  { text: 'Ship ',         font: '500 17px Inter' },
+  { text: '@maya',         font: '700 12px Inter',
+    break: 'never',        // 整个 @mention 不被切断
+    extraWidth: 22 },      // 额外的 chip padding/border
+  { text: "'s rich-note",  font: '500 17px Inter' },
+])
+
+walkRichInlineLineRanges(prepared, 320, range => {
+  const line = materializeRichInlineLineRange(prepared, range)
+  // 每个 fragment 自带 source item index、文本切片、gapBefore、cursor
+})
+```
+
+特别注意 `break: 'never'`：让 chip 像一个原子单位——
+**这是 web 上长期缺失的能力**，过去要靠 `white-space: nowrap` + 容器 hack 凑。
+
+## 四、实现原理：跟着真实代码走一遍
+
+挑一个具体例子 trace 整个流程：测 `"Hello 世界 🌏"` 在 100px 宽下会换几行。
+
+### Step 1：Intl.Segmenter 切词
+
+`prepare()` 内部首先用 `Intl.Segmenter` 把字符串切成"段"：
+
+```ts
+// layout.ts 顶端
+function getSharedGraphemeSegmenter(): Intl.Segmenter {
+  if (sharedGraphemeSegmenter === null) {
+    sharedGraphemeSegmenter = new Intl.Segmenter(undefined, {
+      granularity: 'grapheme'
+    })
+  }
+  return sharedGraphemeSegmenter
+}
+```
+
+`Intl.Segmenter` 是 ES2022 标准 API，浏览器原生提供，**懂多语言断词规则**：
+
+```text
+'Hello 世界 🌏'  →  ['Hello', ' ', '世', '界', ' ', '🌏']
+```
+
+注意**中文按字切，emoji 是一个 grapheme**——
+这是后续折行能正确处理 CJK 和 emoji 的基础。
+
+### Step 2：canvas measureText 测每段宽度
+
+进入 `measurement.ts::getSegmentMetrics`：
+
+```ts
+metrics = {
+  width: ctx.measureText(seg).width,
+  containsCJK: isCJK(seg),
+}
+```
+
+得到（以 16px Inter 为例，数字示意）：
+
+```text
+['Hello', ' ', '世', '界', ' ', '🌏']
+widths = [27.3, 4.0, 16.0, 16.0, 4.0, 18.5]
+kinds  = ['text', 'space', 'text', 'text', 'space', 'text']
+```
+
+但 `🌏` 这一段还要走 emoji 校准（macOS Chrome 上 canvas 测得偏大），
+所以源码里有 `getCorrectedSegmentWidth()` 这个间接层。
+
+### Step 3：分析阶段的额外标注
+
+`analysis.ts` 给每段额外打 tag：
+
+- 是否 CJK
+- 是否数字序列
+- 是否禁则起首/收尾标点（kinsoku，日文排版规则）
+- 是否引号闭合等
+
+这些都进入 `kinds: SegmentBreakKind[]`，**折行时 O(1) 查表**。
+
+### Step 4：折行算法主循环（精简版）
+
+回到 `layout()`，假设 maxWidth = 100：
+
+```text
+maxWidth = 100
+acc = 0
+lineCount = 0
+
+遍历 widths:
+  acc += widths[i]
+  if acc > maxWidth → 换行, lineCount++, acc = widths[i]
+
+'Hello' (27.3)  acc=27.3
+' '     (4.0)   acc=31.3
+'世'    (16.0)  acc=47.3
+'界'    (16.0)  acc=63.3
+' '     (4.0)   acc=67.3
+'🌏'    (18.5)  acc=85.8
+
+→ 一行就放下了, lineCount = 1
+→ height = 1 * lineHeight
+```
+
+但**真实代码远比这复杂**——要处理：
+
+- letter-spacing 累加（`spacingGraphemeCounts`）
+- tab 停靠（`tabStopAdvance` + `getTabAdvance()`）
+- soft hyphen 选中后追加 `'-'` 宽度（`discretionaryHyphenWidth`）
+- 行尾空白允许"挂出去"（CSS 行为）
+- CJK 内部任意切，西文按词切（`overflow-wrap: break-word` fallback）
+- 禁则处理（标点不能行首 / 不能行末）
+- letter-spacing 在硬换行后是否计入首段（`getLeadingLetterSpacing`）
+
+`line-break.ts` 顶端 `consumesAtLineStart` 这类小函数就是处理这些细节的：
+
+```ts
+function consumesAtLineStart(kind: SegmentBreakKind): boolean {
+  return kind === 'space' || kind === 'zero-width-break' || kind === 'soft-hyphen'
+}
+
+function breaksAfter(kind: SegmentBreakKind): boolean {
+  return (
+    kind === 'space' ||
+    kind === 'preserved-space' ||
+    kind === 'tab' ||
+    kind === 'zero-width-break' ||
+    kind === 'soft-hyphen'
+  )
+}
+```
+
+**每一行注释都在补 CSS 规范的缝**——这是该库技术含量真正高的地方。
+
+### Step 5：返回结果
+
+最终返回的就是几个 number：
+
+```ts
+{ height: 24, lineCount: 1 }
+```
+
+整个 `layout()` 调用**没有触碰 DOM 一次**——
+甚至连 `canvas.measureText` 都没再调（因为段宽度已经缓存）。
+这就是 **0.0002ms per layout** 的来源。
+
+<Callout type="success">
+  整个架构可以用一句话概括：
+  **"把所有可缓存的东西极尽缓存，把所有可在 OffscreenCanvas 完成的事赶出主线程，把所有浏览器差异收敛到一个 profile 对象。"**
+  这不是某种"魔法算法"，是**多年实战沉淀出来的工程经验密度**。
+</Callout>
+
+## 五、Pretext 的边界（README 自承的 caveat）
+
+值得知道哪里不能用：
+
+- 只覆盖 `white-space: normal` 和 `pre-wrap`
+- 只支持 `word-break: normal` 和 `keep-all`
+- **`system-ui` 字体在 macOS 上不准**——必须用具名字体（Inter / Helvetica 等）
+- 必须有 `Intl.Segmenter` + Canvas 2D（不支持极老浏览器/某些 SSR 运行时）
+- **不自带自动连字符**（要靠 caller 插入 soft hyphen）
+- `font-feature-settings` / `font-variation-settings` 不参与建模
+
+定位很清晰：**它解决 95% 常见 web 文本场景，不是要替代浏览器的整套排版引擎**。
+这种克制是它能保持架构清晰、性能优秀的关键。
+
+## 六、最大的启示
+
+如果只能从这个库带走一件事，我会带走它对**"两阶段缓存"** 的极致执行：
+
+```text
+准备阶段：所有贵的事一次性做完，结果展平成 number[] / Int8Array
+查询阶段：纯算术，永不接触 DOM 和 canvas
+```
+
+这是一个**应用面远超文本测量**的范式。任何你在 web 上做的高频测量（图片尺寸、布局抖动、动画计算），
+都可以套用同一个模式：
+1. 找到那次"昂贵但确定的"工作
+2. 把结果展平成最 CPU 友好的数据结构
+3. 把热点路径写成纯算术
+
+## 七、一句话总结
+
+> Pretext 不是"快了一点"——它把一类**过去 10 年所有前端都默默忍受的成本**
+> （DOM 文本测量引发的 layout reflow）**降到几乎为零**。
+> 它的价值不在于"新算法"，而在于**把工程问题分解到极致干净的两阶段**。
+> 当 chenglou 说"web UI 的最后一块拼图"，这不是夸张——
+> 真正用过 react-window / virtuoso 的人，会立刻明白他在说什么。
+
+## 延伸阅读
+
+- 仓库主页：[github.com/chenglou/pretext](https://github.com/chenglou/pretext)
+- 实时 Demo：[chenglou.me/pretext](https://chenglou.me/pretext/)
+- 源码核心文件：[`src/layout.ts`](https://github.com/chenglou/pretext/blob/main/src/layout.ts) / [`src/measurement.ts`](https://github.com/chenglou/pretext/blob/main/src/measurement.ts) / [`src/line-break.ts`](https://github.com/chenglou/pretext/blob/main/src/line-break.ts)
+- 前身项目：[Sebastian Markbage 的 text-layout](https://github.com/chenglou/text-layout)
+- 相关概念：[layout thrashing on CSS-Tricks](https://css-tricks.com/forced-synchronous-layouts/)
