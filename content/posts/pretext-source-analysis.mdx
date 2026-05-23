@@ -565,8 +565,37 @@ function breaksAfter(kind: SegmentBreakKind): boolean {
 
 ## 延伸阅读
 
+挑了 Pretext 原仓库 + 它所在领域的"必经之路"——读完能自己评判它好在哪、不打算做什么。
+
+### 原仓库与作者资源
+
 - 仓库主页：[github.com/chenglou/pretext](https://github.com/chenglou/pretext)
-- 实时 Demo：[chenglou.me/pretext](https://chenglou.me/pretext/)
-- 源码核心文件：[`src/layout.ts`](https://github.com/chenglou/pretext/blob/main/src/layout.ts) / [`src/measurement.ts`](https://github.com/chenglou/pretext/blob/main/src/measurement.ts) / [`src/line-break.ts`](https://github.com/chenglou/pretext/blob/main/src/line-break.ts)
+- 实时 Demo：[chenglou.me/pretext](https://chenglou.me/pretext/) / [somnai-dreams.github.io/pretext-demos](https://somnai-dreams.github.io/pretext-demos/)
+- 源码核心文件：[`src/layout.ts`](https://github.com/chenglou/pretext/blob/main/src/layout.ts) / [`src/measurement.ts`](https://github.com/chenglou/pretext/blob/main/src/measurement.ts) / [`src/line-break.ts`](https://github.com/chenglou/pretext/blob/main/src/line-break.ts) / [`src/analysis.ts`](https://github.com/chenglou/pretext/blob/main/src/analysis.ts) / [`src/bidi.ts`](https://github.com/chenglou/pretext/blob/main/src/bidi.ts)
 - 前身项目：[Sebastian Markbage 的 text-layout](https://github.com/chenglou/text-layout)
-- 相关概念：[layout thrashing on CSS-Tricks](https://css-tricks.com/forced-synchronous-layouts/)
+- chenglou 其他作品：[ReasonReact](https://reasonml.github.io/reason-react/) / [react-motion](https://github.com/chenglou/react-motion)
+
+### 浏览器性能的经典概念
+
+- [Layout thrashing on CSS-Tricks](https://css-tricks.com/forced-synchronous-layouts/) —— 文章里说的"强制同步布局"是什么
+- [Avoid large, complex layouts and layout thrashing](https://web.dev/articles/avoid-large-complex-layouts-and-layout-thrashing) —— web.dev 上的 Layout 优化指南
+- [FastDOM](https://github.com/wilsonpage/fastdom) —— 用读写批处理对抗 thrashing 的经典库
+- [What forces layout / reflow](https://gist.github.com/paulirish/5d52fb081b3570c81e3a) —— Paul Irish 整理的"会触发 reflow 的属性"清单
+
+### Web 文本排版与国际化
+
+- [Unicode Text Segmentation (UAX #29)](https://unicode.org/reports/tr29/) —— `Intl.Segmenter` 背后的标准
+- [CSS Text Module Level 3](https://www.w3.org/TR/css-text-3/) —— `white-space` / `word-break` / `overflow-wrap` 等规范
+- [HarfBuzz](https://github.com/harfbuzz/harfbuzz) —— 浏览器实际用的 OpenType 排版引擎，理解"Pretext 选择不做什么"
+- [pdf.js bidi](https://github.com/mozilla/pdf.js) —— Pretext 双向文本（RTL）的灵感源
+
+### 类似领域的库（横向比较）
+
+- [@tanstack/virtual](https://tanstack.com/virtual) —— 虚拟列表，最受益于精确高度
+- [virtuoso](https://virtuoso.dev) —— 默认"先渲染再测"，对照能看出 Pretext 的差异
+- [Yoga](https://github.com/facebook/yoga) —— React Native 的布局引擎，思路类似但 native 优先
+- [Skia/Paragraph](https://skia.org/docs/dev/design/text_shaping/) —— Flutter 的文本测量与排版引擎
+
+### 站内相关文章
+
+- [Claude 使用指南：细小但不可忽视的细节与技巧](/blog/claude-practical-tips) —— 和"工程经验密度"主题接近
