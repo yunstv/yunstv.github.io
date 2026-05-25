@@ -387,6 +387,20 @@ function DialogBody({
     height: Math.max(node.scrollHeight, node.offsetHeight),
   })
 
+  // html-to-image's cloneCSSStyle reads `getComputedStyle`, which resolves the
+  // wrapper's `margin: 0 auto` into concrete pixel values (based on whatever
+  // the live scroll container's width happens to be) and bakes them onto the
+  // clone. Inside the 720-wide foreignObject those pixel margins then push the
+  // content sideways and leave a blank strip on one edge of the PNG. Zero the
+  // margins on the clone so the export matches the preview exactly.
+  const EXPORT_STYLE_OVERRIDE = {
+    margin: '0',
+    marginLeft: '0',
+    marginRight: '0',
+    marginTop: '0',
+    marginBottom: '0',
+  } as const
+
   const onDownload = useCallback(async () => {
     if (!ref.current || busy) return
     setBusy(true)
@@ -396,6 +410,7 @@ function DialogBody({
       const dataUrl = await toPng(ref.current, {
         pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
+        style: EXPORT_STYLE_OVERRIDE,
         ...size,
       })
       const a = document.createElement('a')
@@ -419,6 +434,7 @@ function DialogBody({
       const blob = await toBlob(ref.current, {
         pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
+        style: EXPORT_STYLE_OVERRIDE,
         ...size,
       })
       if (!blob) throw new Error('blob is null')
@@ -444,6 +460,7 @@ function DialogBody({
       const blob = await toBlob(ref.current, {
         pixelRatio: safePixelRatio(size, 2),
         cacheBust: true,
+        style: EXPORT_STYLE_OVERRIDE,
         ...size,
       })
       if (!blob) throw new Error('blob is null')
