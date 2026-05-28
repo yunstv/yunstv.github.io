@@ -1,0 +1,336 @@
+---
+title: 芯片界的"摩尔定律"进化史：从 1965 到 τ-Scaling 的六十年
+date: 2026-05-28
+description: 我们一直在说"摩尔定律放缓"，但摩尔定律本身就改过几次。这篇梳理它的真实演化——原始预测、Dennard 加速、多核救场、节点命名游戏、Koomey/Huang 等"接班定律"，到 2026 年华为的 τ-Scaling。看完之后再谈"摩尔定律是不是死了"会清醒得多。
+tags: [moore-law, semiconductor, chip, history, tau-scaling]
+---
+
+<Callout type="info">
+  几乎每年都有人宣告"摩尔定律已死"。但这条定律**60 年里至少被改过 3 次、被附身过 4 次、被宣判过 N 次**，
+  现在还在以变形的方式延续。这篇把它的真实进化梳理一遍——
+  搞清楚它是怎么被持续"延寿"的，再谈 [韬定律 τ-Scaling](/blog/tau-scaling-law) 之类的新提法才有坐标系。
+</Callout>
+
+## 零、先把"摩尔定律"和"几个相关定律"分清
+
+很多讨论一开始就乱，是因为下面这几条经常被混为一谈：
+
+| 名字 | 实际说的是 |
+|---|---|
+| **摩尔定律 (Moore's Law)** | 集成电路上的晶体管数量随时间指数增长 |
+| **Dennard Scaling** | 晶体管缩小时，**功耗密度保持不变** |
+| **安迪比尔定律 (Andy-Bill Law)** | 硬件每次进步都会被软件膨胀吃掉 |
+| **Koomey 定律** | 单位能耗能完成的计算量持续翻倍 |
+| **黄氏定律 (Huang's Law)** | GPU 性能两年翻一倍以上（速度快于 Moore）|
+| **Wright 定律** | 产量翻倍，单位成本以固定比例下降（学习曲线）|
+
+它们各自描述芯片演化的不同侧面。**摩尔定律是"数量"，Dennard 是"功耗"，Koomey 是"能效"** ——
+经常出现"X 已死，Y 还活着"的局面。下面按时间顺序讲。
+
+## 一、1965：摩尔的原始预测——一年翻一倍
+
+1965 年 4 月，时任仙童半导体（Fairchild）研发主管的 **Gordon Moore** 在 _Electronics_ 杂志上发表
+《Cramming more components onto integrated circuits》。原文核心一句：
+
+> "The complexity for minimum component costs has increased at a rate of roughly a factor of two per year."
+
+翻译：**集成电路上的器件数量，大约每年翻一倍**——这是最初的版本。
+当时整张图只有 5 个数据点（1959–1965），整篇文章 4 页，**完全是经验外推**。
+
+但这条经验外推被产业界当成了一份"产能路线图"——
+Intel、TI、Motorola 都开始按这个节奏排研发投入。
+**"经验观察"由此变成"产业自我兑现的目标"** ——这是摩尔定律最神奇的地方。
+
+## 二、1975：摩尔自己改成"两年翻一倍"
+
+到 1975 年，原始版本已经追不上现实。摩尔本人在 IEEE 演讲中**修正了原始预测**：
+
+> 每 **两年** 翻一倍，不再是每年翻一倍。
+
+再后来产业界又把它磨成了 **"18 个月翻一倍"** 的说法（出自摩尔同事 David House 的口径）——
+但这一版**摩尔本人从未官方背书**。所以严格说现存最权威版本就两个：
+**1965 年的"每年"** 和 **1975 年的"每两年"**。
+
+<Callout type="info">
+  这是第一个被忽视的真相：**摩尔定律本身就被作者修订过**。
+  把它当成"宇宙定律"来要求今天的工艺也要严格 18 个月翻一倍，
+  其实是把一份**经验路线图**当成了**物理定律**。
+</Callout>
+
+## 三、1974：Dennard Scaling——真正让 Moore 持续生效的"隐藏功臣"
+
+如果只有摩尔定律（"做小就行"），实际上根本走不下去——
+**晶体管缩小意味着同样面积上挤更多管子，功耗会指数级飙升**。
+
+IBM 的 Robert Dennard 1974 年发表了一个互补的规律：
+
+```text
+晶体管尺寸缩小 k 倍 →
+  - 单管功耗下降 k²
+  - 同等面积晶体管数 ×k²
+  - 总功耗密度保持不变
+```
+
+这就是 **Dennard Scaling**。它意味着：
+**摩尔定律持续生效的同时，芯片不会烧掉**——
+工程师可以放心地"做小 + 加密度"，因为热量不会失控。
+
+1974–2005 这 30 年是芯片工业的**黄金期**：
+摩尔定律 + Dennard Scaling 像两个齿轮一起转——
+晶体管越来越多、频率越来越高、功耗大致可控。
+
+## 四、2005 左右：Dennard Scaling 先死了
+
+到 90nm 之后，**漏电流（leakage current）变得不可忽略**——
+晶体管关闭时还是会漏电，且总量随密度增加。结果是：
+
+```text
+理想中：缩小工艺 → 功耗密度不变
+现实中：缩小工艺 → 漏电流飙升 → 功耗密度反而上升
+```
+
+到了 2005 年左右，**Dennard Scaling 实际上失效了**。
+直接后果：单核 CPU 频率撞墙，**从 2004 年 Intel Pentium 4 大致停在 3.8GHz 之后，再也没大幅前进过**。
+
+| 年份 | 旗舰 CPU 主频 |
+|---|---|
+| 2000 | 1.5 GHz |
+| 2002 | 3.0 GHz |
+| 2004 | 3.8 GHz（Prescott）|
+| 2010 | 3.6 GHz（i7-980X）|
+| 2020 | 5.0 GHz（i9-10900K，靠 boost）|
+| 2026 | 6.0 GHz 上下（仍然在挤）|
+
+20 多年里主频基本横盘。**算力增长不再靠"频率"，开始靠"核数"和"架构"** ——
+这就是接下来的多核时代。
+
+<Callout type="warning">
+  这是第二个常被忽视的真相：**Moore 之前先死的是 Dennard**。
+  今天讨论"Moore 是否还活着"其实意义不大——
+  从用户体感角度看，**频率早就停止上升了**，
+  只是因为多核 + 架构 + 缓存 + GPU 在补位，整体性能还在涨。
+</Callout>
+
+## 五、2005+：多核 + 异构 + 架构红利
+
+Dennard 死后，芯片进入**多维度演化**：
+
+- **多核**：单核拼频率行不通，就拼核心数（2 核 → 4 核 → 16 核 → 64 核 → 192 核）
+- **专用单元**：GPU、NPU、DSP、视频编解码器加速特定负载
+- **缓存层级**：L1/L2/L3 越来越大，HBM 加入
+- **微架构**：超标量、乱序执行、分支预测、SIMD/AVX
+- **能效优化**：Apple Silicon 把"性能/瓦"作为新主轴
+
+这一阶段实际上是**摩尔定律的"应用层延寿"** ——
+晶体管还在增多，但带来的不再是单核飞跃，而是**多种性能曲线的并行扩张**。
+
+```text
+1965–2005   单线性能起飞  ← Moore + Dennard 共同作用
+2005–2015   多核救场      ← Moore 还在, Dennard 死了
+2015–2025   异构 + AI 加速 ← 不只是 CPU，而是整个 SoC 在演化
+```
+
+## 六、节点命名游戏：28nm → 2nm 不一定是"真"的
+
+2010 年代之后还出现一件让外行困惑的事：**工艺节点名字越来越脱离实物**。
+
+- 1990s：节点名 ≈ 实际栅长（130nm ≈ 130nm 栅长）
+- 2010s：节点名 ≈ 营销节奏（22nm 其实栅长 ~26nm）
+- 2020s：节点名 ≈ 厂家排号（TSMC 5nm、Samsung 5nm、Intel 7 实物指标各不相同）
+- 2025+：**"等效节点"** 出现（如华为 τ-Scaling 强调"等效 1.4nm"）
+
+业界后来用 **晶体管密度（MTr/mm²）** 作为更客观的指标：
+
+| 工艺名 | 厂家 | 晶体管密度（MTr/mm²，约值）|
+|---|---|---|
+| 28nm | TSMC | ~10 |
+| 7nm | TSMC | ~95 |
+| 5nm | TSMC | ~170 |
+| 3nm（N3）| TSMC | ~290 |
+| 2nm（N2）| TSMC | ~~330+ |
+| 18A | Intel | ~~目标 250 上下 |
+
+> 数据来源：各家公开技术发布会与第三方分析（如 SemiAnalysis / IEEE）
+
+<Callout type="info">
+  关键认知：**"几 nm" 已经不是物理量，是品牌名**。
+  当你看到"2nm 工艺"时，更可靠的对比口径是**晶体管密度**和**功耗 / 性能曲线**。
+  τ-Scaling 提出"等效 1.4nm"也是在这个语境下——
+  它不是宣称用了 1.4nm 工艺，而是宣称**通过 τ 维度优化达到了该密度等级的系统效果**。
+</Callout>
+
+## 七、后摩尔时代的"附身定律们"
+
+Moore + Dennard 黄金期结束后，业内陆续出现几条"接班定律"。它们各自描述演化的一面：
+
+### 7.1 Koomey 定律：能效翻倍
+
+Stanford 的 Jonathan Koomey 2010 年提出：
+**每完成一次计算所需的能量，约每 1.5 年翻一倍降低**。
+1946 到 2010 整整 65 年都成立。这条定律在 Moore 减速之后仍然继续——
+**因为能效优化的空间比晶体管缩小要大**。
+
+数据中心、电池、移动设备的演进，更多受 Koomey 定律驱动，而不是纯 Moore。
+
+### 7.2 黄氏定律 (Huang's Law)
+
+英伟达 CEO 黄仁勋 2018 年前后多次提出：
+**GPU 的 AI 计算性能每两年翻两倍以上**，速度**快于 Moore**。
+
+实测：H100 比 A100 提升约 6x，B200 比 H100 再提 ~2.5x——
+**GPU 的演进速度确实超过了 Moore**。原因是：
+**GPU 同时吃了"工艺红利 + 架构红利 + 封装红利 + 互联红利"**。
+
+但要注意：黄氏定律是**英伟达自己提出的、围绕自己产品的**——
+它是个真实的工程现象，**但带有营销色彩**。
+
+### 7.3 安迪比尔定律 (Andy-Bill Law)
+
+老段子：
+
+> "Andy gives, Bill takes away."
+
+Intel CEO Andy Grove 让芯片性能不断提升，Microsoft CEO Bill Gates 让 Windows 不断膨胀，
+**用户感知的速度基本没变**。这条不是物理定律，是行业观察——
+但今天仍然成立：**LLM 一夜之间把你的 RTX 显卡显存吃干净**就是新版安迪比尔。
+
+### 7.4 Wright 定律 (学习曲线)
+
+**产量每翻一倍，单位成本以固定比例下降**——19 世纪飞机制造业总结出来的规律。
+半导体也适用：**每代节点的成本下降很大一部分来自累计产量的扩张，而不是工艺本身**。
+
+这是为什么"被禁先进制程"对一国半导体产业杀伤大——
+**学习曲线被切断，成本永远下不来**。
+
+## 八、双墙：物理墙 + 经济墙
+
+到 2020 年代，纯几何缩微遇到的不只是物理问题，**经济成本也在塌方**：
+
+### 8.1 物理墙
+
+- 3nm 之后量子隧穿、漏电流不可控
+- 2nm 节点 GAA（Gate-All-Around）晶体管出场救命
+- 1.4nm 之后栅长接近原子尺度，硅的极限就在那里
+
+### 8.2 经济墙
+
+| 项 | 5nm fab | 3nm fab | 2nm fab（预估）|
+|---|---|---|---|
+| 建厂投资 | ~150 亿美元 | ~200 亿美元 | ~250–300 亿美元 |
+| 单 mask 设计 | ~3500 万美元 | ~5000 万美元 | ~7000 万美元+ |
+| EUV 光刻机价格 | ~1.5 亿美元 | ~1.8 亿美元 | ~3.5 亿美元（High-NA）|
+
+**做芯片越来越像造航空母舰**——只有少数厂家能玩。
+这是为什么 fabless（NVIDIA / AMD / 高通 / 联发科 / 海思）+ foundry（TSMC / Samsung / Intel）模式越来越极化。
+
+## 九、当下的多路径：More Moore / More than Moore / Beyond Moore
+
+业界这几年总结出三条并行路径：
+
+### 9.1 More Moore（继续推几何）
+
+- TSMC 2nm → A16 → 1.4nm
+- Intel 18A → 14A → 10A
+- Samsung 2nm GAA → 1.4nm
+- High-NA EUV、背面供电、GAA、CFET 都是这一条路上的技术抓手
+
+### 9.2 More than Moore（封装 + 集成）
+
+- **Chiplet（小芯片）**：把多个不同工艺的 die 拼起来——AMD 早做，Intel/NVIDIA 跟进
+- **2.5D / 3D 封装**：CoWoS、Foveros、SoIC——把 HBM 堆到 GPU 旁边
+- **背面供电（PowerVia, BSPDN）**：从晶圆背面送电，节省正面走线空间
+- **硅光（Silicon Photonics）**：芯片间用光替代铜
+
+这条路 NVIDIA、AMD 走得最深——本质上**靠封装拉一个 Moore 出来**。
+
+### 9.3 Beyond Moore（换范式）
+
+- **In-memory compute**：在存储里算，省掉数据搬运
+- **Neuromorphic**：仿生神经元芯片（Intel Loihi、IBM TrueNorth）
+- **Quantum computing**：量子比特，特定问题指数加速
+- **τ-Scaling**：[韬定律](/blog/tau-scaling-law)——华为 2026 提出，把演进主轴换成时间维度
+
+**Beyond Moore 不是替代 Moore，是另开一根轴**。
+未来 10 年大概率是 **More Moore + More than Moore + Beyond Moore 三条并行**。
+
+## 十、韬定律 / τ-Scaling 在历史里的位置
+
+把华为 2026 年 5 月发布的 [τ-Scaling](/blog/tau-scaling-law) 放进上面这条进化曲线里看：
+
+```text
+1965  Moore       — 数量轴（晶体管数）↑
+1974  Dennard     — 功耗轴（功耗密度）守恒
+2005  Dennard 死  — 频率不再上升
+2005+ 多核        — 并行轴
+2010  Koomey      — 能效轴↑
+2018  Huang       — GPU 综合轴↑
+2020+ Chiplet     — 封装轴
+2026  τ-Scaling   — 时间轴（信号延迟）↓
+```
+
+它**不是"新的摩尔定律"**——
+它是 Beyond Moore 路径上一个具体的、被一家大厂正式命名的工程框架。
+和 Koomey、Huang 这些"后摩尔接班定律"一样，它描述芯片演化的另一个侧面。
+
+**摩尔定律没有死。**
+**它只是不再是唯一一根轴**——
+而每多出一根可优化的轴，意味着芯片产业**还有几十年的工程空间**。
+
+<Callout type="success">
+  **每一条接班定律出现，都不是为了打败 Moore，是为了补 Moore 之外被忽视的维度。**
+  Dennard 补功耗、Koomey 补能效、Huang 补 GPU、Chiplet 补封装、τ-Scaling 补时间——
+  Moore 这一条主曲线下面，**长出了一颗多枝的演化树**。
+  这才是"摩尔定律六十年"的真正样子。
+</Callout>
+
+## 十一、给读者的几个判断标准
+
+下次再看到"X 定律出炉 / Moore 已死 / 国产突破"这类新闻，可以用这套坐标系自检：
+
+1. **它描述的是哪根轴？** 数量 / 功耗 / 能效 / 频率 / 延迟 / 封装 / 软件 ……
+2. **它是物理规律还是商业目标？** Moore 一开始是经验外推，被产业兑现成路线图
+3. **它给的是"实际"还是"等效"？** 等效 ≠ 实际工艺，工程口径要看清
+4. **生态能跟上吗？** 任何硬件演进缺了编译器 / 算子库 / 系统软件都打不出来
+5. **学习曲线（Wright）成立吗？** 产量起不来，成本永远下不来
+
+把这五条当滤镜，**90% 的"半导体新闻"可以快速判断分量**。
+
+## 一句话总结
+
+> 摩尔定律从未真正"死过"。
+> 它在 60 年里被改过两次、被 Dennard 加持过 30 年、被多核救场过 10 年、
+> 被 Koomey / Huang / Chiplet / τ-Scaling 一根根新轴接力延寿。
+> 真正的演化不是"一条曲线终结"，而是**"曲线长成了树"**——
+> 这棵树还会继续长，直到某一天我们换一种完全不基于硅的计算介质为止。
+
+## 延伸阅读
+
+把"摩尔定律史"这个话题彻底讲透，下面是按角度分组的进阶资源。
+
+### 经典原始文献
+
+- Gordon Moore, _Cramming more components onto integrated circuits_ (1965) —— 原始 4 页论文，[免费 PDF](https://newsroom.intel.com/wp-content/uploads/sites/11/2018/05/moores-law-electronics.pdf)
+- Robert Dennard et al., _Design of Ion-Implanted MOSFETs with Very Small Physical Dimensions_ (1974) —— Dennard Scaling 原论文
+- Jonathan Koomey, _Implications of Historical Trends in the Electrical Efficiency of Computing_ (2011) —— Koomey 定律论文
+
+### 后摩尔时代综述
+
+- _Chip War_, Chris Miller —— 芯片地缘政治；解释为什么 EUV 是新瓶颈
+- _Computer Architecture: A Quantitative Approach_, Hennessy & Patterson —— "黄金时代结束之后"一章直面后摩尔时代
+- ["The End of Moore's Law: A New Beginning"](https://spectrum.ieee.org/the-end-of-moores-law-a-new-beginning), IEEE Spectrum —— 业内综述
+- _The Innovators_, Walter Isaacson —— 把晶体管发明到 Moore 的故事讲透
+
+### 持续信息源
+
+- [SemiAnalysis](https://www.semianalysis.com) —— 最专业的英文芯片产业付费订阅
+- [Chips and Cheese](https://chipsandcheese.com) —— 独立芯片评测博客
+- [The Chip Letter](https://thechipletter.substack.com) —— Substack 免费周更
+- [WikiChip](https://en.wikichip.org/) —— 各家芯片规格、架构对比的开放参考
+- 中文：半导体行业观察、芯东西、芯流智库
+
+### 站内相关
+
+- 配套文章：[韬定律（τ-Scaling）](/blog/tau-scaling-law) —— 摩尔定律之后的最新一根轴
+- 系列文章：[芯片对互联网的作用](/blog/chips-and-internet) —— 芯片为什么是"互联网的杠杆"
+- 系列文章：[光纤对于互联网的作用](/blog/fiber-optics-internet) —— 数据中心内部正在变得越来越光化
+- 系列文章：[未来五年的风口](/blog/next-five-years) —— AI 算力赛道与中国半导体路径
