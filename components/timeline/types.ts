@@ -5,4 +5,5 @@ export interface TimelineItem {
   description?: string
   date: string
   tags: string[]
+  screenshots?: number
 }

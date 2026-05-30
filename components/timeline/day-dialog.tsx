@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Badge, Box, Dialog, Flex, ScrollArea, Text } from '@radix-ui/themes'
+import { Badge, Box, Dialog, Flex, ScrollArea, Text, Tooltip } from '@radix-ui/themes'
+import { ImageIcon } from '@radix-ui/react-icons'
 import dayjs from 'dayjs'
 import type { TimelineItem } from './types'
 
@@ -94,9 +95,23 @@ export function DayDialog({
                       border: '1px solid var(--gray-a4)',
                     }}
                   >
-                    <Text as="div" weight="medium">
-                      {it.title}
-                    </Text>
+                    <Flex align="center" gap="2">
+                      <Text as="div" weight="medium">
+                        {it.title}
+                      </Text>
+                      {it.screenshots && it.screenshots > 0 ? (
+                        <Tooltip content={`${it.screenshots} 张快照`}>
+                          <Flex
+                            align="center"
+                            gap="1"
+                            style={{ color: 'var(--accent-11)', flexShrink: 0 }}
+                          >
+                            <ImageIcon />
+                            <Text size="1">{it.screenshots}</Text>
+                          </Flex>
+                        </Tooltip>
+                      ) : null}
+                    </Flex>
                     {it.description && (
                       <Text as="div" size="2" color="gray" mt="1">
                         {it.description}

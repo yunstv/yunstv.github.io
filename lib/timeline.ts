@@ -24,5 +24,6 @@ export function projectsToTimelineItems(
     description: frontmatter.description,
     date: frontmatter.date,
     tags: frontmatter.stack ?? [],
+    screenshots: frontmatter.screenshots?.length,
   }))
 }

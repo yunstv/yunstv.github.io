@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Badge, Box, Button, Card, Flex, Heading, Text } from '@radix-ui/themes'
+import { Badge, Box, Button, Card, Flex, Heading, Text, Tooltip } from '@radix-ui/themes'
+import { ImageIcon } from '@radix-ui/react-icons'
 import dayjs from 'dayjs'
 import { DayDialog } from './day-dialog'
 import type { TimelineItem } from './types'
@@ -73,7 +74,21 @@ export function TimelineView({
                       style={{ textDecoration: 'none', color: 'inherit' }}
                     >
                       <Flex direction="column" gap="1">
-                        <Text weight="medium">{it.title}</Text>
+                        <Flex align="center" gap="2">
+                          <Text weight="medium">{it.title}</Text>
+                          {it.screenshots && it.screenshots > 0 ? (
+                            <Tooltip content={`${it.screenshots} 张快照`}>
+                              <Flex
+                                align="center"
+                                gap="1"
+                                style={{ color: 'var(--accent-11)', flexShrink: 0 }}
+                              >
+                                <ImageIcon />
+                                <Text size="1">{it.screenshots}</Text>
+                              </Flex>
+                            </Tooltip>
+                          ) : null}
+                        </Flex>
                         {it.description && (
                           <Text size="2" color="gray">
                             {it.description}
