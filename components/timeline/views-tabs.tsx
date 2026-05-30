@@ -8,6 +8,7 @@ import {
   CalendarIcon,
   ListBulletIcon,
 } from '@radix-ui/react-icons'
+import { useTabParam } from '@/components/shared/use-tab-param'
 import { TimelineView } from './timeline-view'
 import { CalendarView } from './calendar-view'
 import { ActivityView } from './activity-view'
@@ -26,8 +27,9 @@ export function ViewsTabs({
   listIcon?: ReactNode
   unit?: string
 }) {
+  const [value, setValue] = useTabParam('tab', 'timeline')
   return (
-    <Tabs.Root defaultValue="timeline">
+    <Tabs.Root value={value} onValueChange={setValue}>
       <Tabs.List>
         <Tabs.Trigger value="timeline">
           <Flex align="center" gap="2">

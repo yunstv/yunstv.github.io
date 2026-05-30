@@ -3,6 +3,7 @@
 import { Box, Flex, Tabs } from '@radix-ui/themes'
 import { BarChartIcon, FileTextIcon, ImageIcon } from '@radix-ui/react-icons'
 import { MDXContent } from '@/components/mdx/mdx-content'
+import { useTabParam } from '@/components/shared/use-tab-param'
 import { ScreenshotsGallery } from './screenshots-gallery'
 import { RepoActivityView, type RepoActivityData } from './repo-activity-view'
 import type { ScreenshotMeta } from '@/types/content'
@@ -17,9 +18,10 @@ interface Props {
 export function ProjectTabs({ code, screenshots, demo, activity }: Props) {
   const hasShots = !!screenshots && screenshots.length > 0
   const hasActivity = !!activity && activity.buckets.length > 0
+  const [value, setValue] = useTabParam('tab', 'content')
 
   return (
-    <Tabs.Root defaultValue="content">
+    <Tabs.Root value={value} onValueChange={setValue}>
       <Tabs.List>
         <Tabs.Trigger value="content">
           <Flex align="center" gap="2">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Box, Card, Flex, Grid, Tabs, Text } from "@radix-ui/themes";
 import { GridIcon, ImageIcon, ListBulletIcon } from "@radix-ui/react-icons";
+import { useTabParam } from "@/components/shared/use-tab-param";
 import { getToolIcon, getToolIllustration } from "./tool-illustrations";
 
 export type ToolItem = {
@@ -97,8 +98,9 @@ function ToolIllustrationCard({ tool }: { tool: ToolItem }) {
 }
 
 export function ToolsList({ tools }: { tools: ToolItem[] }) {
+  const [value, setValue] = useTabParam("tab", "illustrated");
   return (
-    <Tabs.Root defaultValue="illustrated">
+    <Tabs.Root value={value} onValueChange={setValue}>
       <Tabs.List>
         <Tabs.Trigger value="illustrated">
           <Flex align="center" gap="2">
