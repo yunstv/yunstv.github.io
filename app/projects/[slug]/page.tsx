@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Badge, Flex, Heading, Link as RLink, Text } from '@radix-ui/themes'
 import { getBySlug, listSlugs } from '@/lib/mdx'
 import type { ProjectMeta } from '@/types/content'
-import { MDXContent } from '@/components/mdx/mdx-content'
+import { ProjectTabs } from '@/components/projects/project-tabs'
 
 type Params = Promise<{ slug: string }>
 
@@ -59,7 +59,11 @@ export default async function ProjectPage({ params }: { params: Params }) {
           </Text>
         </Flex>
       </Flex>
-      <MDXContent code={code} />
+      <ProjectTabs
+        code={code}
+        screenshots={frontmatter.screenshots}
+        demo={frontmatter.demo}
+      />
     </article>
   )
 }

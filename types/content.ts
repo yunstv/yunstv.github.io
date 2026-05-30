@@ -8,6 +8,13 @@ export interface PostMeta {
   draft?: boolean
 }
 
+export interface ScreenshotMeta {
+  src: string
+  title: string
+  description?: string
+  route?: string
+}
+
 export interface ProjectMeta {
   name: string
   description: string
@@ -18,6 +25,7 @@ export interface ProjectMeta {
   demo?: string
   cover?: string
   featured?: boolean
+  screenshots?: ScreenshotMeta[]
 }
 
 export interface PageMeta {
