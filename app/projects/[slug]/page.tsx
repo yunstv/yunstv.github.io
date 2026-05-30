@@ -1,9 +1,22 @@
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Badge, Flex, Heading, Link as RLink, Text } from '@radix-ui/themes'
 import { getBySlug, listSlugs } from '@/lib/mdx'
 import type { ProjectMeta } from '@/types/content'
 import { ProjectTabs } from '@/components/projects/project-tabs'
+import type { RepoActivityData } from '@/components/projects/repo-activity-view'
+
+async function loadActivity(slug: string): Promise<RepoActivityData | undefined> {
+  const p = path.join(process.cwd(), 'public/projects', slug, 'activity.json')
+  try {
+    const raw = await fs.readFile(p, 'utf-8')
+    return JSON.parse(raw) as RepoActivityData
+  } catch {
+    return undefined
+  }
+}
 
 type Params = Promise<{ slug: string }>
 
@@ -31,6 +44,7 @@ export default async function ProjectPage({ params }: { params: Params }) {
     notFound()
   }
   const { frontmatter, code } = project
+  const activity = await loadActivity(slug)
 
   return (
     <article>
@@ -63,6 +77,7 @@ export default async function ProjectPage({ params }: { params: Params }) {
         code={code}
         screenshots={frontmatter.screenshots}
         demo={frontmatter.demo}
+        activity={activity}
       />
     </article>
   )

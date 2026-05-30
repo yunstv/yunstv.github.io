@@ -1,19 +1,22 @@
 'use client'
 
 import { Box, Flex, Tabs } from '@radix-ui/themes'
-import { FileTextIcon, ImageIcon } from '@radix-ui/react-icons'
+import { BarChartIcon, FileTextIcon, ImageIcon } from '@radix-ui/react-icons'
 import { MDXContent } from '@/components/mdx/mdx-content'
 import { ScreenshotsGallery } from './screenshots-gallery'
+import { RepoActivityView, type RepoActivityData } from './repo-activity-view'
 import type { ScreenshotMeta } from '@/types/content'
 
 interface Props {
   code: string
   screenshots?: ScreenshotMeta[]
   demo?: string
+  activity?: RepoActivityData
 }
 
-export function ProjectTabs({ code, screenshots, demo }: Props) {
+export function ProjectTabs({ code, screenshots, demo, activity }: Props) {
   const hasShots = !!screenshots && screenshots.length > 0
+  const hasActivity = !!activity && activity.buckets.length > 0
 
   return (
     <Tabs.Root defaultValue="content">
@@ -32,6 +35,14 @@ export function ProjectTabs({ code, screenshots, demo }: Props) {
             </Flex>
           </Tabs.Trigger>
         )}
+        {hasActivity && (
+          <Tabs.Trigger value="activity">
+            <Flex align="center" gap="2">
+              <BarChartIcon />
+              提交 {activity!.total}
+            </Flex>
+          </Tabs.Trigger>
+        )}
       </Tabs.List>
       <Box pt="4">
         <Tabs.Content value="content">
@@ -40,6 +51,11 @@ export function ProjectTabs({ code, screenshots, demo }: Props) {
         {hasShots && (
           <Tabs.Content value="screenshots">
             <ScreenshotsGallery shots={screenshots!} demo={demo} />
+          </Tabs.Content>
+        )}
+        {hasActivity && (
+          <Tabs.Content value="activity">
+            <RepoActivityView data={activity!} />
           </Tabs.Content>
         )}
       </Box>
