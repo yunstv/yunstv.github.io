@@ -1,0 +1,296 @@
+---
+title: Three.js 学习系列（一）序章：它是什么，为什么学，怎么学
+date: 2026-05-28
+description: 一份从 0 到 1 的 Three.js 学习地图。这是 10 篇系列的第一篇——讲清楚 WebGL 与 Three.js 的关系、整个生态长什么样、官方三大入口怎么用，以及一段最小可运行的 "Hello Cube"。看完你能立刻动手，并清楚后面 9 篇会带你去哪里。
+tags: [threejs, webgl, 3d, javascript, learning-series]
+---
+
+<Callout type="info">
+  这是 **Three.js 学习系列** 的第一篇（共 10 篇规划）。
+  系列定位：**使用入门 + 源码剖析** 双线推进——
+  既能让你写出代码，也能让你看懂 [mrdoob/three.js](https://github.com/mrdoob/three.js) 仓库到底是怎么组织的。
+  本篇是序章，建立全局观，把整张地图先放在你面前。
+</Callout>
+
+## 一、Three.js 是什么
+
+一句话定义：**Three.js 是一个用 JavaScript 写的 3D 渲染库，让你在浏览器里画 3D 而不用直接写 WebGL**。
+
+它的作者是西班牙开发者 **Ricardo Cabello（mrdoob）**，2010 年 4 月发布第一版。
+**到 2026 年它已经是 GitHub Star 数最高的 3D 引擎之一**，全网用户基础大概只有 Unity / Unreal 这类游戏引擎能比。
+
+为什么"在浏览器里画 3D"是大事？
+因为 **浏览器零安装、跨平台、内置在每台设备里**——
+3D 内容一旦能跑在 Web 上，分发成本立刻塌方。
+
+Three.js 的典型应用：
+
+- 产品展示（鞋、车、家具的可旋转 3D 预览）
+- 数据可视化（地球仪、网络拓扑、3D 图表）
+- 在线游戏与互动叙事
+- VR/AR（WebXR）
+- 创意作品集网站（很多艺术家的 portfolio）
+- 工业级 BIM / CAD 在线预览
+- AI 时代的 3D 场景编辑器（Blender 之外的 Web 替代）
+
+## 二、WebGL 与 Three.js：底层和"封装"的关系
+
+为了真正理解 Three.js，先把它和 WebGL 的关系说清楚：
+
+```text
+┌─────────────────────────────────────┐
+│        Three.js（高层抽象）         │ ← 你写: scene.add(cube)
+├─────────────────────────────────────┤
+│        WebGL / WebGPU API           │ ← 浏览器: gl.drawArrays(...)
+├─────────────────────────────────────┤
+│         GPU 驱动 + 硬件             │ ← OS / Driver
+└─────────────────────────────────────┘
+```
+
+- **WebGL**：W3C 标准，浏览器原生提供，**API 极度底层**——
+  你要手动管理顶点缓冲区、写 GLSL shader、配置投影矩阵
+- **Three.js**：在 WebGL 上做了一层友好封装，把 3D 世界的概念（场景、相机、光、材质）抽象成对象
+
+直观对比：**画一个旋转的立方体**，原生 WebGL 大约要 200 行，Three.js 大约要 20 行。
+
+<Callout type="success">
+  Three.js 的核心价值是**"把 GPU 编程的入门成本降一个数量级"**。
+  这一点和 React 之于 DOM、PyTorch 之于 CUDA 是同一种现象——
+  **行业普及一种新技术，几乎总是靠一层好抽象，而不是教所有人写底层**。
+</Callout>
+
+> **WebGPU 的关系**：Three.js 从 r150+ 开始引入 WebGPU 渲染器（next-gen，性能更好、可计算着色器）。
+> 现在仓库里 WebGL 与 WebGPU **并存**——本系列会以 WebGL 渲染器为主，单独一篇讲 WebGPU 切换。
+
+## 三、官方三大入口（先收藏，反复用）
+
+学习 Three.js 最容易踩的坑是**信息源太杂**——网上教程版本不同步、API 改动频繁。
+**官方三件套就够了**：
+
+| 入口 | 链接 | 用法 |
+|---|---|---|
+| 官网 | [threejs.org](https://threejs.org/) | 看 examples，几百个交互式 demo 是最快建立"它能做什么"的方式 |
+| 文档 | [threejs.org/docs](https://threejs.org/docs/) | API 参考，所有类 / 方法 / 参数；遇到不懂的类**直接到这里查**，别看二手教程 |
+| 手册 | [threejs.org/manual](https://threejs.org/manual/) | 官方教程，从基础到进阶，**比所有第三方教程都新**（社区维护，跟着版本走）|
+| 源码 | [github.com/mrdoob/three.js](https://github.com/mrdoob/three.js) | 真正想搞清楚原理时唯一可信源；本系列的"源码剖析"以这里为准 |
+
+<Callout type="warning">
+  **别在 2026 年还看 2019 年的 Three.js 教程**——
+  API 变化大，构造函数签名、模块拆分、动画系统都改过几轮。
+  以官方 manual + examples 为主、第三方教程为辅，能避开 80% 的"我代码为啥不跑"的坑。
+</Callout>
+
+## 四、第一段可运行代码：Hello Cube
+
+直接动手——这段代码在浏览器里能跑出一个**旋转的彩色立方体**：
+
+```html
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hello Three.js</title>
+    <style>body { margin: 0; overflow: hidden; }</style>
+  </head>
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.170.0/build/three.module.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from 'three'
+
+      // 1. 三大件：场景 / 相机 / 渲染器
+      const scene = new THREE.Scene()
+      const camera = new THREE.PerspectiveCamera(
+        75,                                // 视场角 fov
+        window.innerWidth / window.innerHeight,  // 宽高比
+        0.1,                               // 近裁剪面
+        1000                               // 远裁剪面
+      )
+      camera.position.z = 3
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true })
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      renderer.setPixelRatio(window.devicePixelRatio)
+      document.body.appendChild(renderer.domElement)
+
+      // 2. 加一个立方体进场景
+      const geometry = new THREE.BoxGeometry(1, 1, 1)
+      const material = new THREE.MeshNormalMaterial()   // 用法线着色，免光源
+      const cube = new THREE.Mesh(geometry, material)
+      scene.add(cube)
+
+      // 3. 每帧渲染 + 旋转
+      renderer.setAnimationLoop(() => {
+        cube.rotation.x += 0.01
+        cube.rotation.y += 0.01
+        renderer.render(scene, camera)
+      })
+
+      // 4. 适配窗口尺寸
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+      })
+    </script>
+  </body>
+</html>
+```
+
+把这段保存成 `index.html`，**双击打开**就能看到一个旋转的彩色立方体。
+（如果你浏览器对 CORS 严格，可以用 `python -m http.server` 本地起服务）
+
+这段代码已经体现了 Three.js 的**三大件 + 一个网格 + 一个渲染循环**这套基础结构——
+后面所有更复杂的应用，本质上都是在这个骨架上扩展。
+
+## 五、Three.js 的"三大件 + 一个生态"
+
+让上面这段代码跑起来的几个基本概念，先把名字记住：
+
+```text
+┌──────────────────┐
+│      Scene       │  ← "舞台"，所有可见对象都放进它
+└────────┬─────────┘
+         │
+   ┌─────┴─────┐
+   ↓           ↓
+┌──────┐   ┌──────┐
+│ Mesh │   │ Light│  ← 可被渲染的对象、光源、辅助物
+└──────┘   └──────┘
+   ↑
+   │
+┌──────────┐  ┌──────────┐
+│ Geometry │  │ Material │
+└──────────┘  └──────────┘
+
+┌──────────────────┐    ┌──────────────────┐
+│     Camera       │    │     Renderer     │
+│ (观察者视角)     │    │ (把场景画成像素) │
+└──────────────────┘    └──────────────────┘
+```
+
+| 概念 | 角色 | 关键类 |
+|---|---|---|
+| Scene | 场景，对象的容器 | `THREE.Scene` |
+| Camera | 相机，决定我们怎么看 | `PerspectiveCamera` / `OrthographicCamera` |
+| Renderer | 渲染器，把场景画到 canvas | `WebGLRenderer` / `WebGPURenderer` |
+| Geometry | 几何体（形状）| `BoxGeometry`、`SphereGeometry`、`BufferGeometry` |
+| Material | 材质（外观、反射方式）| `MeshBasicMaterial`、`MeshStandardMaterial`、`ShaderMaterial` |
+| Mesh | 网格 = Geometry + Material | `THREE.Mesh` |
+| Light | 光源 | `DirectionalLight`、`PointLight`、`AmbientLight` |
+
+外围生态（不在核心仓库但常用）：
+
+- **OrbitControls** —— 鼠标拖拽旋转相机
+- **GLTFLoader** —— 加载 .glb/.gltf 3D 模型
+- **dat.GUI / lil-gui** —— 实时调参
+- **stats.js** —— FPS 监测
+- **EffectComposer** —— 后处理（辉光、景深、抗锯齿）
+- **drei**（React Three Fiber 生态）—— React 写 Three.js 的工程辅助
+
+## 六、Three.js 的源码全景（先看目录，再啃模块）
+
+`github.com/mrdoob/three.js` 仓库根目录最值得了解的几个文件夹：
+
+| 路径 | 作用 |
+|---|---|
+| `src/` | **所有源码**，按模块组织 |
+| `src/core/` | 场景图基础：Object3D、BufferAttribute、Layers …… |
+| `src/cameras/` | 各种相机实现 |
+| `src/geometries/` | 内置几何体（Box / Sphere / Plane / Torus / ……）|
+| `src/materials/` | 内置材质（Basic / Standard / Phong / Shader / ……）|
+| `src/lights/` | 光源实现 |
+| `src/renderers/` | **渲染管线核心**——WebGLRenderer / WebGPURenderer |
+| `src/renderers/shaders/` | 内置 GLSL 着色器源码（chunk 系统）|
+| `src/loaders/` | 各种 Loader |
+| `src/animation/` | 动画系统（AnimationMixer、KeyframeTrack）|
+| `examples/` | 几百个交互式 demo |
+| `editor/` | 官方在线场景编辑器源码 |
+
+整个仓库**有上千个 .js 文件**，但 80% 的关键逻辑集中在 `src/core` + `src/renderers/webgl` 这两块——
+本系列后续会按"先看用法，再看源码"的方式，一层层往下挖。
+
+<Callout type="info">
+  对学习者来说一个非常好的习惯：**遇到不懂的类，先打开 [docs](https://threejs.org/docs/) 看 API，
+  再 cmd+click 到源码看实现**。
+  Three.js 源码风格非常一致，类的层级清晰、命名直白——
+  **是少数能"读源码学到东西不会被劝退"的开源项目**。
+</Callout>
+
+## 七、本系列的 10 篇规划
+
+按 "0 → 1 → 精通 + 源码剖析" 的节奏排：
+
+| # | 主题 | 重点 |
+|---|---|---|
+| 01 | **序章**（本篇）| 全景 + 第一段代码 + 系列地图 |
+| 02 | 三大件深入：Scene / Camera / Renderer | 各自参数、坐标系、投影 |
+| 03 | Geometry 与 Material 全面拆解 | BufferGeometry 原理、各种 Material 适用场景 |
+| 04 | 光照与阴影 | 三种光、阴影贴图、PBR 基础 |
+| 05 | 动画系统 + 控制器 | requestAnimationFrame、补间、AnimationMixer、OrbitControls |
+| 06 | 加载外部资产 | GLTF / OBJ / FBX、Draco 压缩、纹理流水线 |
+| 07 | 着色器入门 | ShaderMaterial + GLSL、uniforms、内置 chunk 系统 |
+| 08 | 后处理与特效 | EffectComposer、辉光、景深、SSAO |
+| 09 | 性能优化 | InstancedMesh、LOD、frustum culling、Drawcall 合批 |
+| 10 | 源码架构总览 | 仓库目录、渲染管线主流程、和上 9 篇连点成线 |
+
+每篇都会保持 **使用层（怎么写）+ 源码层（为什么这样实现）** 两条线并行——
+学完整个系列，**你既能做项目，也能在出 bug 时看 Three.js 源码自助调试**。
+
+## 八、给你的第一个"作业"
+
+把上面那段 Hello Cube 代码跑起来，然后改三件事：
+
+1. 把 `BoxGeometry` 换成 `SphereGeometry(1, 32, 32)`
+2. 把 `MeshNormalMaterial` 换成 `MeshBasicMaterial({ color: 0x44aa88, wireframe: true })`
+3. 在 Animation Loop 里只让它**绕 Y 轴**慢慢转
+
+跑出效果后，回头看代码——
+你会发现自己已经无意识地**理解了"网格 = 几何体 + 材质"** 这套抽象。
+这就是 Three.js 教学最神奇的地方：**你不知不觉就上路了**。
+
+下一篇 [《Three.js（二）三大件深入：Scene / Camera / Renderer 的真正面貌》](/blog/threejs-02-scene-camera-renderer)
+会把 Hello Cube 里那 3 个类逐一拆开——
+**参数到底有哪些、各种相机怎么选、Renderer 在底层做了什么**。
+
+## 一句话总结
+
+> Three.js 是把 WebGL 从"博士级 API"压缩成"前端开发可用"的那一层抽象。
+> 学它**不是学一个库**，是学**3D 世界在浏览器里是怎么组装出来的**——
+> 等你看完这 10 篇，你看到任何一个 3D Web 站点都能 **F12 拆开它**，
+> 知道它用了什么几何体、什么材质、什么光、什么后处理。
+> 这是 Web 时代少数能让你"看穿别人作品"的硬技能之一。
+
+## 延伸阅读
+
+### 官方资源（永远以这里为准）
+
+- [threejs.org](https://threejs.org/) —— 主站 + examples 库
+- [Three.js Docs](https://threejs.org/docs/) —— API 参考
+- [Three.js Manual](https://threejs.org/manual/) —— 官方教程
+- [Three.js GitHub](https://github.com/mrdoob/three.js) —— 源码仓库，issue 与 PR 是最新动态
+- [Three.js Forum](https://discourse.threejs.org/) —— 官方论坛，遇到坑先搜这里
+
+### 经典书与教程
+
+- _Three.js Essentials_, Jos Dirksen —— 老但扎实
+- _Discover three.js_, Lewy Blue —— 免费在线教程，覆盖到中级
+- _Bruno Simon: Three.js Journey_ —— 付费课程，圈内公认最完整
+- _Real-Time Rendering_, Akenine-Möller et al. —— 想真正理解 GPU 渲染原理的"圣经"
+
+### 邻居生态
+
+- [React Three Fiber](https://docs.pmnd.rs/react-three-fiber) —— React 写 Three.js，工程上更顺手
+- [drei](https://github.com/pmndrs/drei) —— R3F 的工程辅助库
+- [Theatre.js](https://www.theatrejs.com/) —— 在浏览器里做动画的可视化工具
+- [Blender](https://www.blender.org/) —— 免费 3D 建模工具，配合 GLTF 导出
+
+### 站内相关
+
+- [互联网硬件软件全景](/blog/internet-hardware-and-software) —— GPU 在浏览器渲染管线里的位置
+- [Pretext 源码分析](/blog/pretext-source-analysis) —— 同样是"前端高频测量"问题，文字版本
