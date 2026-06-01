@@ -1,0 +1,500 @@
+---
+title: Three.js 学习系列（二）三大件深入：Scene / Camera / Renderer 的真正面貌
+date: 2026-05-28
+description: Hello Cube 里的 3 个类——new Scene()、new PerspectiveCamera()、new WebGLRenderer()——表面看是 3 行代码，里面藏着场景图、矩阵继承、视椎体投影、渲染管线主循环。这一篇把它们一层层拆开。
+tags: [threejs, webgl, 3d, scene-graph, learning-series]
+---
+
+<Callout type="info">
+  [上一篇](/blog/threejs-01-overview) 用 20 行代码画出了一个旋转立方体。
+  这一篇把那 20 行里**最关键的 3 个对象**逐一拆开——
+  Scene 不只是"容器"，Camera 也不只是"视角"，Renderer 更不是"调用一下就行"。
+  搞清楚它们的内部模型，**写复杂场景时不会迷路**。
+</Callout>
+
+## 一、Scene：不只是"容器"，是一棵场景图（Scene Graph）
+
+```js
+const scene = new THREE.Scene()
+scene.add(cube)
+```
+
+很多人以为 Scene 就是 `Array<Object>` 这种容器。**它不是**——
+它是 **场景图（Scene Graph）的根节点**。
+
+### 1.1 Scene 继承自 Object3D
+
+打开 [`src/scenes/Scene.js`](https://github.com/mrdoob/three.js/blob/master/src/scenes/Scene.js)，
+你会看到 Scene 极其简洁——本质上就是 `Object3D` 的一个子类，额外加了几个场景级属性：
+
+```js
+class Scene extends Object3D {
+  constructor() {
+    super()
+    this.isScene = true
+    this.background = null            // 背景：颜色 / Texture / CubeTexture
+    this.environment = null           // 环境贴图（用于 PBR 反射）
+    this.fog = null                   // 雾效
+    this.backgroundBlurriness = 0
+    this.backgroundIntensity = 1
+    this.overrideMaterial = null      // 整场景强制材质（调试常用）
+  }
+}
+```
+
+**真正的"容器"能力来自父类 `Object3D`**。
+
+### 1.2 Object3D：所有"可放到场景里的东西"的祖先
+
+打开 [`src/core/Object3D.js`](https://github.com/mrdoob/three.js/blob/master/src/core/Object3D.js)，
+这是整个 Three.js 最重要的类之一。简化版的关键属性：
+
+```js
+class Object3D {
+  position    = new Vector3()        // 局部位置
+  rotation    = new Euler()          // 欧拉角
+  quaternion  = new Quaternion()     // 四元数（和 rotation 互相同步）
+  scale       = new Vector3(1, 1, 1) // 缩放
+
+  matrix         = new Matrix4()     // 局部变换矩阵（由上面 3 个算出）
+  matrixWorld    = new Matrix4()     // 世界变换矩阵（沿父链累乘）
+  matrixAutoUpdate = true            // 是否每帧自动重算 matrix
+
+  parent   = null
+  children = []                      // 子节点列表
+
+  visible = true
+  layers  = new Layers()
+  userData = {}
+}
+```
+
+**Mesh / Light / Camera / Group / Scene 全部继承自 Object3D**——
+这意味着：
+
+- 任何对象都可以 `.add()` 子对象（Mesh 也能当容器用）
+- 任何对象都可以 `.position.set(x, y, z)`
+- 矩阵变换沿父子链**累积**——这就是"场景图"的本质
+
+### 1.3 场景图带来的工程红利
+
+```js
+const car = new THREE.Group()
+const body  = new THREE.Mesh(bodyGeo, bodyMat)
+const wheel = new THREE.Mesh(wheelGeo, wheelMat)
+
+car.add(body)
+car.add(wheel)
+scene.add(car)
+
+car.position.x = 10   // 整辆车（body + wheel）都跟着移动
+car.rotation.y = 0.5  // 整辆车一起转
+wheel.rotation.x += 0.1  // 单独让轮子自转
+```
+
+**子对象的世界变换 = 父对象的世界变换 × 子对象的局部变换**——
+这种递归累乘是 GPU 时代图形学的标准模式，
+也是为什么你能用相对简洁的代码做出复杂场景动画。
+
+### 1.4 遍历场景图：`traverse()`
+
+```js
+scene.traverse(obj => {
+  if (obj.isMesh) {
+    obj.castShadow = true
+    obj.receiveShadow = true
+  }
+})
+```
+
+`traverse()` 深度优先递归整棵树——
+**修改批量对象、查找特定节点、统计场景规模**都靠它。
+
+<Callout type="success">
+  **关键认知**：Three.js 的对象模型是"树"，不是"列表"。
+  写复杂场景时，**用 Group 给逻辑相关的对象分组**，比把所有 Mesh 一股脑塞进 Scene 根下要顺手得多。
+</Callout>
+
+## 二、Camera：相机的"视椎体"和投影矩阵
+
+```js
+const camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000)
+```
+
+这 4 个参数定义了一个**视椎体（frustum）**——
+3D 世界里**这个椎体范围内的东西才会被画**，外面的会被裁掉。
+
+### 2.1 PerspectiveCamera：透视相机
+
+```text
+           ┌─ 远裁剪面 (far)
+          /│
+         / │
+        /  │
+       /   │ ← 椎体内的物体被渲染
+      /    │
+     /     │
+    /      │
+   ◯───────┴─ 近裁剪面 (near)
+   ↑
+ 相机位置
+```
+
+4 个参数：
+
+| 参数 | 含义 | 典型值 |
+|---|---|---|
+| `fov` | 垂直视场角（度）| 45–75（人眼约 60）|
+| `aspect` | 宽高比 | `width / height` |
+| `near` | 近裁剪面距离 | 0.1 |
+| `far` | 远裁剪面距离 | 1000 或 10000 |
+
+源码 [`src/cameras/PerspectiveCamera.js`](https://github.com/mrdoob/three.js/blob/master/src/cameras/PerspectiveCamera.js) 里，
+最关键的方法是 `updateProjectionMatrix()`——把这 4 个参数计算成一个 4×4 的投影矩阵：
+
+```js
+updateProjectionMatrix() {
+  const near = this.near
+  let top = near * Math.tan(DEG2RAD * 0.5 * this.fov) / this.zoom
+  let height = 2 * top
+  let width = this.aspect * height
+  let left = -0.5 * width
+  // ……（offset / view 等高级特性）
+  this.projectionMatrix.makePerspective(left, left + width, top, top - height, near, this.far)
+  this.projectionMatrixInverse.copy(this.projectionMatrix).invert()
+}
+```
+
+**这个矩阵会被 vertex shader 用来把 3D 顶点变成 2D 屏幕坐标**——
+所以改 `fov` / `aspect` 后必须 `updateProjectionMatrix()`，否则相机参数和实际渲染不一致。
+
+### 2.2 OrthographicCamera：正交相机
+
+正交相机**没有透视收缩**，看到的物体大小不随距离变化——
+适合 2D 游戏、CAD、技术图纸、minimap、UI 叠加。
+
+```js
+const cam = new THREE.OrthographicCamera(
+  left, right,   // 视体左右
+  top, bottom,   // 视体上下
+  near, far      // 近远裁剪
+)
+```
+
+视椎体从**金字塔**变成**矩形盒**：
+
+```text
+┌────────────────┐  ← far
+│   渲染区域      │
+└────────────────┘
+       …
+┌────────────────┐  ← near
+│   渲染区域      │
+└────────────────┘
+```
+
+### 2.3 该选哪个？
+
+| 场景 | 选哪个 |
+|---|---|
+| 第一人称 / 第三人称 3D | **PerspectiveCamera** |
+| 2D 游戏（俯视 / 平台跳跃）| OrthographicCamera |
+| CAD / BIM / 技术绘图 | OrthographicCamera |
+| 数据可视化（3D 图表）| 看需求，柱状图常用 Orthographic |
+| Minimap、UI 元素叠加 | OrthographicCamera |
+| VR / AR | PerspectiveCamera（且 WebXR 会自动管理）|
+
+### 2.4 一个超常被忘的细节：`camera.lookAt()` 之后必须更新
+
+```js
+camera.position.set(5, 5, 5)
+camera.lookAt(0, 0, 0)            // 让相机朝向原点
+
+// 但相机的世界矩阵这一帧还没更新
+camera.updateMatrixWorld()        // ← 立即生效需要手动调
+```
+
+绝大多数情况渲染循环里 Three.js 会自动 `updateMatrixWorld()`，
+但**渲染前的逻辑里依赖 worldMatrix 时（如手动算 ray、frustum），必须手动调一次**。
+这是新手最容易踩的坑之一。
+
+## 三、Renderer：渲染管线的"指挥官"
+
+```js
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+```
+
+WebGLRenderer 是整个 Three.js 最复杂的类——
+单文件 [`src/renderers/WebGLRenderer.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/WebGLRenderer.js)
+**长达 2000+ 行**，因为它要包揽所有渲染管线工作。
+
+### 3.1 构造参数（常用的 7 个）
+
+```js
+new THREE.WebGLRenderer({
+  canvas:           myCanvas,   // 可传入已存在的 canvas
+  antialias:        true,       // MSAA 抗锯齿
+  alpha:            false,      // 背景是否透明
+  premultipliedAlpha: true,
+  preserveDrawingBuffer: false, // 是否保留 buffer（截图时打开）
+  powerPreference:  'high-performance', // 'low-power' / 'high-performance' / 'default'
+  precision:        'highp',    // 着色器精度
+  depth:            true,       // 是否启用深度缓冲
+  stencil:          false,      // 是否启用模板缓冲
+  logarithmicDepthBuffer: false // 大场景近远比例悬殊时打开
+})
+```
+
+实战经验：
+
+- **`antialias: true`** 默认开，但移动端可能要关
+- **`powerPreference: 'high-performance'`** 强制用独显
+- **`logarithmicDepthBuffer: true`** 在场景从厘米到公里跨度时打开，否则深度精度爆炸
+
+### 3.2 必设的几个属性
+
+```js
+renderer.setSize(width, height)              // 必设
+renderer.setPixelRatio(window.devicePixelRatio) // 高 DPI 必设
+renderer.shadowMap.enabled = true            // 想要阴影
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.outputColorSpace = THREE.SRGBColorSpace    // r152+ 后默认改了，老教程不一样
+renderer.toneMapping = THREE.ACESFilmicToneMapping  // PBR 推荐
+renderer.toneMappingExposure = 1.0
+```
+
+<Callout type="warning">
+  **颜色空间这个坑很大**：
+  - Three.js r152（2023）改了默认 color space
+  - 老教程里 `renderer.outputEncoding = sRGBEncoding` 已废弃，换成 `outputColorSpace`
+  - 纹理也要相应设置 `texture.colorSpace = SRGBColorSpace`
+  - **PBR 材质 + 错误 color space = 颜色看起来"灰扑扑"**——99% 的新手作品色彩问题在这里
+</Callout>
+
+### 3.3 `render()` 内部到底做了什么
+
+`renderer.render(scene, camera)` 一行，**内部做了至少 8 件事**：
+
+```text
+1. 更新 scene 所有 Object3D 的 matrixWorld（递归）
+2. 更新 camera 的 matrixWorldInverse 和 projectionMatrix
+3. 视椎体裁剪（frustum culling）——把椎体外的对象剔除
+4. 把可见对象分成两类: opaque（不透明）+ transparent（透明）
+5. opaque 列表按"前→后"排序（充分利用深度测试早期剔除）
+6. transparent 列表按"后→前"排序（保证半透明叠加正确）
+7. 上传顶点 / 索引 / uniforms 到 GPU
+8. 依次发出 drawcall：bindProgram → setUniforms → drawElements
+```
+
+这 8 步的顺序**对性能和正确性都至关重要**：
+
+- 第 3 步少做了 → 屏幕外的对象浪费 GPU
+- 第 4–6 步搞错了 → 半透明物体叠加颜色错误
+- 第 8 步 drawcall 数量是性能最大杀手（[Part 09](/blog/threejs-09-performance) 会专门讲）
+
+### 3.4 一帧的"渲染顺序"可视化
+
+```text
+┌──────────────────────────────────────────────┐
+│ requestAnimationFrame                        │
+│  ↓                                           │
+│  scene.traverse → 更新 matrixWorld           │
+│  ↓                                           │
+│  projectObject(scene)                        │
+│   ├─ 剔除 visible=false                      │
+│   ├─ frustum 剔除                            │
+│   └─ 分类: opaque / transparent / lights     │
+│  ↓                                           │
+│  渲染阴影贴图 (如果开了)                     │
+│  ↓                                           │
+│  渲染 opaque（前→后）                        │
+│  ↓                                           │
+│  渲染 transparent（后→前）                   │
+│  ↓                                           │
+│  完成本帧                                    │
+└──────────────────────────────────────────────┘
+```
+
+### 3.5 WebGPURenderer：下一代渲染器
+
+r150+ 之后 Three.js 提供 `WebGPURenderer`，未来会是默认选项：
+
+```js
+import { WebGPURenderer } from 'three/webgpu'
+
+const renderer = new WebGPURenderer({ antialias: true })
+await renderer.init()
+```
+
+差异：
+- **更快**：现代 GPU 的命令缓冲与并行调度
+- **支持 compute shader**：GPU 通用计算
+- **更现代的 shader 语言（WGSL）**
+
+但当前（2026）兼容性仍不如 WebGL2 完整——
+**生产项目优先用 WebGL，对新特性敏感的玩 WebGPU**。
+
+## 四、把三大件串起来：完整的"一帧"
+
+放在一起回看 [Part 01](/blog/threejs-01-overview) 的 Hello Cube，
+现在你应该能看出每一行背后发生的事了：
+
+```js
+// Scene 是场景图的根，本质上是 Object3D
+const scene = new THREE.Scene()
+
+// 相机的 fov/aspect/near/far 生成投影矩阵 → 决定哪些顶点能进屏幕
+const camera = new THREE.PerspectiveCamera(75, w/h, 0.1, 1000)
+camera.position.z = 3       // ← 设置 position，会被算进 matrixWorld
+
+// Renderer 是整个管线的指挥官
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+renderer.setSize(w, h)
+renderer.setPixelRatio(devicePixelRatio)
+document.body.appendChild(renderer.domElement)
+
+// Mesh = Geometry + Material，也是 Object3D，放进场景图
+const cube = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshNormalMaterial()
+)
+scene.add(cube)
+
+// 每帧:
+// 1. 修改某些 Object3D 的状态
+// 2. 调 renderer.render(scene, camera) 触发 8 步流水
+renderer.setAnimationLoop(() => {
+  cube.rotation.x += 0.01
+  cube.rotation.y += 0.01
+  renderer.render(scene, camera)
+})
+```
+
+**这套骨架后面 8 篇都不会变**——
+我们只会替换其中的 Geometry / Material / Light / Loader / Shader / Post-processing 几个部件。
+
+## 五、源码深读：Scene → Renderer 的调用链
+
+如果你想真正看懂 `renderer.render(scene, camera)` 的内部，**关键源码线索**：
+
+```text
+src/renderers/WebGLRenderer.js
+  └── this.render(scene, camera)
+        ├── projectObject(scene, camera, 0, ...)
+        │     └── 递归 scene 子节点, 分类到 currentRenderList
+        ├── shadowMap.render()
+        ├── renderObjects(opaqueObjects, scene, camera)
+        │     └── renderObject() → renderBufferDirect() → gl.drawElements()
+        └── renderObjects(transparentObjects, scene, camera)
+```
+
+涉及的关键内部对象：
+
+| 文件 | 角色 |
+|---|---|
+| `WebGLRenderer.js` | 总入口 |
+| `WebGLRenderLists.js` | 当前帧的"待渲染对象"列表 |
+| `WebGLProgram.js` | 着色器编译与缓存 |
+| `WebGLBufferRenderer.js` | 实际 `gl.drawArrays/drawElements` |
+| `WebGLShadowMap.js` | 阴影贴图渲染 |
+| `WebGLState.js` | 缓存 GL 状态，避免冗余设置 |
+
+<Callout type="info">
+  这一部分目前不需要全部读懂——
+  系列后面 [Part 10：源码架构总览](/blog/threejs-10-source-architecture) 会**专门花一篇** 串这条主线。
+  现在你只要记住：**Three.js 的渲染管线最终落到 WebGLRenderer.render() 这一个入口函数上**。
+</Callout>
+
+## 六、实操作业（继续上一篇的节奏）
+
+在 Hello Cube 基础上完成三件事：
+
+### 1. 用 Group 组合两个 Mesh
+
+```js
+const group = new THREE.Group()
+group.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshNormalMaterial()))
+group.add(new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshNormalMaterial()).translateX(1.5))
+scene.add(group)
+
+// 然后让整个 group 转，子对象会一起跟着转
+group.rotation.y += 0.01
+```
+
+体会场景图的父子继承。
+
+### 2. 同一个场景两台相机切换
+
+```js
+const perspective = new THREE.PerspectiveCamera(75, w/h, 0.1, 1000)
+const ortho = new THREE.OrthographicCamera(-3, 3, 3, -3, 0.1, 1000)
+let useOrtho = false
+window.addEventListener('keydown', e => { if (e.key === 'c') useOrtho = !useOrtho })
+// renderer.render(scene, useOrtho ? ortho : perspective)
+```
+
+体会两种相机视觉效果差异。
+
+### 3. 打印一次场景图结构
+
+```js
+scene.traverse(obj => {
+  console.log(`${'  '.repeat(getDepth(obj))}${obj.type} ${obj.name || ''}`)
+})
+
+function getDepth(obj) {
+  let d = 0; while (obj.parent) { obj = obj.parent; d++ } return d
+}
+```
+
+把场景图打成树形输出——**调试复杂场景时这是最常用的小工具**。
+
+## 七、下一篇预告
+
+[Part 03：Geometry 与 Material 全面拆解](/blog/threejs-03-geometry-material) 会回答：
+
+- BufferGeometry 内部是怎么存顶点数据的？
+- 为什么 `MeshBasicMaterial` 不用光，`MeshStandardMaterial` 要光？
+- PBR（基于物理的渲染）到底改变了什么？
+- 内置 Geometry 之外，怎么自己造一个？
+
+那一篇会真正让你**从"会用 Three.js"走向"理解 GPU 顶点数据"**——
+这是后续 shader、性能优化、自定义渲染的所有前置。
+
+## 一句话总结
+
+> Hello Cube 那 20 行代码看起来朴素，背后是 **场景图 + 视椎体投影 + 渲染管线** 三套机制在协同。
+> Scene 是树、Camera 是投影矩阵生成器、Renderer 是状态机指挥官——
+> 三件事各自有完整的工程细节，**搞清楚它们的内部模型，复杂场景里就不会"代码能跑但效果不对"**。
+
+## 延伸阅读
+
+### 官方文档（按本文涉及类查）
+
+- [Object3D](https://threejs.org/docs/#api/en/core/Object3D)
+- [Scene](https://threejs.org/docs/#api/en/scenes/Scene)
+- [PerspectiveCamera](https://threejs.org/docs/#api/en/cameras/PerspectiveCamera)
+- [OrthographicCamera](https://threejs.org/docs/#api/en/cameras/OrthographicCamera)
+- [WebGLRenderer](https://threejs.org/docs/#api/en/renderers/WebGLRenderer)
+- [WebGPURenderer](https://threejs.org/docs/#api/en/renderers/WebGPURenderer)
+
+### 源码核心文件
+
+- [`src/core/Object3D.js`](https://github.com/mrdoob/three.js/blob/master/src/core/Object3D.js)
+- [`src/scenes/Scene.js`](https://github.com/mrdoob/three.js/blob/master/src/scenes/Scene.js)
+- [`src/cameras/PerspectiveCamera.js`](https://github.com/mrdoob/three.js/blob/master/src/cameras/PerspectiveCamera.js)
+- [`src/renderers/WebGLRenderer.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/WebGLRenderer.js)
+- [`src/renderers/webgl/WebGLRenderLists.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/webgl/WebGLRenderLists.js)
+
+### 概念深入
+
+- _Real-Time Rendering, 4th Edition_, Akenine-Möller —— 第 2、4 章：变换、投影矩阵
+- [Learn OpenGL: Coordinate Systems](https://learnopengl.com/Getting-started/Coordinate-Systems) —— 视椎体与投影矩阵最好的免费教程
+- [Three.js Fundamentals: Scene Graph](https://threejs.org/manual/#en/scenegraph) —— 官方场景图章节
+- ["The Book of Shaders"](https://thebookofshaders.com/) —— shader 入门必读（为 Part 07 做准备）
+
+### 系列内文章
+
+- 上一篇：[Three.js（一）序章](/blog/threejs-01-overview)
+- 下一篇：[Three.js（三）Geometry 与 Material 全面拆解](/blog/threejs-03-geometry-material)
+- 全系列地图：见 [序章末尾的 10 篇规划表](/blog/threejs-01-overview)
