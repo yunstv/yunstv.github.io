@@ -1,0 +1,529 @@
+---
+title: Three.js 学习系列（三）Geometry 与 Material 全面拆解
+date: 2026-05-28
+description: Mesh = Geometry + Material 这个等式我们已经会背了。但 Geometry 在内存里到底是什么样子？Material 为什么有 BasicMaterial / Standard / Phong / Physical / Shader 这么多种？这一篇把"顶点数据 + 着色策略"两条线一次讲透。
+tags: [threejs, webgl, geometry, material, pbr, learning-series]
+---
+
+<Callout type="info">
+  [上一篇](/blog/threejs-02-scene-camera-renderer) 拆了 Scene / Camera / Renderer。
+  这一篇拆 Mesh 的两个组成部分：**Geometry（形状）+ Material（外观）**。
+  搞清楚这两个之后，你才能真正理解 GPU 在每一帧到底"看到"什么、又是怎么"画"出来的。
+</Callout>
+
+## 一、BufferGeometry：顶点数据的真相
+
+### 1.1 一切几何体都是"一堆数字"
+
+GPU 不认识"立方体"、"球"、"龙"——它只认识 **三角形**，而三角形由**顶点**组成。
+所以无论你用 `BoxGeometry` 还是加载一个龙模型，最终送进 GPU 的都是：
+
+```text
+positions : [x0, y0, z0, x1, y1, z1, x2, y2, z2, ……]   ← 顶点位置
+normals   : [nx0, ny0, nz0, ……]                       ← 顶点法线（用于光照）
+uvs       : [u0, v0, u1, v1, ……]                      ← 纹理坐标
+indices   : [0, 1, 2, 2, 3, 0, ……]                    ← 三角形索引（可选）
+colors    : [r0, g0, b0, ……]                          ← 顶点颜色（可选）
+```
+
+这就是 Three.js 里的 **`BufferGeometry`** ——
+**所有几何体的基类**，所有内置 `BoxGeometry` / `SphereGeometry` / `TorusGeometry` **都继承自它**。
+
+### 1.2 BufferAttribute：每个数组的"包装器"
+
+打开 [`src/core/BufferGeometry.js`](https://github.com/mrdoob/three.js/blob/master/src/core/BufferGeometry.js)，
+你会看到 BufferGeometry 内部不是直接存 `Float32Array`，而是用 **BufferAttribute** 包了一层：
+
+```js
+class BufferGeometry {
+  attributes = {}    // { position: BufferAttribute, normal: ..., uv: ... }
+  index      = null  // BufferAttribute | null
+  groups     = []    // 分材质多组渲染时用
+}
+
+class BufferAttribute {
+  array       // 实际数据（Float32Array / Uint16Array ……）
+  itemSize    // 每个顶点占几个数字（position = 3, uv = 2, color = 3）
+  count       // 顶点数
+  normalized  // 是否需要标准化（针对整型数组）
+  usage       // STATIC_DRAW / DYNAMIC_DRAW
+}
+```
+
+`itemSize` 是关键——告诉 GPU **"每 3 个数字是一个顶点位置，每 2 个数字是一个 uv"**。
+
+### 1.3 一个最小的"手工 BufferGeometry"
+
+直接造一个三角形：
+
+```js
+const geometry = new THREE.BufferGeometry()
+
+// 一个三角形 = 3 个顶点 × 3 个数字（x, y, z）= 9 个数字
+const vertices = new Float32Array([
+  -1, -1, 0,
+   1, -1, 0,
+   0,  1, 0,
+])
+
+geometry.setAttribute(
+  'position',
+  new THREE.BufferAttribute(vertices, 3)   // 3 = itemSize
+)
+
+const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x44aa88 }))
+scene.add(mesh)
+```
+
+跑起来——一个绿色三角形出现在屏幕上。
+这就是 Three.js **最底层的几何体构造方式**——
+所有内置 geometry 都是用类似代码批量生成的。
+
+<Callout type="success">
+  **理解这一点之后，再去看 BoxGeometry / SphereGeometry 的源码**：
+  它们本质上是**用循环生成上面这种 Float32Array** 的工具函数。
+  自定义几何体（地形、波浪、自适应网格）就靠手动操作 BufferAttribute 来实现。
+</Callout>
+
+### 1.4 索引（Index）：去重的关键
+
+立方体有 8 个顶点，但 6 个面 × 2 个三角形 = 12 个三角形 × 3 = 36 个顶点位置。
+要么重复存 36 个，要么存 8 个 + 一个"索引数组"。
+
+```js
+geometry.setIndex([0, 1, 2,  2, 3, 0, ...])  // 用索引复用顶点
+```
+
+**带索引的几何体内存占用小、缓存命中率高**——
+是为什么 BoxGeometry 默认带 index。
+GPU 通过 `gl.drawElements()` 而不是 `gl.drawArrays()` 来渲染索引化几何体。
+
+### 1.5 内置 Geometry 速查表
+
+按使用频率排序：
+
+| 类 | 用途 | 关键参数 |
+|---|---|---|
+| BoxGeometry | 立方体 | width, height, depth, segments |
+| SphereGeometry | 球 | radius, widthSegments, heightSegments |
+| PlaneGeometry | 平面 | width, height, segments（**做地面/水面常用**）|
+| CylinderGeometry | 圆柱 | radiusTop, radiusBottom, height |
+| ConeGeometry | 圆锥 | 同上但 radiusTop=0 |
+| TorusGeometry | 圆环（甜甜圈）| radius, tube |
+| TorusKnotGeometry | 圆环结 | 数学装饰常用 |
+| TetrahedronGeometry | 四面体 | 多面体家族 |
+| OctahedronGeometry | 八面体 | 多面体家族 |
+| IcosahedronGeometry | 二十面体 | 球体的低多边形替代 |
+| LatheGeometry | 旋转曲面 | 用 2D 轮廓绕轴旋转生成 |
+| ExtrudeGeometry | 拉伸 | 从 2D Shape 拉成 3D |
+| TextGeometry | 3D 文字 | 需要字体文件 |
+| EdgesGeometry | 边线提取 | 从已有几何提取边 |
+| WireframeGeometry | 线框 | 同上 |
+
+每一个都是 [`src/geometries/`](https://github.com/mrdoob/three.js/tree/master/src/geometries) 下一个独立文件——
+读源码会发现它们都是**100–300 行的循环 + 三角函数**，理解一两个就懂全套。
+
+## 二、Material：决定"怎么画"的策略
+
+Geometry 决定**形状**，Material 决定**外观**——
+同一个球，配 BasicMaterial 是纯色，配 StandardMaterial 是金属球，配 ShaderMaterial 可以是流动液体。
+
+### 2.1 Material 的家族族谱
+
+```text
+Material（基类）
+  ├── MeshBasicMaterial       不参与光照，纯色或贴图
+  ├── MeshNormalMaterial      用法线着色（调试用）
+  ├── MeshDepthMaterial       用深度着色（调试/阴影）
+  ├── MeshMatcapMaterial      用 matcap 球贴图模拟光照
+  ├── MeshLambertMaterial     漫反射（旧式 Lambertian 光照模型）
+  ├── MeshPhongMaterial       漫反射 + 高光（Phong 光照模型）
+  ├── MeshToonMaterial        卡通渲染（色阶分层）
+  ├── MeshStandardMaterial    ★ PBR 标准材质（推荐用这个）
+  ├── MeshPhysicalMaterial    PBR 扩展（玻璃、布料、清漆涂层）
+  ├── ShaderMaterial          自定义 GLSL（Part 07 详谈）
+  ├── RawShaderMaterial       完全裸的自定义 shader
+  ├── LineBasicMaterial       线段
+  ├── LineDashedMaterial      虚线
+  ├── PointsMaterial          点云
+  ├── SpriteMaterial          始终面向相机的精灵
+  └── ShadowMaterial          仅接收阴影
+```
+
+每一种都有特定用途，**但 90% 的项目主要在用 4 种**：
+
+- `MeshBasicMaterial` —— 不需要光照的简单场景
+- `MeshStandardMaterial` —— 写实风格，配光使用
+- `ShaderMaterial` —— 特效、流动、变形
+- `LineBasicMaterial` —— 线框、辅助线、debug
+
+### 2.2 MeshBasicMaterial：最朴素的着色策略
+
+```js
+const mat = new THREE.MeshBasicMaterial({
+  color: 0xff8844,
+  wireframe: false,
+  transparent: false,
+  opacity: 1,
+  map: null,        // 颜色贴图（texture）
+  side: THREE.FrontSide,  // 双面：DoubleSide
+})
+```
+
+**特点**：完全无视场景里的光源——给颜色就是颜色，给贴图就是贴图。
+适合：UI、标记、不需要光照感的简单场景、地图标记球。
+
+### 2.3 MeshLambertMaterial / MeshPhongMaterial：经典光照模型
+
+这两个是"古典图形学"时代的材质：
+
+- **Lambert**：只算漫反射（cosθ 决定亮度），表面看起来"哑光"
+- **Phong**：Lambert + 高光（specular highlight），表面看起来"塑料"或"金属"
+
+```js
+const lambert = new THREE.MeshLambertMaterial({ color: 0x44aa88 })
+const phong = new THREE.MeshPhongMaterial({
+  color: 0x44aa88,
+  specular: 0x222222,
+  shininess: 30,
+})
+```
+
+**特点**：计算便宜，但**物理上不准**——
+现实里光照不是简单的 "cosθ" 关系。所以现在主流是 PBR。
+
+### 2.4 MeshStandardMaterial：PBR 时代的默认选择
+
+**PBR（Physically Based Rendering）** 是过去 10 年图形学最大的范式转移——
+把"凭手感调参数"换成"基于真实物理的光照计算"。
+
+```js
+const mat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  metalness: 0.8,     // 金属度: 0 = 非金属（塑料/木头）, 1 = 纯金属
+  roughness: 0.2,     // 粗糙度: 0 = 镜面, 1 = 完全漫反射
+
+  map:           colorTexture,        // 颜色贴图
+  normalMap:     normalTexture,       // 法线贴图（凹凸细节）
+  roughnessMap:  roughnessTexture,    // 粗糙度贴图
+  metalnessMap:  metalnessTexture,    // 金属度贴图
+  aoMap:         aoTexture,            // 环境光遮蔽
+  emissiveMap:   emissiveTexture,     // 自发光
+  envMap:        envCubeTexture,      // 环境反射（必需，否则金属看起来怪）
+})
+```
+
+**两个核心参数**：`metalness` + `roughness`。
+PBR 把"什么是金属、表面有多光滑"这两件事**量化成 0–1 的数字**——
+所有材质的视觉效果由这两个参数主导。
+
+```text
+metalness=0, roughness=1   →   哑光塑料
+metalness=0, roughness=0   →   光滑塑料/陶瓷
+metalness=1, roughness=0   →   抛光金属（镜面）
+metalness=1, roughness=1   →   磨砂金属
+```
+
+<Callout type="warning">
+  **PBR 必须配环境贴图（envMap）**——
+  没有 envMap 的 metalness > 0 物体看起来会"灰扑扑、像油漆"。
+  因为金属的外观 90% 来自**反射的环境光**，没东西可反射就什么都看不到。
+  实战中用 [`RGBELoader`](https://threejs.org/docs/#examples/en/loaders/RGBELoader) 加载 .hdr 文件作 envMap。
+</Callout>
+
+### 2.5 MeshPhysicalMaterial：PBR Pro
+
+`MeshPhysicalMaterial` 继承 Standard，**多加了几个高级特性**：
+
+```js
+new THREE.MeshPhysicalMaterial({
+  clearcoat: 1,            // 清漆涂层（汽车漆、指甲油）
+  clearcoatRoughness: 0.1,
+  transmission: 1,         // 透射（玻璃、酒杯）
+  thickness: 0.5,          // 透射厚度
+  ior: 1.5,                // 折射率
+  sheen: 0.5,              // 布料光泽（天鹅绒、丝绸）
+  iridescence: 0.5,        // 虹彩（CD、肥皂泡）
+  attenuationColor: 0xffffff,
+  attenuationDistance: 1,
+})
+```
+
+**适用**：汽车、玻璃、宝石、布料、肥皂泡——
+**任何"普通 PBR 不够用"** 的特殊材质。
+
+### 2.6 MeshNormalMaterial / MeshDepthMaterial：调试神器
+
+```js
+new THREE.MeshNormalMaterial()    // 用法线方向着色（每面颜色不同）
+new THREE.MeshDepthMaterial()     // 用深度着色（近黑远白）
+```
+
+虽然不是"产品材质"，但**写复杂场景时是定位 bug 的好工具**：
+
+- 模型导入后看起来怪 → 换 NormalMaterial 看法线对不对
+- 阴影/深度有问题 → 换 DepthMaterial 看深度分布
+
+### 2.7 LineBasicMaterial / PointsMaterial / SpriteMaterial
+
+这三个不是给 Mesh 用的：
+
+- **LineBasicMaterial** + `THREE.Line` / `LineSegments` / `LineLoop` 画线
+- **PointsMaterial** + `THREE.Points` 画点云
+- **SpriteMaterial** + `THREE.Sprite` 画始终面向相机的精灵图
+
+```js
+// 一万个点的星空
+const positions = new Float32Array(10000 * 3)
+for (let i = 0; i < positions.length; i++) positions[i] = (Math.random() - 0.5) * 100
+const geom = new THREE.BufferGeometry()
+geom.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+const stars = new THREE.Points(geom, new THREE.PointsMaterial({ size: 0.1, color: 0xffffff }))
+scene.add(stars)
+```
+
+**Points + 大量顶点是粒子系统、星空、烟雾**的基础——
+配合 ShaderMaterial 能做出非常炫的效果（Part 07 会展开）。
+
+## 三、Texture：贴图系统的核心
+
+PBR 材质几乎都要配贴图。Three.js 的 Texture 系统几个要点：
+
+### 3.1 加载贴图
+
+```js
+const loader = new THREE.TextureLoader()
+const tex = loader.load('/path/to/texture.jpg')
+
+// r152+ 必须显式设置 colorSpace
+tex.colorSpace = THREE.SRGBColorSpace  // 颜色贴图用 sRGB
+// normalMap / roughnessMap 等"数据贴图"用 NoColorSpace（默认）
+```
+
+<Callout type="warning">
+  **三个最容易忘的配置**：
+  - `colorSpace` —— 颜色贴图必须 sRGB，数据贴图必须 NoColorSpace
+  - `flipY` —— GLTF 加载的纹理是 false，常规贴图是 true
+  - `wrapS / wrapT` —— 默认 ClampToEdge，平铺要改 RepeatWrapping
+</Callout>
+
+### 3.2 贴图类型一览
+
+| 贴图 | 作用 | 数据类型 |
+|---|---|---|
+| `map` | 颜色（diffuse） | sRGB |
+| `normalMap` | 法线（凹凸细节，不改几何）| Linear |
+| `roughnessMap` | 粗糙度 | Linear |
+| `metalnessMap` | 金属度 | Linear |
+| `aoMap` | 环境光遮蔽 | Linear |
+| `emissiveMap` | 自发光 | sRGB |
+| `bumpMap` | 凸凹（老式，不如 normal）| Linear |
+| `displacementMap` | 位移（真的改变顶点）| Linear |
+| `envMap` | 环境反射 | sRGB |
+| `lightMap` | 烘焙光照 | Linear |
+| `alphaMap` | 透明度 | Linear |
+
+### 3.3 mipmap 与 anisotropy
+
+```js
+tex.generateMipmaps = true
+tex.minFilter = THREE.LinearMipmapLinearFilter
+tex.anisotropy = renderer.capabilities.getMaxAnisotropy()  // 各向异性过滤
+```
+
+- **mipmap**：自动生成多个层级的小图，远处用小图，避免锯齿和摩尔纹
+- **anisotropy**：斜视贴图时的清晰度（看远处地面纹理特别明显）
+
+## 四、Material 的"GLSL 编译"是怎么发生的
+
+很多人不知道：**每个 Material 内部都会被 Three.js 编译成一段 GLSL shader**。
+
+打开 [`src/renderers/shaders/ShaderLib.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderLib.js)，
+你会看到一张"材质 → shader 名"的映射表：
+
+```js
+const ShaderLib = {
+  basic:     { uniforms, vertexShader, fragmentShader },
+  lambert:   { ... },
+  phong:     { ... },
+  standard:  { ... },
+  physical:  { ... },
+  matcap:    { ... },
+  toon:      { ... },
+  points:    { ... },
+  // ……
+}
+```
+
+每个 shader 由 **chunk（片段）** 拼接而成。例如 `standard` 材质的 fragment shader 大致结构：
+
+```text
+common.glsl.js
++ packing.glsl.js
++ uv_pars_fragment.glsl.js
++ map_pars_fragment.glsl.js
++ normalmap_pars_fragment.glsl.js
++ ……
++ standard_frag.glsl.js
+```
+
+打开 [`src/renderers/shaders/ShaderChunk/`](https://github.com/mrdoob/three.js/tree/master/src/renderers/shaders/ShaderChunk)
+就能看到 **100+ 个 .glsl.js 片段**——
+**Three.js 的 PBR 实现就藏在这里**。
+
+<Callout type="info">
+  这是 Three.js 工程上最精巧的一部分：
+  **把 shader 切成可复用的 chunk，按材质需求"编译期拼接"**。
+  这种模式后来被很多 WebGL 库借鉴。
+  Part 07 会专门讲怎么 inject 你自己的 chunk 进现有材质——
+  这是写"PBR 材质 + 自定义变形"最优雅的姿势。
+</Callout>
+
+## 五、实战：四种材质的同球对比
+
+放四个相同的球到场景里，分别用四种材质——一眼看出区别：
+
+```js
+const ball = (mat, x) => {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), mat)
+  m.position.x = x
+  scene.add(m)
+  return m
+}
+
+ball(new THREE.MeshBasicMaterial({ color: 0xff4444 }), -3)
+ball(new THREE.MeshLambertMaterial({ color: 0xff4444 }), -1)
+ball(new THREE.MeshPhongMaterial({ color: 0xff4444, shininess: 100 }), 1)
+ball(new THREE.MeshStandardMaterial({ color: 0xff4444, metalness: 0.8, roughness: 0.2 }), 3)
+
+// 不加光的话 Lambert/Phong/Standard 都是黑的，必须加灯
+scene.add(new THREE.AmbientLight(0xffffff, 0.3))
+const dir = new THREE.DirectionalLight(0xffffff, 1)
+dir.position.set(5, 5, 5)
+scene.add(dir)
+
+// 加环境贴图让 Standard 的金属感正常
+new THREE.RGBELoader().load('/env.hdr', tex => {
+  tex.mapping = THREE.EquirectangularReflectionMapping
+  scene.environment = tex
+})
+```
+
+跑完看四个球——
+**Basic 是平面色，Lambert 是哑光，Phong 是塑料，Standard 是金属球**。
+这就是材质系统给"同一个几何体"带来的视觉表达力。
+
+## 六、自定义 Geometry：做一个波浪平面
+
+实际项目里经常需要"动态变形"的几何——海洋、地形、布料。
+最朴素的做法是**操作 BufferAttribute**：
+
+```js
+const SIZE = 50, SEG = 100
+const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG)
+geo.rotateX(-Math.PI / 2)  // 让它平躺
+
+const positions = geo.attributes.position
+const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+  color: 0x2266aa, wireframe: false, side: THREE.DoubleSide,
+}))
+scene.add(mesh)
+
+// 每帧更新顶点高度
+const clock = new THREE.Clock()
+renderer.setAnimationLoop(() => {
+  const t = clock.getElapsedTime()
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i)
+    const z = positions.getZ(i)
+    positions.setY(i, Math.sin(x * 0.3 + t) * 0.5 + Math.cos(z * 0.3 + t * 0.7) * 0.5)
+  }
+  positions.needsUpdate = true   // ★ 关键：通知 GPU 重新上传数据
+  geo.computeVertexNormals()     // 重算法线，否则光照不对
+  renderer.render(scene, camera)
+})
+```
+
+要点：
+
+- `positions.needsUpdate = true` ★ 必须，不然 GPU 不会重新拿数据
+- 改完位置要 `computeVertexNormals()`，否则光照计算用的还是旧法线
+- **如果性能不够**：把这套逻辑搬到 ShaderMaterial 的 vertex shader 里——CPU → GPU 是数量级提升（Part 07 详谈）
+
+## 七、作业
+
+在 [Part 02](/blog/threejs-02-scene-camera-renderer) 的基础上：
+
+### 1. 手工造一个金字塔几何体
+
+不用 `ConeGeometry`，用 BufferGeometry + 5 个顶点 + index 自己拼一个四棱锥。
+做完会非常有感——"几何体不是黑盒"。
+
+### 2. PBR 球 + 三种贴图
+
+下载一组免费 PBR 贴图（[ambientCG](https://ambientcg.com) / [polyhaven](https://polyhaven.com)），
+分别挂上 `map` / `normalMap` / `roughnessMap`，加 envMap，调出"金属磨砂表面"的效果。
+
+### 3. 一千个 cube 用 MeshNormalMaterial
+
+随机放 1000 个不同位置、不同大小的立方体——
+你会发现 1000 个 cube 各自一个 drawcall 时，**FPS 可能掉到很难看**。
+这是 [Part 09 性能优化](/blog/threejs-09-performance) 要解决的问题，先体会一下"野生 Three.js"的性能边界。
+
+## 八、下一篇预告
+
+[Part 04：光照与阴影](/blog/threejs-04-lights-shadows) 会回答：
+
+- 三大光（Ambient / Directional / Point / Spot / Hemisphere / RectArea）各自适合什么场景
+- 阴影贴图（Shadow Map）为什么默认是关的
+- 软阴影、PCF / VSM、级联阴影（CSM）
+- IBL（基于图像的光照）和 envMap 的关系
+- 实战：搭一个完整的"展厅灯光"场景
+
+PBR 离开光照就是"半成品"——下一篇才真正让你的场景有"质感"。
+
+## 一句话总结
+
+> **Geometry 是顶点数据，Material 是着色策略。**
+> 看懂 BufferGeometry 的数组结构，你就明白了 GPU 在看什么；
+> 看懂 Material 家族族谱，你就明白了 GPU 在算什么。
+> 这两件事搞清楚之后，**Three.js 的所有视觉效果都不再是黑盒**。
+
+## 延伸阅读
+
+### 官方文档（按本文涉及类查）
+
+- [BufferGeometry](https://threejs.org/docs/#api/en/core/BufferGeometry)
+- [BufferAttribute](https://threejs.org/docs/#api/en/core/BufferAttribute)
+- [Material 总览](https://threejs.org/docs/#api/en/materials/Material)
+- [MeshStandardMaterial](https://threejs.org/docs/#api/en/materials/MeshStandardMaterial)
+- [MeshPhysicalMaterial](https://threejs.org/docs/#api/en/materials/MeshPhysicalMaterial)
+- [Texture](https://threejs.org/docs/#api/en/textures/Texture)
+
+### 源码核心文件
+
+- [`src/core/BufferGeometry.js`](https://github.com/mrdoob/three.js/blob/master/src/core/BufferGeometry.js)
+- [`src/core/BufferAttribute.js`](https://github.com/mrdoob/three.js/blob/master/src/core/BufferAttribute.js)
+- [`src/geometries/`](https://github.com/mrdoob/three.js/tree/master/src/geometries) —— 所有内置 Geometry
+- [`src/materials/`](https://github.com/mrdoob/three.js/tree/master/src/materials) —— 所有内置 Material
+- [`src/renderers/shaders/ShaderLib.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderLib.js)
+- [`src/renderers/shaders/ShaderChunk/`](https://github.com/mrdoob/three.js/tree/master/src/renderers/shaders/ShaderChunk) —— GLSL chunk 仓库
+
+### PBR 与图形学深读
+
+- [Filament PBR 文档](https://google.github.io/filament/Filament.html) —— Google 出品，**最好的 PBR 入门**
+- _Real-Time Rendering, 4th Edition_, Akenine-Möller —— 第 9 章：基于物理的着色
+- [Disney BRDF 论文](https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf) —— PBR "metalness/roughness 工作流"的源头
+- [Learn OpenGL: PBR](https://learnopengl.com/PBR/Theory) —— 免费教程
+
+### 资源站
+
+- [Poly Haven](https://polyhaven.com/) —— 免费高质量 PBR 贴图 + HDRI
+- [ambientCG](https://ambientcg.com/) —— 免费 PBR 贴图
+- [Sketchfab](https://sketchfab.com/) —— 海量 3D 模型，可下 GLTF
+
+### 系列内文章
+
+- 上一篇：[Three.js（二）三大件深入](/blog/threejs-02-scene-camera-renderer)
+- 下一篇：[Three.js（四）光照与阴影](/blog/threejs-04-lights-shadows)
+- 系列地图：[Three.js（一）序章](/blog/threejs-01-overview)
