@@ -1,0 +1,588 @@
+---
+title: Three.js 学习系列（七）着色器入门：ShaderMaterial、GLSL 与 onBeforeCompile
+date: 2026-06-03
+description: 学到这里你已经能搭出 PBR 场景。但所有"看上去很酷"的效果（流光、溶解、屏幕扭曲、卡通描边）几乎都靠 shader。这一篇用最少的 GLSL 把渲染管线讲清楚，然后做出 5 个能落地的实战效果。
+tags: [threejs, shader, glsl, webgl, learning-series]
+---
+
+<Callout type="info">
+  Shader 是 Three.js 学习曲线里最陡的一段——
+  但搞清楚之后，**你看到任何"很酷"的 Web 3D 作品都不再是黑盒**。
+  本篇用最少的 GLSL 把 vertex / fragment shader 的工作机制讲透，
+  然后做 5 个能直接拿走的效果：流光、波浪、溶解、卡通、屏幕扭曲。
+</Callout>
+
+## 一、GPU 渲染管线：vertex shader 与 fragment shader
+
+### 1.1 一次绘制发生了什么
+
+```text
+你的 JS:
+  scene.add(mesh)                        ← 顶点数据准备好
+  renderer.render(scene, camera)         ← 触发绘制
+
+GPU 接管:
+  ┌────────────────────────────────┐
+  │ Vertex Shader (顶点着色器)     │  ← 每个顶点跑一次
+  │   - 把顶点位置变成屏幕坐标     │
+  │   - 计算/传递插值数据          │
+  └────────────────────────────────┘
+              ↓
+  ┌────────────────────────────────┐
+  │ 光栅化 (rasterization)         │  ← 三角形 → 像素列表
+  └────────────────────────────────┘
+              ↓
+  ┌────────────────────────────────┐
+  │ Fragment Shader (片元着色器)   │  ← 每个像素跑一次
+  │   - 决定这个像素是什么颜色     │
+  └────────────────────────────────┘
+              ↓
+       屏幕上的像素
+```
+
+**两个 shader 都在 GPU 上并行执行**——
+百万级顶点、几百万像素，靠这种**大规模并行**才有 60fps。
+
+### 1.2 数据流：attributes / uniforms / varyings
+
+| 类型 | 来源 | 谁用 | 例子 |
+|---|---|---|---|
+| **attribute** | 每个顶点独立的数据 | vertex shader | position, normal, uv, color |
+| **uniform** | CPU 传入，所有顶点/像素共享 | vertex & fragment | 时间、矩阵、贴图、参数 |
+| **varying** | vertex 算好，传给 fragment（光栅化时插值）| fragment shader | UV、世界坐标、法线 |
+
+```text
+       attribute (每顶点)
+              ↓
+    ┌─────────────────────┐
+    │  Vertex Shader      │  ← uniform (全局)
+    │                     │
+    │  gl_Position = ...  │
+    │  vUv = uv;          │  ← 写入 varying
+    └─────────────────────┘
+              ↓
+       光栅化 (varying 被自动插值)
+              ↓
+    ┌─────────────────────┐
+    │  Fragment Shader    │  ← uniform (全局)
+    │  reads vUv          │  ← 读取 varying
+    │  gl_FragColor = ... │
+    └─────────────────────┘
+```
+
+记住这张图——**所有 shader 代码都是在填这三类变量**。
+
+## 二、ShaderMaterial：从零写一个 shader
+
+### 2.1 最小可运行例子
+
+```js
+const material = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime: { value: 0 },
+    uColor: { value: new THREE.Color(0x44aa88) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;     // 把 uv 传给 fragment
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform float uTime;
+    uniform vec3 uColor;
+    varying vec2 vUv;
+
+    void main() {
+      float strip = 0.5 + 0.5 * sin(vUv.x * 20.0 + uTime * 2.0);
+      gl_FragColor = vec4(uColor * strip, 1.0);
+    }
+  `,
+})
+
+const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material)
+scene.add(mesh)
+
+// 每帧更新 uTime
+const clock = new THREE.Clock()
+renderer.setAnimationLoop(() => {
+  material.uniforms.uTime.value = clock.getElapsedTime()
+  renderer.render(scene, camera)
+})
+```
+
+跑起来——**立方体表面出现流动的横纹**。
+这就是 shader 最基础的玩法：**用数学函数生成颜色**。
+
+### 2.2 Three.js 自动注入的"内置变量"
+
+`ShaderMaterial`（不是 RawShaderMaterial）会**自动给你声明**这些常用变量：
+
+```glsl
+// 这些不需要你写, Three.js 自动加在 shader 顶部:
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
+uniform vec3 cameraPosition;
+
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec2 uv;
+```
+
+所以最朴素的 shader 永远是这一行：
+
+```glsl
+gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+```
+
+**记住这行**——它是所有 vertex shader 的最简版。
+做的事就是把"顶点的局部坐标"经过模型变换、视图变换、投影变换，**变成屏幕坐标**。
+
+<Callout type="success">
+  ShaderMaterial 比 RawShaderMaterial 友好得多——
+  **除非你做极致优化或写 WebGPU shader，永远用 ShaderMaterial**。
+</Callout>
+
+### 2.3 GLSL 速查（够用的部分）
+
+GLSL 是 C 风格的 GPU 编程语言，**学 30 个关键字就能写出大部分效果**。
+
+| 关键类型 / 函数 | 用途 |
+|---|---|
+| `float`, `vec2`, `vec3`, `vec4`, `mat3`, `mat4` | 基本类型 |
+| `+ - * /` 直接作用于 vec | 逐元素运算 |
+| `dot(a, b)` | 点积 |
+| `cross(a, b)` | 叉积 |
+| `length(v)` | 向量长度 |
+| `normalize(v)` | 单位化 |
+| `mix(a, b, t)` | 线性插值（t 从 0 → 1）|
+| `step(edge, x)` | x > edge 返回 1，否则 0 |
+| `smoothstep(e0, e1, x)` | 平滑过渡 |
+| `clamp(x, min, max)` | 截断 |
+| `abs(x)`, `sign(x)`, `floor(x)`, `fract(x)` | 数学 |
+| `sin`, `cos`, `tan` | 三角函数 |
+| `pow(x, n)`, `exp(x)`, `log(x)` | 指数对数 |
+| `texture2D(sampler, uv)` | **采样贴图**（WebGL 1）|
+| `texture(sampler, uv)` | 采样贴图（WebGL 2 + GLSL ES 3.0）|
+
+**vec 的成员可以用 .xyzw 或 .rgba 访问**（叫 swizzle）：
+
+```glsl
+vec3 color = vec3(1.0, 0.5, 0.2);
+float r = color.r;       // 1.0
+vec2 rg = color.rg;      // (1.0, 0.5)
+vec3 bgr = color.bgr;    // (0.2, 0.5, 1.0)
+```
+
+## 三、实战 1：UV 流光（最经典的 shader 入门）
+
+```glsl
+// fragmentShader
+uniform float uTime;
+uniform sampler2D uMap;
+varying vec2 vUv;
+
+void main() {
+  // 让 UV 随时间偏移 → 贴图就"流动"了
+  vec2 uv = vUv;
+  uv.y += uTime * 0.1;
+
+  vec4 base = texture2D(uMap, uv);
+
+  // 叠一层流动的高光
+  float glow = 0.5 + 0.5 * sin(vUv.y * 10.0 - uTime * 3.0);
+  vec3 col = base.rgb + glow * vec3(0.2, 0.4, 0.6);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+```
+
+```js
+const tex = new THREE.TextureLoader().load('/water.jpg')
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping   // 必须开 repeat, 否则 uv > 1 时贴图就完了
+
+const material = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime: { value: 0 },
+    uMap: { value: tex },
+  },
+  vertexShader,
+  fragmentShader,
+})
+```
+
+效果：**水流 / 能量条 / 传送门 / 进度条** 都是这套思路的变体。
+
+## 四、实战 2：波浪平面（vertex shader 做几何变形）
+
+[Part 03 的波浪](/blog/threejs-03-geometry-material) 是 CPU 算每个顶点——FPS 一掉就抖。
+搬到 GPU 上：
+
+```glsl
+// vertexShader
+uniform float uTime;
+varying vec2 vUv;
+varying float vHeight;
+
+void main() {
+  vUv = uv;
+
+  // GPU 端算波浪高度
+  float h = sin(position.x * 0.5 + uTime) * 0.5
+          + cos(position.z * 0.3 + uTime * 0.7) * 0.3;
+
+  vec3 pos = position;
+  pos.y += h;
+  vHeight = h;
+
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+}
+```
+
+```glsl
+// fragmentShader
+varying vec2 vUv;
+varying float vHeight;
+
+void main() {
+  vec3 deep = vec3(0.0, 0.2, 0.5);
+  vec3 shallow = vec3(0.2, 0.6, 0.9);
+  vec3 color = mix(deep, shallow, smoothstep(-0.5, 0.5, vHeight));
+  gl_FragColor = vec4(color, 1.0);
+}
+```
+
+**几万顶点的波浪场景，FPS 稳定 60**——
+这就是为什么"动画系统能不能用 shader 写"是 Three.js 性能的分水岭。
+
+<Callout type="warning">
+  注意：在 vertex shader 里改了顶点位置之后，**光照法线还是按原始位置算的**。
+  如果你要让波浪有 PBR 光照，必须重新计算法线（用 `normalMatrix` + 解析导数或几何邻居采样）——
+  这是 vertex shader 的高级话题，先做无光照版本足以入门。
+</Callout>
+
+## 五、实战 3：溶解效果（噪声 + smoothstep + alpha）
+
+游戏里"角色被烧掉"那种效果：
+
+```glsl
+// fragmentShader
+uniform float uDissolve;    // 0 = 完整, 1 = 完全消失
+uniform sampler2D uNoise;
+uniform sampler2D uMap;
+varying vec2 vUv;
+
+void main() {
+  float n = texture2D(uNoise, vUv).r;        // 噪声值 (0–1)
+  if (n < uDissolve) discard;                // ★ discard = 这个像素不画
+
+  // 燃烧边缘高光
+  vec4 base = texture2D(uMap, vUv);
+  float edge = smoothstep(uDissolve, uDissolve + 0.05, n);
+  vec3 fire = mix(vec3(1.0, 0.4, 0.0), vec3(1.0), edge);
+
+  gl_FragColor = vec4(mix(fire, base.rgb, edge), 1.0);
+}
+```
+
+**`discard` 直接告诉 GPU"这个像素别画"**——
+配合一张噪声贴图，从 0 慢慢推到 1，物体边缘"燃烧"着消失。
+
+JS 端：
+
+```js
+material.uniforms.uDissolve.value = 0
+// 用 GSAP / Tween 推到 1
+gsap.to(material.uniforms.uDissolve, { value: 1, duration: 2 })
+```
+
+## 六、实战 4：卡通描边 + 色阶（toon shading）
+
+```glsl
+// fragmentShader
+uniform vec3 uLightDir;
+varying vec3 vNormal;
+
+void main() {
+  // 光照点积
+  float NdotL = max(0.0, dot(normalize(vNormal), normalize(uLightDir)));
+
+  // 把连续亮度阶梯化 (3 档)
+  float toon = NdotL > 0.66 ? 1.0
+             : NdotL > 0.33 ? 0.6
+             : 0.3;
+
+  // 边缘描边: 法线 vs 视线接近垂直时画黑
+  // (这里简化, 真实做法用 stencil 或后处理)
+  vec3 color = vec3(1.0, 0.4, 0.2) * toon;
+  gl_FragColor = vec4(color, 1.0);
+}
+```
+
+```glsl
+// vertexShader
+varying vec3 vNormal;
+
+void main() {
+  vNormal = normalize(normalMatrix * normal);   // 把法线变换到视空间
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+```
+
+**3 档色阶**是卡通渲染的最朴素实现。
+Three.js 自带 `MeshToonMaterial` 也是这条原理——
+但你自己写一遍才知道它内部在做什么。
+
+## 七、实战 5：屏幕扭曲（屏幕空间后处理）
+
+```glsl
+// fragmentShader (后处理 pass)
+uniform sampler2D tDiffuse;     // 上一 pass 渲染的画面
+uniform float uTime;
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv;
+  uv.x += sin(vUv.y * 30.0 + uTime * 5.0) * 0.01;    // 波动
+  gl_FragColor = texture2D(tDiffuse, uv);
+}
+```
+
+这是 [Part 08 后处理](/blog/threejs-08-postprocessing) 的预告——
+后处理就是**把整个屏幕当成一张贴图，再用 shader 处理一遍**。
+**故障屏 / 雨刮器 / 水下扭曲 / 醉酒视觉**都是这种思路。
+
+## 八、onBeforeCompile：把自定义 shader 嵌进 PBR 材质
+
+写 ShaderMaterial 从零开始 = 失去 PBR 光照与所有内置功能。
+**`onBeforeCompile`** 让你**修改现有材质的 shader 字符串**，保留 PBR 同时加自己的逻辑：
+
+```js
+const material = new THREE.MeshStandardMaterial({ color: 0xffffff })
+
+material.onBeforeCompile = (shader) => {
+  // 添加自定义 uniform
+  shader.uniforms.uTime = { value: 0 }
+  material.userData.shader = shader   // 保存引用以便每帧更新
+
+  // 在 vertex shader 中找到一个标记位置插入代码
+  shader.vertexShader = shader.vertexShader.replace(
+    '#include <begin_vertex>',
+    /* glsl */`
+      #include <begin_vertex>
+      transformed.y += sin(transformed.x * 3.0 + uTime) * 0.2;
+    `
+  )
+
+  // 顶部加 uniform 声明
+  shader.vertexShader = shader.vertexShader.replace(
+    'void main() {',
+    /* glsl */`
+      uniform float uTime;
+      void main() {
+    `
+  )
+}
+
+// 每帧更新 uniform
+renderer.setAnimationLoop(() => {
+  if (material.userData.shader) {
+    material.userData.shader.uniforms.uTime.value = clock.getElapsedTime()
+  }
+  renderer.render(scene, camera)
+})
+```
+
+**这是 Three.js 高级特效最优雅的做法**：
+保留 PBR 的全部能力（光照、贴图、阴影、tone mapping），同时**注入自己的变形与颜色**。
+
+### 8.1 可用的"标记位置"（ShaderChunk）
+
+Three.js 的内置 shader 由约 100 个 `#include <chunk_name>` 拼接而成。
+[`src/renderers/shaders/ShaderChunk/`](https://github.com/mrdoob/three.js/tree/master/src/renderers/shaders/ShaderChunk) 里每个文件就是一个 chunk。
+常用注入点：
+
+| Chunk 名 | 含义 | 可注入什么 |
+|---|---|---|
+| `#include <begin_vertex>` | 顶点变换前 | 修改 `transformed` (vec3) |
+| `#include <beginnormal_vertex>` | 法线变换前 | 修改 `objectNormal` |
+| `#include <displacementmap_vertex>` | displacement 应用后 | 进一步偏移 |
+| `#include <map_fragment>` | 颜色贴图采样后 | 改变 `diffuseColor` |
+| `#include <emissivemap_fragment>` | 自发光采样后 | 加额外发光 |
+| `#include <tonemapping_fragment>` | tone mapping 前 | 改最终颜色 |
+
+读 `ShaderChunk/` 源码 + 试 `replace` 是熟练 onBeforeCompile 的最佳路径。
+
+<Callout type="success">
+  **几乎所有"自定义 PBR 效果"** 都是这一招：
+  - 让 GLTF 加载进来的人物**身上有流光**
+  - 让产品展示模型**有溶解效果**
+  - 让地面**根据相机距离变色**
+  ……
+  都不需要从零写 shader，**改一行 chunk 就够了**。
+</Callout>
+
+## 九、CustomShaderMaterial：onBeforeCompile 的现代封装
+
+社区库 [`three-custom-shader-material`](https://github.com/FarazzShaikh/THREE-CustomShaderMaterial) 把 onBeforeCompile 包装成更友好的 API：
+
+```js
+import CustomShaderMaterial from 'three-custom-shader-material'
+
+const material = new CustomShaderMaterial({
+  baseMaterial: THREE.MeshStandardMaterial,
+  uniforms: { uTime: { value: 0 } },
+  vertexShader: /* glsl */`
+    uniform float uTime;
+    void main() {
+      csm_Position.y += sin(position.x * 3.0 + uTime) * 0.2;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform float uTime;
+    void main() {
+      csm_DiffuseColor.rgb *= 0.5 + 0.5 * sin(uTime);
+    }
+  `,
+  color: 0xffffff,
+})
+```
+
+`csm_Position` / `csm_DiffuseColor` / `csm_Emissive` 等是它提供的"语义钩子"——
+**比手写 onBeforeCompile 短一半**，2026 年工业项目里推荐用它。
+
+## 十、ShaderMaterial vs RawShaderMaterial vs onBeforeCompile
+
+| 用法 | 适合 |
+|---|---|
+| `ShaderMaterial` | 完全自定义效果（流光、卡通、特效粒子）|
+| `RawShaderMaterial` | 极少数极致优化场景（默认不要用）|
+| `onBeforeCompile` | **在 PBR 基础上加效果**（90% 项目场景）|
+| `CustomShaderMaterial` | onBeforeCompile 的现代写法 |
+| `MeshStandardMaterial` 直接用 | 不需要自定义 shader 时 |
+
+**决策树**：
+
+```text
+要 PBR 光照吗?
+  └ 是: 用 MeshStandardMaterial
+         需要加自定义效果?
+           └ 是: onBeforeCompile / CustomShaderMaterial
+           └ 否: 直接用
+  └ 否: 用 ShaderMaterial 从零写
+```
+
+## 十一、调试 shader 的几个工具
+
+shader 调试比 JS 痛苦得多（没有 console.log）。常用技巧：
+
+### 11.1 把变量当颜色"画"出来
+
+```glsl
+gl_FragColor = vec4(vUv, 0.0, 1.0);          // UV 画成颜色
+gl_FragColor = vec4(vNormal * 0.5 + 0.5, 1); // 法线画成颜色 (法线变色)
+gl_FragColor = vec4(vec3(depthValue), 1);    // 任何 float 都能这么 debug
+```
+
+### 11.2 Spector.js
+
+Chrome / Firefox 扩展，**可以抓取 WebGL 调用、查看每个 shader 的实际编译代码**。
+**排查 shader 编译报错和性能问题必备**。
+
+### 11.3 检查 onBeforeCompile 注入后的最终代码
+
+```js
+material.onBeforeCompile = (shader) => {
+  // ... 修改完
+  console.log(shader.vertexShader)
+  console.log(shader.fragmentShader)
+}
+```
+
+**Three.js 实际编译给 GPU 的 shader 长什么样**，直接打印出来。
+
+## 十二、作业
+
+### 1. 把波浪平面改造成"实时变形 + 颜色随高度"
+
+把 [Part 03 的 CPU 版波浪](/blog/threejs-03-geometry-material) 改成 ShaderMaterial 版本——
+对比 CPU vs GPU 在 100×100 → 500×500 网格下的 FPS。
+
+### 2. 在 GLTF 模型上加流光
+
+用 onBeforeCompile，让加载进来的角色身上出现**从下到上的能量流光**——
+游戏里"满血、激活、复活"那种效果。
+
+### 3. 用 GLSL 画一个"圆"
+
+```glsl
+// fragmentShader: 在 vUv (0–1, 0–1) 范围内画一个居中的圆
+varying vec2 vUv;
+void main() {
+  float d = distance(vUv, vec2(0.5));
+  float c = smoothstep(0.3, 0.28, d);     // 边缘羽化
+  gl_FragColor = vec4(vec3(c), c);
+}
+```
+
+体会"shader 不是画几何体，是画**距离场**"——
+理解这个，将来学 [Signed Distance Field (SDF)](https://iquilezles.org/articles/distfunctions/) 会顺得多。
+
+## 十三、下一篇预告
+
+[Part 08：后处理与特效](/blog/threejs-08-postprocessing) 会回答：
+
+- EffectComposer 怎么工作（多个 render pass 串起来）
+- 内置 pass：Bloom（辉光）、SSAO、SMAA、Outline、Bokeh（景深）
+- 自己写一个后处理 pass（这就是 Part 07 的延伸）
+- Three.js 自带的 PostProcessing vs 社区库 [postprocessing](https://github.com/pmndrs/postprocessing) 怎么选
+
+学到这里你已经能做**绝大多数 Web 3D 视觉效果**——
+剩下的两篇是性能与源码总览，把这套技术拉成真正"可上线"的工程。
+
+## 一句话总结
+
+> **Shader 是 GPU 编程，不是 Three.js 编程。**
+> 学好 vertex shader（顶点位置变换）+ fragment shader（像素颜色决定）+ onBeforeCompile（嵌入 PBR）三件套，
+> 你就能复刻 90% 的 "看上去很酷" 的 Web 3D 效果。
+> 这是 Three.js 路上最陡的山，**也是翻过去之后视野最开阔的一段**。
+
+## 延伸阅读
+
+### 入门到精通
+
+- [The Book of Shaders](https://thebookofshaders.com/) —— **shader 入门最好的免费教程**
+- [Shadertoy](https://www.shadertoy.com/) —— 大量 fragment shader 范例，可在线 fork
+- [Inigo Quilez 个人站](https://iquilezles.org/articles/) —— 图形学大神，文章都是宝藏
+- ["I am bored, let me show you fluid simulation"](https://blog.maximeheckel.com/) —— Maxime Heckel 的高质量 shader 系列
+- _The Book of Shaders_ + _OpenGL Shading Language_, Randi Rost —— GLSL 系统化书
+
+### Three.js shader 资源
+
+- [Three.js Shader 章节](https://threejs.org/manual/#en/custom-shaders) —— 官方教程
+- [`src/renderers/shaders/ShaderChunk/`](https://github.com/mrdoob/three.js/tree/master/src/renderers/shaders/ShaderChunk) —— 100+ 内置 chunk
+- [`src/renderers/shaders/ShaderLib.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderLib.js) —— 完整材质 shader 入口
+- [`three-custom-shader-material`](https://github.com/FarazzShaikh/THREE-CustomShaderMaterial) —— onBeforeCompile 现代封装
+- [`three-shader-fbm`](https://github.com/FarazzShaikh/glsl-fbm) —— 噪声函数库
+
+### 工具
+
+- [Spector.js](https://spector.babylonjs.com/) —— WebGL 调用追踪
+- [Shader Park](https://shaderpark.com/) —— 用 JS 写 shader 的可视化工具
+
+### 数学基础
+
+- [Khan Academy Linear Algebra](https://www.khanacademy.org/math/linear-algebra) —— 矩阵与向量
+- [3Blue1Brown Linear Algebra Series](https://www.3blue1brown.com/topics/linear-algebra) —— 几何直觉
+- [Math for Game Developers (YouTube)](https://www.youtube.com/c/jorgevino) —— 系列讲座
+
+### 系列内文章
+
+- 上一篇：[Three.js（六）加载外部资产](/blog/threejs-06-loaders)
+- 下一篇：[Three.js（八）后处理与特效](/blog/threejs-08-postprocessing)
+- 系列地图：[Three.js（一）序章](/blog/threejs-01-overview)
