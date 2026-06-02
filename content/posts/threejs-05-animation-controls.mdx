@@ -1,0 +1,526 @@
+---
+title: Three.js 学习系列（五）动画系统与控制器：让场景动起来、让用户操作
+date: 2026-06-02
+description: 一个没有动画与交互的 3D 场景，体验上不如一张图。这一篇拆开 Three.js 的动画循环（rAF vs setAnimationLoop）、Clock 时序、补间与 GSAP、AnimationMixer 骨骼动画，以及 6 种官方控制器各自适合什么场景——读完你的场景才真正"活起来"。
+tags: [threejs, animation, controls, gsap, gltf, learning-series]
+---
+
+<Callout type="info">
+  [上一篇](/blog/threejs-04-lights-shadows) 让场景有了"质感"，
+  这一篇让它**动起来**且能**被用户操作**。
+  动画与控制器看上去是两件事，实际上是同一个系统的两面——
+  **每一帧都更新某些状态**，无论这状态是物体的位置、骨骼的姿态，还是相机的角度。
+</Callout>
+
+## 一、动画循环：rAF / setAnimationLoop / Clock
+
+### 1.1 三种写法（先讲优劣）
+
+```js
+// ❌ 方法 1：setTimeout 循环 —— 不要这么写
+setInterval(() => renderer.render(scene, camera), 16)
+
+// ✅ 方法 2：requestAnimationFrame —— 经典
+function animate() {
+  requestAnimationFrame(animate)
+  renderer.render(scene, camera)
+}
+animate()
+
+// ✅ 方法 3：renderer.setAnimationLoop —— 推荐
+renderer.setAnimationLoop(() => {
+  renderer.render(scene, camera)
+})
+```
+
+`renderer.setAnimationLoop()` 是 Three.js 推荐的写法，原因：
+
+- **WebXR / VR 模式下** 必须用它（rAF 在 VR 帧时序里失效）
+- **关闭循环** 只需 `setAnimationLoop(null)`，rAF 想关掉要存 id 再 cancel
+- 内部已经是 rAF + WebXR 双适配
+
+### 1.2 Clock：时间是动画的"心跳"
+
+绝对不要这么写：
+
+```js
+// ❌ 帧率不稳时动画会忽快忽慢
+cube.rotation.x += 0.01
+```
+
+每帧 `+= 0.01` 在 60fps 是每秒转 0.6 弧度，在 30fps 是 0.3 弧度——
+**FPS 变了，动画速度就变了**。
+
+正确做法：
+
+```js
+const clock = new THREE.Clock()
+
+renderer.setAnimationLoop(() => {
+  const delta = clock.getDelta()       // 距上一帧多少秒
+  const elapsed = clock.getElapsedTime()  // 距开始多少秒
+
+  cube.rotation.x += 0.6 * delta       // 每秒固定转 0.6 弧度
+  ball.position.y = Math.sin(elapsed) * 2
+
+  renderer.render(scene, camera)
+})
+```
+
+`clock.getDelta()` 是动画系统的标准时序——
+**所有变化都乘 delta**，FPS 怎么变动画速度都一致。
+
+<Callout type="success">
+  **delta-based animation 是游戏与 3D 引擎的通用约定**。
+  Unity / Unreal / Godot 也是这套——
+  学会这一点，你写出来的代码在任何 3D 引擎都是顺手的。
+</Callout>
+
+## 二、手动动画：直接改 Object3D 属性
+
+最朴素也最常用——**直接修改 position / rotation / scale**：
+
+```js
+const clock = new THREE.Clock()
+
+renderer.setAnimationLoop(() => {
+  const t = clock.getElapsedTime()
+
+  cube.position.x = Math.sin(t) * 3            // 水平来回
+  cube.position.y = Math.abs(Math.sin(t * 2))  // 弹跳
+  cube.rotation.y = t * 0.5                    // 持续转
+
+  cube.scale.setScalar(1 + Math.sin(t * 3) * 0.2)  // 缩放呼吸
+
+  renderer.render(scene, camera)
+})
+```
+
+适合：周期性运动、跟随、相机摇移、UI 微动效。
+
+## 三、补间（Tween）：从 A 平滑过渡到 B
+
+需要"点击按钮 → 相机从 A 滑到 B" 这种"一次性插值"时，补间库更顺手。
+
+### 3.1 Tween.js（轻量经典）
+
+```js
+import { Tween, Group, Easing } from '@tweenjs/tween.js'
+
+const group = new Group()
+
+function flyTo(target) {
+  new Tween(camera.position, group)
+    .to({ x: target.x, y: target.y, z: target.z }, 1500)
+    .easing(Easing.Cubic.Out)
+    .start()
+}
+
+renderer.setAnimationLoop(() => {
+  group.update()       // ★ 必须每帧 update
+  renderer.render(scene, camera)
+})
+
+document.querySelector('#btn').onclick = () => flyTo({ x: 5, y: 3, z: 5 })
+```
+
+### 3.2 GSAP（功能强大）
+
+```js
+import gsap from 'gsap'
+
+gsap.to(camera.position, {
+  x: 5, y: 3, z: 5,
+  duration: 1.5,
+  ease: 'power2.out',
+  onUpdate: () => camera.lookAt(0, 0, 0),
+})
+```
+
+GSAP 优势：
+
+- 不需要每帧手动 update（自带 ticker）
+- 更丰富的缓动函数 + timeline 组合
+- 文档与社区比 tween.js 大很多
+
+**选哪个**：项目小、希望零依赖 → tween.js；做交互密集的产品 → GSAP。
+
+## 四、AnimationMixer：播放 GLTF 自带的动画
+
+很多 3D 模型（角色、机器、风扇）出口时**自带动画**——
+GLTF / FBX 格式可以嵌入骨骼动画、形变动画、属性轨道。
+Three.js 的 `AnimationMixer` 负责播放这些。
+
+### 4.1 加载 GLTF 并播放第一段动画
+
+```js
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+
+const loader = new GLTFLoader()
+let mixer
+
+loader.load('/character.glb', (gltf) => {
+  scene.add(gltf.scene)
+  mixer = new THREE.AnimationMixer(gltf.scene)
+
+  // gltf.animations 是 AnimationClip[]
+  const clip = gltf.animations[0]
+  const action = mixer.clipAction(clip)
+  action.play()
+})
+
+const clock = new THREE.Clock()
+renderer.setAnimationLoop(() => {
+  const delta = clock.getDelta()
+  if (mixer) mixer.update(delta)        // ★ 必须每帧 update
+  renderer.render(scene, camera)
+})
+```
+
+### 4.2 多段动画切换 + 混合
+
+```js
+const idleAction = mixer.clipAction(gltf.animations.find(c => c.name === 'Idle'))
+const walkAction = mixer.clipAction(gltf.animations.find(c => c.name === 'Walk'))
+const runAction  = mixer.clipAction(gltf.animations.find(c => c.name === 'Run'))
+
+idleAction.play()
+
+function switchAction(from, to, duration = 0.3) {
+  to.reset().play()
+  from.crossFadeTo(to, duration, true)
+}
+
+// 切到走路
+switchAction(idleAction, walkAction)
+```
+
+`crossFadeTo()` 在两段动画间做权重混合，**避免姿态突变**——
+角色行走 / 跑步 / 跳跃 / 攻击的切换都靠这个。
+
+### 4.3 动画系统的核心三件套
+
+```text
+AnimationClip   = 一段完整动画（如"走路"）
+   └─ KeyframeTrack[] = 多条属性轨道
+        ├── 骨骼 Bone1.position 在 [t1, t2, t3] 的值
+        ├── 骨骼 Bone1.quaternion 在 ... 的值
+        └── ...
+
+AnimationAction = 一次播放的实例（控制权重、循环、速度）
+AnimationMixer  = 管理同一对象的多个 Action
+```
+
+代码层面：
+
+```js
+const action = mixer.clipAction(clip)
+action.loop          = THREE.LoopOnce    // 默认 LoopRepeat
+action.clampWhenFinished = true
+action.timeScale     = 1.0               // 速度
+action.weight        = 1.0               // 权重 (混合时用)
+action.play()
+```
+
+源码可读性很高，可以打开 [`src/animation/AnimationMixer.js`](https://github.com/mrdoob/three.js/blob/master/src/animation/AnimationMixer.js) 顺着看一遍。
+
+## 五、Controls 控制器：6 种官方实现
+
+控制器都在 [`examples/jsm/controls/`](https://github.com/mrdoob/three.js/tree/master/examples/jsm/controls)
+（不在核心 `src/` 里，import 时走 `three/addons/controls/`）。
+
+| 控制器 | 适用场景 |
+|---|---|
+| **OrbitControls** | ★ 最常用，鼠标轨道绕物体看 |
+| **MapControls** | 类似 OrbitControls 但**平移优先**（地图浏览）|
+| **TrackballControls** | 类似 Orbit 但无"上方向"限制（适合工业 CAD）|
+| **PointerLockControls** | 第一人称（FPS / WASD 操作）|
+| **FlyControls** | 自由飞行（飞行模拟器、太空场景）|
+| **TransformControls** | 在场景里**操作物体**（编辑器必备）|
+
+### 5.1 OrbitControls：最常用
+
+```js
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+
+const controls = new OrbitControls(camera, renderer.domElement)
+controls.enableDamping = true            // 鼠标松手后惯性
+controls.dampingFactor = 0.05
+controls.minDistance   = 2
+controls.maxDistance   = 50
+controls.maxPolarAngle = Math.PI / 2     // 不让看到地面下方
+controls.target.set(0, 0, 0)             // 围绕的中心点
+
+renderer.setAnimationLoop(() => {
+  controls.update()    // damping 模式下必须每帧 update
+  renderer.render(scene, camera)
+})
+```
+
+90% 的产品展示、模型查看器、3D 数据可视化都用 OrbitControls。
+
+### 5.2 PointerLockControls：第一人称
+
+```js
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
+
+const controls = new PointerLockControls(camera, document.body)
+
+document.querySelector('#start').onclick = () => controls.lock()  // 锁鼠标
+
+const move = { w: false, a: false, s: false, d: false }
+addEventListener('keydown', e => { if (move.hasOwnProperty(e.key)) move[e.key] = true })
+addEventListener('keyup',   e => { if (move.hasOwnProperty(e.key)) move[e.key] = false })
+
+const speed = 5
+const clock = new THREE.Clock()
+
+renderer.setAnimationLoop(() => {
+  const delta = clock.getDelta()
+  const d = speed * delta
+  if (move.w) controls.moveForward(d)
+  if (move.s) controls.moveForward(-d)
+  if (move.a) controls.moveRight(-d)
+  if (move.d) controls.moveRight(d)
+  renderer.render(scene, camera)
+})
+```
+
+第一人称漫游 / 互动展览 / FPS 游戏 / VR 房间预览都用它。
+
+### 5.3 TransformControls：直接操作物体
+
+类似 Blender 的"移动/旋转/缩放"小工具：
+
+```js
+import { TransformControls } from 'three/addons/controls/TransformControls.js'
+
+const tc = new TransformControls(camera, renderer.domElement)
+tc.attach(cube)
+scene.add(tc)
+
+addEventListener('keydown', e => {
+  if (e.key === 'w') tc.setMode('translate')
+  if (e.key === 'e') tc.setMode('rotate')
+  if (e.key === 'r') tc.setMode('scale')
+})
+
+// 操作 TransformControls 时禁止 OrbitControls 旋转
+tc.addEventListener('dragging-changed', e => {
+  orbitControls.enabled = !e.value
+})
+```
+
+做"在线场景编辑器"绕不开。Three.js 官方 editor 也是用这套。
+
+### 5.4 MapControls / TrackballControls
+
+```js
+// MapControls: Orbit 风格但平移优先, 适合 GIS / 城市地图
+import { MapControls } from 'three/addons/controls/MapControls.js'
+const map = new MapControls(camera, renderer.domElement)
+
+// TrackballControls: 无"上方向"限制, 适合任意角度查看 (CAD)
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
+const tb = new TrackballControls(camera, renderer.domElement)
+```
+
+### 5.5 FlyControls
+
+```js
+import { FlyControls } from 'three/addons/controls/FlyControls.js'
+const fly = new FlyControls(camera, renderer.domElement)
+fly.movementSpeed = 10
+fly.rollSpeed = Math.PI / 4
+
+renderer.setAnimationLoop(() => {
+  fly.update(clock.getDelta())
+  renderer.render(scene, camera)
+})
+```
+
+适合无重力的飞行 / 太空场景。
+
+## 六、控制器源码：本质上是输入 → 矩阵变换
+
+OrbitControls 这类工具的代码看起来复杂，但本质上只有三件事：
+
+```text
+1. 监听鼠标 / 触摸 / 滚轮事件
+2. 把输入转成"球坐标增量"（绕 target 的方位角 + 仰角 + 距离）
+3. 把球坐标转回 camera.position，并调 camera.lookAt(target)
+```
+
+[`OrbitControls.js`](https://github.com/mrdoob/three.js/blob/master/examples/jsm/controls/OrbitControls.js) 大概 1500 行，
+**核心算法约 100 行**——剩下都是边界处理、damping、触摸适配。
+强烈建议读一遍：**理解了它，你自己就能造任何特殊的相机控制器**。
+
+## 七、动画 + 控制器整合：一个交互场景
+
+把这一篇的东西拼起来：模型自带骨骼动画 + 用户可以轨道绕看 + 点击切换动画。
+
+```js
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+
+// 控制器
+const controls = new OrbitControls(camera, renderer.domElement)
+controls.enableDamping = true
+
+// 加模型
+let mixer, actions = {}, currentAction
+new GLTFLoader().load('/robot.glb', (gltf) => {
+  scene.add(gltf.scene)
+  mixer = new THREE.AnimationMixer(gltf.scene)
+
+  gltf.animations.forEach(clip => {
+    actions[clip.name] = mixer.clipAction(clip)
+  })
+  currentAction = actions['Idle']
+  currentAction.play()
+})
+
+// 切换动画
+function play(name) {
+  if (!actions[name] || currentAction === actions[name]) return
+  const next = actions[name]
+  next.reset().play()
+  currentAction.crossFadeTo(next, 0.3, false)
+  currentAction = next
+}
+
+document.querySelector('#idle').onclick = () => play('Idle')
+document.querySelector('#walk').onclick = () => play('Walk')
+document.querySelector('#wave').onclick = () => play('Wave')
+
+const clock = new THREE.Clock()
+renderer.setAnimationLoop(() => {
+  const delta = clock.getDelta()
+  if (mixer) mixer.update(delta)
+  controls.update()
+  renderer.render(scene, camera)
+})
+```
+
+短短几十行——一个**有 PBR 光照 + 骨骼动画 + 鼠标交互 + 状态切换**的小应用就出来了。
+这就是 Three.js 的工程吸引力。
+
+## 八、几个常见坑
+
+### 8.1 Damping 忘了 `controls.update()`
+
+```js
+controls.enableDamping = true
+// renderer.setAnimationLoop 里没调 controls.update() → 没有惯性效果
+```
+
+### 8.2 没有 Clock，动画卡顿
+
+```js
+cube.rotation.x += 0.01   // ❌ FPS 不稳定 → 速度不稳
+// 改成 cube.rotation.x += 1.0 * delta
+```
+
+### 8.3 mixer.update 调用位置
+
+```js
+mixer.update(delta)     // ✅ 每帧调一次, 传 delta（秒）
+mixer.update(1)         // ❌ 传错单位, 动画飞速
+```
+
+`AnimationMixer.update()` 接受的是**秒**——`clock.getDelta()` 正好返回秒。
+
+### 8.4 PointerLockControls 在 iframe 里不工作
+
+`requestPointerLock` 在嵌入式 iframe 里默认禁用，
+开发时如果在 dev tool 嵌套 frame 里测试可能完全没反应——
+**直接打开页面**就好。
+
+### 8.5 OrbitControls + TransformControls 同时启用时拖拽冲突
+
+要监听 `dragging-changed` 互相禁用（前面代码已示范）。
+
+## 九、源码地标
+
+| 文件 | 角色 |
+|---|---|
+| [`src/animation/AnimationMixer.js`](https://github.com/mrdoob/three.js/blob/master/src/animation/AnimationMixer.js) | 动画混合器主类 |
+| [`src/animation/AnimationAction.js`](https://github.com/mrdoob/three.js/blob/master/src/animation/AnimationAction.js) | 单条 Action |
+| [`src/animation/AnimationClip.js`](https://github.com/mrdoob/three.js/blob/master/src/animation/AnimationClip.js) | 一段动画 |
+| [`src/animation/KeyframeTrack.js`](https://github.com/mrdoob/three.js/blob/master/src/animation/KeyframeTrack.js) | 单条属性轨道 |
+| [`examples/jsm/controls/OrbitControls.js`](https://github.com/mrdoob/three.js/blob/master/examples/jsm/controls/OrbitControls.js) | 最值得读的控制器 |
+| [`examples/jsm/controls/TransformControls.js`](https://github.com/mrdoob/three.js/blob/master/examples/jsm/controls/TransformControls.js) | 编辑器交互参考 |
+
+## 十、作业
+
+### 1. 给 [Part 03 的波浪平面](/blog/threejs-03-geometry-material) 加 OrbitControls
+
+让你可以绕着海浪看——这一步会让你立刻明白为什么"controls"是 3D Web 标配。
+
+### 2. 试一次 GSAP timeline
+
+```js
+gsap.timeline()
+  .to(cube.position, { x: 3, duration: 1 })
+  .to(cube.rotation, { y: Math.PI, duration: 0.8 }, '-=0.5')  // 重叠 0.5s
+  .to(cube.scale,    { x: 2, y: 2, z: 2, duration: 0.5 })
+```
+
+体会 timeline 组合的节奏感——这是 GSAP 远胜 tween.js 的部分。
+
+### 3. 加载一个免费 GLTF 模型 + 切换动画
+
+去 [Sketchfab](https://sketchfab.com) / [mixamo.com](https://www.mixamo.com)（Adobe 免费）下一个带动画的角色，
+配 PointerLockControls 实现"WASD 走路 + 按 Shift 跑步"——
+**完成这个作业你就能做小游戏 demo 了**。
+
+## 十一、下一篇预告
+
+[Part 06：加载外部资产](/blog/threejs-06-loaders) 会回答：
+
+- GLTF / glb / OBJ / FBX 各自适合什么场景
+- 为什么 GLTF 是 Web 3D 的事实标准
+- Draco / Meshopt 压缩怎么用
+- KTX2 纹理压缩
+- 加载进度、缓存、与 Suspense 配合
+- 处理大模型时的工程姿势
+
+不再"自己造几何体"，而是"加载行业资产"——这是项目落地的关键一步。
+
+## 一句话总结
+
+> **动画 = 每帧改属性，控制器 = 把用户输入翻译成属性变更。**
+> 两者底层是同一回事——都基于 `Object3D` 的 position / rotation / scale 修改。
+> 区别只在 **谁来决定"下一帧改成什么值"**：动画系统决定 / 用户输入决定 / 物理引擎决定。
+> 把这条主线看穿，3D 交互的所有套路就是它的排列组合。
+
+## 延伸阅读
+
+### 官方文档
+
+- [AnimationMixer](https://threejs.org/docs/#api/en/animation/AnimationMixer)
+- [AnimationClip](https://threejs.org/docs/#api/en/animation/AnimationClip)
+- [AnimationAction](https://threejs.org/docs/#api/en/animation/AnimationAction)
+- [Clock](https://threejs.org/docs/#api/en/core/Clock)
+- [OrbitControls](https://threejs.org/docs/#examples/en/controls/OrbitControls)
+- [PointerLockControls](https://threejs.org/docs/#examples/en/controls/PointerLockControls)
+- [TransformControls](https://threejs.org/docs/#examples/en/controls/TransformControls)
+
+### 补间与时序
+
+- [GSAP](https://gsap.com/) —— 最强的 JS 动画库
+- [Tween.js](https://github.com/tweenjs/tween.js) —— 轻量经典
+- [easings.net](https://easings.net/) —— 缓动函数速查 + 可视化
+- _CSS Animation 101_, Donovan Hutchinson —— CSS 视角，但 easing 道理通用
+
+### 角色动画资源
+
+- [mixamo.com](https://www.mixamo.com) —— Adobe 免费角色 + 大量动作捕捉动画
+- [Sketchfab](https://sketchfab.com) —— 海量 GLTF 可下载
+- [Quaternius](https://quaternius.com/) —— 免费低多边形角色合集
+
+### 系列内文章
+
+- 上一篇：[Three.js（四）光照与阴影](/blog/threejs-04-lights-shadows)
+- 下一篇：[Three.js（六）加载外部资产](/blog/threejs-06-loaders)
+- 系列地图：[Three.js（一）序章](/blog/threejs-01-overview)
