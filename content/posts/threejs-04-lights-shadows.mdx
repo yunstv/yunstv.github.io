@@ -1,0 +1,542 @@
+---
+title: Three.js 学习系列（四）光照与阴影：从 6 种灯到 PBR + IBL
+date: 2026-06-02
+description: PBR 材质不配光等于半成品。这一篇拆开 Three.js 的 6 种光源各自适合什么、阴影贴图为什么默认是关的、PCF / VSM 软阴影怎么选、CSM 怎么处理大场景，以及把 envMap / IBL / Light Probe 串起来——读完你的场景从"塑料感"变成"有质感"。
+tags: [threejs, lighting, shadow, pbr, ibl, learning-series]
+---
+
+<Callout type="info">
+  [上一篇](/blog/threejs-03-geometry-material) 拆完 Geometry / Material 后，你有了"画什么 + 怎么着色"的能力。
+  但 PBR 材质**离开光照就是半成品**——这一篇把光与阴影这条线讲透。
+  6 种光、阴影贴图原理、软阴影算法、IBL、调试技巧——一篇过完。
+</Callout>
+
+## 一、Three.js 的 6 种光源
+
+```text
+Light（基类）
+  ├── AmbientLight          全局环境光，无方向，无阴影
+  ├── HemisphereLight       半球光（天空色 + 地面色）
+  ├── DirectionalLight      平行光（太阳）
+  ├── PointLight            点光（灯泡）
+  ├── SpotLight             聚光（手电筒、车灯）
+  ├── RectAreaLight         矩形面光（窗、屏幕、灯管）
+  └── LightProbe            光照探针（IBL 高级用法）
+```
+
+每一种都有特定的物理对应——**没有"哪种最好"，只有"哪种适合**这个场景"。
+
+### 1.1 AmbientLight：兜底的"环境填充"
+
+```js
+const ambient = new THREE.AmbientLight(0xffffff, 0.3)
+scene.add(ambient)
+```
+
+- **无方向、无衰减、不投射阴影**
+- 作用：**让背光面不要全黑**——现实里漫反射的"光遍布全场"
+- 强度通常 0.1–0.4，太高场景会"发灰"
+
+**仅有 AmbientLight 的场景看起来扁平**——必须配方向性光源。
+
+### 1.2 HemisphereLight：上下两种颜色
+
+```js
+const hemi = new THREE.HemisphereLight(
+  0x87ceeb,   // skyColor 天空色
+  0x6b4423,   // groundColor 地面色
+  0.5         // intensity
+)
+scene.add(hemi)
+```
+
+- 模拟 **"天空蓝光从上照下来 + 地面暖色反射上来"** 的环境
+- 比 AmbientLight 自然得多
+- **室外场景几乎必加**
+
+### 1.3 DirectionalLight：太阳光
+
+```js
+const dir = new THREE.DirectionalLight(0xffffff, 1)
+dir.position.set(10, 20, 10)
+dir.target.position.set(0, 0, 0)  // 朝向
+scene.add(dir)
+scene.add(dir.target)              // ★ target 也要 add 进 scene
+```
+
+- 平行光，**所有光线方向一致**（就像太阳光，地球上任意位置看都是同方向）
+- **唯一参数是位置 + target**，位置只决定光线方向，不决定衰减距离
+- 是**最便宜也最常用**的"主光"
+
+**坑**：`dir.target` 必须 add 进 scene 才会更新世界矩阵。
+不 add 也能跑，但改 target.position 时不会立刻生效。
+
+### 1.4 PointLight：点光源（灯泡）
+
+```js
+const point = new THREE.PointLight(0xffaa44, 1, 50, 2)
+// 参数: color, intensity, distance, decay
+point.position.set(0, 5, 0)
+scene.add(point)
+```
+
+- 从一个点向**四面八方发光**，**有衰减**
+- `distance`：超过这个距离强度归零（0 表示无限远）
+- `decay`：衰减指数，**物理上正确是 2**（光强随距离平方衰减）
+
+适合：吊灯、火把、爆炸闪光、灯泡。
+
+### 1.5 SpotLight：聚光
+
+```js
+const spot = new THREE.SpotLight(0xffffff, 1, 30, Math.PI / 6, 0.1, 2)
+// color, intensity, distance, angle, penumbra, decay
+spot.position.set(5, 10, 5)
+spot.target.position.set(0, 0, 0)
+scene.add(spot, spot.target)
+```
+
+- **圆锥形**发光，方向 + 角度都可调
+- `angle`：圆锥半角（最大 PI/2）
+- `penumbra`：边缘羽化程度（0 = 硬边，1 = 软边）
+
+适合：手电筒、车灯、舞台灯、监控摄像头视野。
+
+### 1.6 RectAreaLight：面光源
+
+```js
+import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js'
+
+const rect = new THREE.RectAreaLight(0xffffff, 3, 4, 2)  // color, intensity, w, h
+rect.position.set(0, 5, 0)
+rect.lookAt(0, 0, 0)
+scene.add(rect)
+scene.add(new RectAreaLightHelper(rect))   // 辅助显示矩形位置
+```
+
+- 模拟 **窗户、屏幕、长条灯管** 的发光
+- **PBR 配合下效果非常自然**（光从面发出而不是点）
+- ⚠️ 只对 `MeshStandardMaterial` 和 `MeshPhysicalMaterial` 生效
+- ⚠️ **不投射阴影**（计算太贵）
+
+<Callout type="success">
+  室内场景里 RectAreaLight 是"提升质感"最有效的一招。
+  一面墙上挂一个 RectAreaLight 当窗户，整个室内立刻有"从窗外照进来的光"——
+  这是过去图形学时代要用复杂 GI 算法才能做到的效果。
+</Callout>
+
+### 1.7 速查表：什么场景用什么光
+
+| 场景 | 推荐组合 |
+|---|---|
+| 室外白天 | HemisphereLight（弱）+ DirectionalLight（主）|
+| 室外夜晚 | AmbientLight（很弱）+ 月光 DirectionalLight + 多个 PointLight |
+| 室内 | AmbientLight + RectAreaLight（窗）+ PointLight（灯具）|
+| 舞台 / 戏剧 | AmbientLight（极弱）+ 多个 SpotLight |
+| 展厅 / 产品展示 | HDR envMap + RectAreaLight（柔光箱）|
+| 太空 / 星空 | 极弱 AmbientLight + 一个 DirectionalLight |
+
+## 二、阴影贴图（Shadow Map）：默认是关的
+
+打开 Three.js 默认不投阴影——**性能太贵**。要阴影必须三处都打开：
+
+```js
+// 1. Renderer 端开启
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+
+// 2. 光源端开启投射
+const dir = new THREE.DirectionalLight(0xffffff, 1)
+dir.castShadow = true
+dir.position.set(10, 20, 10)
+scene.add(dir)
+
+// 3. 物体端两侧都要开
+cube.castShadow = true        // 物体投出阴影
+ground.receiveShadow = true   // 地面接收阴影
+```
+
+**三个都缺一不可**。新手最常见的 bug 是只开了 renderer，结果地面是亮的。
+
+### 2.1 Shadow Map 工作原理
+
+```text
+第 1 步: 从光源的视角渲染场景一次, 只记录深度信息
+         → 得到一张"深度图"(shadow map)
+
+第 2 步: 渲染主画面时, 每个像素都问:
+         "我从光源看过去的距离 > shadow map 记录的最近距离吗?"
+         是 → 被挡住了 → 处于阴影中 → 暗
+         否 → 光直接照到 → 亮
+```
+
+所以阴影贴图本质上是 **"额外的一次渲染 + 一次深度比较"**——
+**有阴影的灯 = 至少 2 倍渲染开销**。
+
+### 2.2 必调的参数
+
+```js
+const light = new THREE.DirectionalLight(0xffffff, 1)
+light.castShadow = true
+light.position.set(10, 20, 10)
+
+light.shadow.mapSize.width  = 2048   // 阴影贴图分辨率（默认 512 太低）
+light.shadow.mapSize.height = 2048
+light.shadow.bias       = -0.0005    // 偏移，解决"阴影痤疮"
+light.shadow.normalBias = 0.02       // 法线方向偏移
+
+// 阴影相机（控制阴影覆盖范围）
+light.shadow.camera.near   = 0.5
+light.shadow.camera.far    = 50
+light.shadow.camera.left   = -20
+light.shadow.camera.right  = 20
+light.shadow.camera.top    = 20
+light.shadow.camera.bottom = -20
+```
+
+<Callout type="warning">
+  **DirectionalLight 的 shadow.camera 是 OrthographicCamera**——
+  它定义了"光从光源往下看时能照到的盒子区域"。
+  如果场景跨度大但盒子小，**阴影只在小区域里有，其他全亮**。
+  这是另一个高频 bug 来源——"我开了阴影但场景一半没阴影"。
+</Callout>
+
+### 2.3 调试阴影：CameraHelper
+
+```js
+const helper = new THREE.CameraHelper(light.shadow.camera)
+scene.add(helper)
+```
+
+立刻能看到一个绿框——**绿框范围内才有阴影**。
+**调试阴影必备**，几乎所有阴影问题都能用它定位。
+
+## 三、软阴影：三种算法
+
+阴影贴图原始版本是**硬阴影**——边缘像素化、像剪纸。
+Three.js 提供 4 种 ShadowMap 类型：
+
+| 类型 | 速度 | 效果 | 用法 |
+|---|---|---|---|
+| `BasicShadowMap` | 最快 | 硬阴影、锯齿严重 | 不推荐 |
+| `PCFShadowMap` | 快 | 边缘软化（默认）| 通用场景 |
+| `PCFSoftShadowMap` | 中等 | 更柔和的软阴影 | **推荐** |
+| `VSMShadowMap` | 慢 | 软阴影，可配合 blur | 高级效果 |
+
+```js
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+```
+
+**PCF（Percentage-Closer Filtering）**：
+对阴影贴图周围几个采样点做平均，让边缘从"硬阶跃"变成"渐变"。
+**VSM（Variance Shadow Maps）**：基于方差的更平滑算法，可以模糊处理，效果更接近真实。
+
+## 四、大场景的痛点：CSM（级联阴影）
+
+DirectionalLight 一张 shadow map 覆盖整个场景，**远处会模糊，近处分辨率浪费**。
+
+**Cascaded Shadow Maps（级联阴影）** 把场景分成多个距离段，每段用一张独立的高分辨率 shadow map：
+
+```text
+近段 (0–10m):    高分辨率 shadow map
+中段 (10–50m):   中分辨率 shadow map
+远段 (50–200m):  低分辨率 shadow map
+```
+
+Three.js 通过 `three/addons/csm/CSM.js` 提供 CSM 支持：
+
+```js
+import { CSM } from 'three/addons/csm/CSM.js'
+
+const csm = new CSM({
+  maxFar: 200,
+  cascades: 3,
+  lightDirection: new THREE.Vector3(-1, -1, -1).normalize(),
+  camera: camera,
+  parent: scene,
+})
+
+// 给所有要接收 CSM 阴影的材质做一次"激活"
+scene.traverse(obj => {
+  if (obj.isMesh) csm.setupMaterial(obj.material)
+})
+
+// 每帧 update
+function render() {
+  csm.update()
+  renderer.render(scene, camera)
+}
+```
+
+适合：开放世界、地图、城市场景。**普通项目 PCFSoft 够用，CSM 是远景需要时再上**。
+
+## 五、IBL（Image-Based Lighting）：让 PBR "活"起来
+
+PBR 材质的反射来自**环境**——所以必须给场景一个"环境"。
+这就是 **IBL（Image-Based Lighting）** 的本质：
+**用一张 HDR 全景图作为"虚拟环境"，材质就能反射出真实场景的颜色**。
+
+### 5.1 加载 HDR 环境贴图
+
+```js
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
+
+new RGBELoader().load('/env/studio.hdr', (texture) => {
+  texture.mapping = THREE.EquirectangularReflectionMapping
+
+  scene.background  = texture   // 当背景显示
+  scene.environment = texture   // ★ 这一行让所有 PBR 材质有反射
+})
+```
+
+**`scene.environment` 是 Three.js IBL 的核心**——
+设置后，**所有 `MeshStandardMaterial` 和 `MeshPhysicalMaterial` 自动用它作环境贴图**，
+不需要给每个材质单独设 `envMap`。
+
+### 5.2 PMREM：环境贴图预过滤
+
+PBR 需要不同粗糙度下的环境采样——
+粗糙的表面看到的环境是模糊的，光滑的看到的是清晰的。
+Three.js 用 **PMREMGenerator** 在加载时**预计算多个模糊层级**：
+
+```js
+const pmremGenerator = new THREE.PMREMGenerator(renderer)
+pmremGenerator.compileEquirectangularShader()
+
+new RGBELoader().load('/env/studio.hdr', (hdr) => {
+  const envMap = pmremGenerator.fromEquirectangular(hdr).texture
+  scene.environment = envMap
+  hdr.dispose()
+  pmremGenerator.dispose()
+})
+```
+
+`fromEquirectangular()` 会**烘焙出一套 mipmap**，每层对应不同的 roughness。
+这是为什么 IBL 配 PBR 的金属球**反射又快又对**——预计算把昂贵的积分挪到了加载时。
+
+<Callout type="success">
+  **scene.environment + 一张 HDR = 整个场景质感跃迁**。
+  把同一个 PBR 金属球放进有 environment 和没 environment 的场景里——
+  视觉差距比"加 100 盏灯"还大。
+  这是 Web 3D 这几年质感能做到接近游戏引擎的根本原因。
+</Callout>
+
+## 六、Light Probe：高级 IBL
+
+`LightProbe` 是 Three.js 提供的**"在某点采样环境"** 的工具，
+适合大场景里**不同区域用不同环境贴图**的情况：
+
+```js
+import { LightProbeGenerator } from 'three/addons/lights/LightProbeGenerator.js'
+
+const probe = LightProbeGenerator.fromCubeTexture(cubeTexture)
+scene.add(probe)
+```
+
+普通项目用不到——**记住有这个工具，做工业级 3D 场景时再回来查**。
+
+## 七、调试光照：四个 Helper
+
+```js
+import { DirectionalLightHelper, PointLightHelper, SpotLightHelper, HemisphereLightHelper } from 'three'
+import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js'
+
+scene.add(new THREE.DirectionalLightHelper(directionalLight, 1))
+scene.add(new THREE.PointLightHelper(pointLight, 0.5))
+scene.add(new THREE.SpotLightHelper(spotLight))
+scene.add(new THREE.HemisphereLightHelper(hemiLight, 1))
+scene.add(new RectAreaLightHelper(rectLight))
+scene.add(new THREE.CameraHelper(directionalLight.shadow.camera))  // 看阴影范围
+```
+
+**Helper 不影响渲染结果，但能极大降低 debug 难度**——
+调灯位置时一定打开，调好再注释掉。
+
+## 八、源码：光照是怎么进入 shader 的
+
+光照计算最终发生在 fragment shader 里。Three.js 内部流程：
+
+```text
+1. 场景里所有 Light 实例 → renderer.render() 时被分类、收集
+2. 上限: 每种光源默认最多 8 个（compile-time 决定）
+3. 每个 Light 被序列化成 uniforms (Vector3 位置/方向、Color、Float 强度等)
+4. fragment shader 里循环遍历每个光源, 累加它们对当前像素的贡献
+```
+
+关键源码：
+
+- [`src/lights/`](https://github.com/mrdoob/three.js/tree/master/src/lights) —— 6 种光源类
+- [`src/renderers/webgl/WebGLLights.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/webgl/WebGLLights.js) —— 光源 uniforms 收集
+- [`src/renderers/webgl/WebGLShadowMap.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/webgl/WebGLShadowMap.js) —— 阴影贴图渲染主流程
+- [`src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js) —— 光源 uniform 声明
+- [`src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js) —— PBR 光照核心计算
+
+<Callout type="info">
+  打开 `lights_fragment_begin.glsl.js` 你会看到**真实的 PBR 公式**：
+  Cook-Torrance BRDF、Fresnel-Schlick、GGX 分布、Smith 几何函数……
+  这是过去 10 年图形学论文成果的工程化体现——
+  **Three.js 把这些公式压缩成 200 行 GLSL，且能跑在浏览器里**。
+</Callout>
+
+## 九、实战：展厅级别的灯光场景
+
+把这一篇所学拼成一个完整场景：
+
+```js
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
+import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js'
+
+// 1. Renderer 开阴影 + ACES tone mapping
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.toneMappingExposure = 1.0
+
+// 2. 加 HDR 环境（核心 IBL）
+const pmrem = new THREE.PMREMGenerator(renderer)
+new RGBELoader().load('/studio.hdr', (hdr) => {
+  scene.environment = pmrem.fromEquirectangular(hdr).texture
+  hdr.dispose(); pmrem.dispose()
+})
+
+// 3. 主光 = DirectionalLight，配阴影
+const sun = new THREE.DirectionalLight(0xffffff, 2)
+sun.position.set(8, 12, 8)
+sun.castShadow = true
+sun.shadow.mapSize.set(2048, 2048)
+sun.shadow.camera.left = -10
+sun.shadow.camera.right = 10
+sun.shadow.camera.top = 10
+sun.shadow.camera.bottom = -10
+sun.shadow.bias = -0.0005
+scene.add(sun)
+
+// 4. 填充光 = HemisphereLight（弱）
+scene.add(new THREE.HemisphereLight(0x87ceeb, 0x444444, 0.3))
+
+// 5. 矩形面光模拟柔光箱
+const softbox = new THREE.RectAreaLight(0xffffff, 4, 4, 2)
+softbox.position.set(-5, 5, 5)
+softbox.lookAt(0, 0, 0)
+scene.add(softbox, new RectAreaLightHelper(softbox))
+
+// 6. 展品 = PBR 金属球
+const ball = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 64, 64),
+  new THREE.MeshStandardMaterial({ color: 0xddaa44, metalness: 0.9, roughness: 0.15 })
+)
+ball.castShadow = true
+ball.receiveShadow = true
+scene.add(ball)
+
+// 7. 地面
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(50, 50),
+  new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 })
+)
+ground.rotation.x = -Math.PI / 2
+ground.position.y = -1
+ground.receiveShadow = true
+scene.add(ground)
+```
+
+跑出来你会看到一个有质感的金球：
+
+- HDR 环境给金属面提供丰富反射
+- 主光提供清晰阴影
+- HemisphereLight 兜底防止暗面全黑
+- RectAreaLight 提供"窗户/柔光箱"补光
+- ACES tone mapping 让高光不爆
+
+**这就是工业级展厅渲染的基本配方**。其他更复杂的项目，无非是在这套骨架上加更多 RectAreaLight、调 envMap、加后处理。
+
+## 十、性能与边界
+
+| 设置 | 性能影响 |
+|---|---|
+| `AmbientLight` / `HemisphereLight` | 极低 |
+| `DirectionalLight`（不带阴影）| 低 |
+| `DirectionalLight`（带阴影）| **中** |
+| `PointLight`（带阴影）| **高**（6 张 cubemap 阴影）|
+| `SpotLight`（带阴影）| 中 |
+| `RectAreaLight`（无阴影）| 中 |
+| 多个动态阴影光源 | **可能让 FPS 直接腰斩** |
+
+工程经验：
+
+- 大多数场景**只让"主光"投射阴影**，其他光只提供颜色
+- shadow map 分辨率从 2048 起步，再降回 1024 看视觉差距
+- `light.shadow.autoUpdate = false` —— 静态场景下手动控制阴影刷新
+
+## 十一、作业
+
+### 1. 把上一篇的"四种材质球"配上完整光照
+
+把 [Part 03 的 4 球对比](/blog/threejs-03-geometry-material) 放进展厅场景里——
+你会发现 `MeshStandardMaterial` 在有 HDR 环境后，**视觉跃迁极大**。
+
+### 2. 做一个"舞台"效果
+
+3 个 SpotLight 不同颜色（红绿蓝），分别打在一个角色模型上——
+体会 SpotLight 的 angle / penumbra / target 怎么配合。
+
+### 3. 阴影范围调到刚好
+
+用 `CameraHelper(light.shadow.camera)` 显示绿框，
+调 `shadow.camera.left/right/top/bottom` 让绿框**恰好包住所有要投阴影的物体**——
+不大不小最省性能。
+
+## 十二、下一篇预告
+
+[Part 05：动画系统 + 控制器](/blog/threejs-05-animation-controls) 会回答：
+
+- `requestAnimationFrame` vs `renderer.setAnimationLoop()` 的区别
+- 自己写补间 vs 用 GSAP / Tween.js
+- `AnimationMixer` 怎么播放 GLTF 模型自带的骨骼动画
+- `OrbitControls` / `MapControls` / `PointerLockControls` 各自适合什么场景
+- 用户输入与摄像机控制的工程细节
+
+## 一句话总结
+
+> **6 种光是工具箱，IBL + envMap 是质感关键，阴影是性能与真实感的平衡。**
+> 学到这里，你已经能搭出"看起来像样"的 3D 场景——
+> 剩下的是 **怎么让它动起来 + 怎么让用户能操作**——
+> 这是接下来两篇的事。
+
+## 延伸阅读
+
+### 官方文档（按本文涉及类查）
+
+- [Light 总览](https://threejs.org/docs/#api/en/lights/Light)
+- [DirectionalLight](https://threejs.org/docs/#api/en/lights/DirectionalLight) / [DirectionalLightShadow](https://threejs.org/docs/#api/en/lights/shadows/DirectionalLightShadow)
+- [PointLight](https://threejs.org/docs/#api/en/lights/PointLight) / [SpotLight](https://threejs.org/docs/#api/en/lights/SpotLight)
+- [RectAreaLight](https://threejs.org/docs/#api/en/lights/RectAreaLight)
+- [HemisphereLight](https://threejs.org/docs/#api/en/lights/HemisphereLight)
+- [PMREMGenerator](https://threejs.org/docs/#api/en/extras/PMREMGenerator)
+
+### 源码核心文件
+
+- [`src/lights/`](https://github.com/mrdoob/three.js/tree/master/src/lights) —— 6 种光源
+- [`src/renderers/webgl/WebGLLights.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/webgl/WebGLLights.js)
+- [`src/renderers/webgl/WebGLShadowMap.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/webgl/WebGLShadowMap.js)
+- [`src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js`](https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js) —— PBR 主循环
+
+### PBR / 光照原理
+
+- [Filament PBR](https://google.github.io/filament/Filament.html) —— 上一篇也推荐过，**光照章节最佳**
+- ["Notes on Importance Sampling"](https://google.github.io/filament/Filament.html#imagebasedlights) —— PMREM 背后的数学
+- _Real-Time Rendering, 4th Edition_ —— 第 9–10 章
+- [Learn OpenGL: PBR Lighting](https://learnopengl.com/PBR/Lighting)
+- [Learn OpenGL: Shadow Mapping](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping)
+
+### HDR 资源站
+
+- [Poly Haven HDRIs](https://polyhaven.com/hdris) —— **免费高质量 HDR**，几乎所有项目都从这里挑
+- [HDRI Haven](https://hdri-haven.com/) —— 同上的姊妹站
+- [Maxime Heckel's blog](https://blog.maximeheckel.com/) —— 大量优秀的 Three.js / shader 实战文章
+
+### 系列内文章
+
+- 上一篇：[Three.js（三）Geometry 与 Material 全面拆解](/blog/threejs-03-geometry-material)
+- 下一篇：[Three.js（五）动画与控制器](/blog/threejs-05-animation-controls)
+- 系列地图：[Three.js（一）序章](/blog/threejs-01-overview)
