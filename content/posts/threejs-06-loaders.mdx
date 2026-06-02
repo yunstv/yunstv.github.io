@@ -1,0 +1,586 @@
+---
+title: Three.js 学习系列（六）加载外部资产：GLTF、Draco、KTX2 与大模型工程姿势
+date: 2026-06-02
+description: 自己写 BoxGeometry 只是入门。真实项目里的 3D 资产都是设计师在 Blender / Maya 做完导出的——GLTF 怎么用、Draco/Meshopt 怎么压、KTX2 纹理怎么搞、加载进度怎么显示、几百兆模型怎么不卡死浏览器，这一篇全部讲透。
+tags: [threejs, gltf, draco, ktx2, loader, learning-series]
+---
+
+<Callout type="info">
+  [上一篇](/blog/threejs-05-animation-controls) 让模型动了起来。
+  但你**怎么获得那个模型**？真实项目里没人自己写顶点——
+  设计师 Blender / Maya / 3ds Max 做完，导出成文件，前端加载进 Three.js。
+  这一篇拆开 GLTF 时代的资产工作流。
+</Callout>
+
+## 一、为什么是 GLTF（不是 OBJ / FBX）
+
+3D 模型格式有几十种，Three.js 支持的也有十多种。但**Web 3D 的事实标准只有一个**：
+**GLTF（.gltf / .glb）**，由 Khronos 组织维护——和 OpenGL / WebGL / Vulkan 同一家。
+
+### 1.1 主流格式速查
+
+| 格式 | 出身 | 优点 | 缺点 | Web 推荐度 |
+|---|---|---|---|---|
+| **GLTF / glb** | Khronos | 标准化、PBR 原生、Draco/KTX2、动画/骨骼齐全 | 编辑器支持新一点 | ★★★★★ |
+| OBJ | Wavefront（1990s）| 简单、文本可读、几乎所有软件支持 | 没材质（要配 .mtl）、没骨骼、没动画 | ★★ |
+| FBX | Autodesk | 编辑器生态最广（Maya/3ds Max 原生）| 闭源二进制、大、慢、Web 不友好 | ★★ |
+| USDZ | Pixar / Apple | iOS AR 标准（AR Quick Look）| Web 工具少 | ★★（iOS AR 用）|
+| Collada (.dae) | Khronos 旧版 | XML 可读 | 老旧，被 GLTF 取代 | ★ |
+| STL | 3D 打印 | 极简单 | 只有三角形，没材质 | ★（仅 3D 打印场景）|
+| PLY | 学术 | 点云常用 | 同 STL | ★（点云）|
+
+**为什么 GLTF 赢了**：
+
+- 二进制格式（.glb）紧凑，单文件就能携带几何 + 材质 + 贴图 + 骨骼 + 动画
+- **PBR 原生支持**（metalness / roughness 工作流），和 Three.js / Unity / Unreal 同一套语义
+- **Khronos 维护标准**，所有引擎遵守同一规范，跨平台无翻译损耗
+- **支持 Draco / Meshopt / KTX2 扩展**——网络传输极致优化
+- "传输级"格式：和 PNG 之于图片是同等地位
+
+<Callout type="success">
+  **没有"该用哪个"的选择题**——
+  设计师交付 3D 资产，**永远要求 GLTF**。
+  如果手上是 OBJ / FBX，先用 [Blender](https://www.blender.org/) 或 [gltf.report](https://gltf.report/) 转成 GLTF 再开发。
+</Callout>
+
+## 二、GLTFLoader 基础
+
+### 2.1 最小可用版本
+
+```js
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+
+const loader = new GLTFLoader()
+loader.load(
+  '/models/duck.glb',
+  (gltf) => {
+    scene.add(gltf.scene)            // 模型本体
+    console.log(gltf.animations)     // AnimationClip[]
+    console.log(gltf.cameras)        // 模型自带的相机
+    console.log(gltf.scenes)         // 多个场景（GLTF 支持多场景）
+  },
+  (xhr) => {
+    console.log(`${(xhr.loaded / xhr.total * 100).toFixed(1)}% loaded`)
+  },
+  (err) => {
+    console.error('Error loading model:', err)
+  }
+)
+```
+
+`GLTFLoader.load()` 的四个参数：URL / 成功回调 / 进度回调 / 错误回调。
+**`gltf.scene` 是一个 Group**，可以直接 `scene.add(gltf.scene)`。
+
+### 2.2 GLTF 返回对象的全貌
+
+```ts
+type GLTF = {
+  animations: AnimationClip[]   // 动画（配合上一篇 AnimationMixer）
+  scene: Group                  // 默认场景的根节点
+  scenes: Group[]               // 所有场景
+  cameras: Camera[]             // 自带相机
+  asset: { generator, version } // 元数据
+  parser: GLTFParser            // 内部解析器（高级用法）
+  userData: Record<string, any> // 自定义数据
+}
+```
+
+### 2.3 Promise 写法（实战推荐）
+
+```js
+async function load(url) {
+  const loader = new GLTFLoader()
+  return new Promise((resolve, reject) => {
+    loader.load(url, resolve, undefined, reject)
+  })
+}
+
+const duck = await load('/models/duck.glb')
+scene.add(duck.scene)
+```
+
+写复杂应用时几乎都用 Promise 包一层——
+方便和 React Suspense、Vue Suspense、`Promise.all()` 组合。
+
+## 三、Draco：把几何数据压到 1/10
+
+GLTF 默认存储几何数据用 Float32Array，**带宽不友好**。
+**Draco** 是 Google 出品的 3D 几何压缩库——
+**典型压缩比 5–10 倍**，对网络分发模型至关重要。
+
+### 3.1 启用 Draco
+
+```js
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
+
+const draco = new DRACOLoader()
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')  // CDN
+// 或本地: draco.setDecoderPath('/draco/')
+
+const loader = new GLTFLoader()
+loader.setDRACOLoader(draco)
+
+loader.load('/models/compressed.glb', (gltf) => scene.add(gltf.scene))
+```
+
+CDN 路径会自动加载 `draco_decoder.wasm` 等运行时文件。
+**本地部署时建议把 draco 解码器复制到 `/public/draco/`**，避免运行时跨域。
+
+### 3.2 怎么压缩你的 GLTF
+
+模型本身要先用工具压缩成 Draco 编码版本：
+
+```bash
+# 方法 1: gltf-pipeline (Node)
+npx gltf-pipeline -i duck.glb -o duck-draco.glb -d
+
+# 方法 2: 在线工具 gltf.report (拖入即可)
+# 方法 3: Blender 导出时勾选 "Draco mesh compression"
+```
+
+效果对比：
+
+```text
+原始 duck.glb        : 4.2 MB
+Draco 压缩 duck.glb  : 320 KB
+压缩比               : 13x
+解码耗时             : <100ms (WASM)
+```
+
+## 四、Meshopt：Draco 的现代替代
+
+**Meshopt** 是 Arseny Kapoulkine 开发的更现代的网格优化库——
+**解码更快**（10–100x 比 Draco 快）、**对 GPU 更友好**。
+
+```js
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
+
+const loader = new GLTFLoader()
+loader.setMeshoptDecoder(MeshoptDecoder)
+
+loader.load('/models/optimized.glb', (gltf) => scene.add(gltf.scene))
+```
+
+压缩自己的模型：
+
+```bash
+npx gltf-transform optimize input.glb output.glb
+# 或 npx gltfpack -i input.glb -o output.glb -cc
+```
+
+**Draco vs Meshopt 怎么选**：
+
+| 维度 | Draco | Meshopt |
+|---|---|---|
+| 压缩率 | 更高 | 较高 |
+| 解码速度 | 慢 | **快 10–100x** |
+| GPU 友好度 | 解码后还要重新组织 | **直接 GPU 可用** |
+| 推荐场景 | 极致带宽优化 | **大多数项目** |
+
+<Callout type="success">
+  2026 年新项目**默认用 Meshopt**——
+  解码快、GPU 友好、和 KTX2 / GLTF Transform 工具链配套好。
+  Draco 仍然有用，但 Meshopt 已经成为主流选择。
+</Callout>
+
+## 五、KTX2：GPU 友好的纹理压缩
+
+纹理是 3D 资产里**最占带宽**的部分——一张 4K PBR 贴图很容易就 10MB+。
+传统做法是 JPG/PNG 压缩，但**GPU 不能直接用 JPG，必须解码成 RGBA**——
+**显存占用爆炸**（4K RGBA = 64MB / 张）。
+
+**KTX2（Basis Universal）** 是新一代 GPU 原生纹理格式：
+
+- **同时是网络压缩 + GPU 压缩**
+- 显存占用约 1/4
+- 自动适配设备能力（ASTC / BC7 / ETC2）
+
+```js
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
+
+const ktx2 = new KTX2Loader()
+ktx2.setTranscoderPath('https://www.gstatic.com/basis-universal/versioned/2021-04-15-ba1c3e4/')
+ktx2.detectSupport(renderer)
+
+const loader = new GLTFLoader()
+loader.setKTX2Loader(ktx2)
+```
+
+转换工具：
+
+```bash
+# 单张图片转 KTX2
+npx ktx-tools  # 或 toktx
+basisu input.png -ktx2 -o output.ktx2
+
+# 整个 GLTF 的所有纹理批量转
+npx gltf-transform ktxify input.glb output.glb
+```
+
+**KTX2 + Meshopt + Draco 三件套**是 2026 年 Web 3D 优化的标配：
+
+```bash
+# 一条命令搞定（gltf-transform）
+npx gltf-transform optimize input.glb output.glb --texture-compress webp --compress meshopt
+```
+
+## 六、其他常用 Loader
+
+虽然 GLTF 是首选，但某些场景仍要其他格式：
+
+### 6.1 OBJLoader + MTLLoader
+
+```js
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js'
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js'
+
+new MTLLoader().load('/model.mtl', (materials) => {
+  materials.preload()
+  new OBJLoader().setMaterials(materials).load('/model.obj', (obj) => {
+    scene.add(obj)
+  })
+})
+```
+
+**只在历史项目或简单几何转换时用**。
+
+### 6.2 FBXLoader
+
+```js
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'
+
+new FBXLoader().load('/character.fbx', (group) => {
+  scene.add(group)
+  // 动画也在里面
+  const mixer = new THREE.AnimationMixer(group)
+  group.animations.forEach(clip => mixer.clipAction(clip).play())
+})
+```
+
+**仅在拿不到 GLTF 时用**。FBX 是 Autodesk 私有格式，文件大、解析慢。
+
+### 6.3 USDZLoader（iOS AR）
+
+```js
+import { USDZLoader } from 'three/addons/loaders/USDZLoader.js'
+```
+
+主要用于 iOS 的 AR Quick Look——一般场景不需要。
+
+### 6.4 STL / PLY
+
+```js
+import { STLLoader } from 'three/addons/loaders/STLLoader.js'
+import { PLYLoader } from 'three/addons/loaders/PLYLoader.js'
+```
+
+3D 打印、点云、医学影像才用。
+
+### 6.5 SVGLoader（把 SVG 变 3D）
+
+```js
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
+import { ExtrudeGeometry } from 'three'
+
+new SVGLoader().load('/logo.svg', (data) => {
+  data.paths.forEach(path => {
+    const shapes = path.toShapes(true)
+    shapes.forEach(shape => {
+      const geo = new ExtrudeGeometry(shape, { depth: 5, bevelEnabled: false })
+      scene.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial()))
+    })
+  })
+})
+```
+
+**把 logo 或 icon 拉成 3D 字** 的常用方案。
+
+## 七、LoadingManager：统一管理多个资产
+
+加载多个资产时，逐个监听进度太啰嗦——用 `LoadingManager`：
+
+```js
+const manager = new THREE.LoadingManager()
+
+manager.onStart = (url, loaded, total) => {
+  console.log(`开始: ${url}`)
+}
+manager.onProgress = (url, loaded, total) => {
+  const percent = ((loaded / total) * 100).toFixed(1)
+  document.querySelector('#progress').textContent = `${percent}%`
+}
+manager.onLoad = () => {
+  console.log('所有资源加载完毕')
+  document.querySelector('#loading').remove()
+}
+manager.onError = (url) => {
+  console.error(`加载失败: ${url}`)
+}
+
+// 所有 loader 共用这个 manager
+const gltfLoader = new GLTFLoader(manager)
+const textureLoader = new THREE.TextureLoader(manager)
+const audioLoader = new THREE.AudioLoader(manager)
+
+// 并发加载
+gltfLoader.load('/model.glb', ...)
+textureLoader.load('/diffuse.jpg', ...)
+audioLoader.load('/bgm.mp3', ...)
+```
+
+`onProgress` / `onLoad` 会**自动综合所有 loader 的进度**——
+**实现 loading 界面就靠这个**。
+
+## 八、纹理加载工作流
+
+PBR 模型往往需要多张贴图。批量加载的标准姿势：
+
+```js
+async function loadTextures(paths) {
+  const loader = new THREE.TextureLoader()
+  const entries = await Promise.all(
+    Object.entries(paths).map(([key, url]) =>
+      new Promise((resolve) => loader.load(url, (tex) => resolve([key, tex])))
+    )
+  )
+  return Object.fromEntries(entries)
+}
+
+const tex = await loadTextures({
+  map:          '/wood_color.jpg',
+  normalMap:    '/wood_normal.jpg',
+  roughnessMap: '/wood_roughness.jpg',
+  aoMap:        '/wood_ao.jpg',
+})
+
+// ★ 颜色贴图设 sRGB, 其他不设
+tex.map.colorSpace = THREE.SRGBColorSpace
+
+const material = new THREE.MeshStandardMaterial(tex)
+```
+
+回顾 [Part 03 的 colorSpace 坑](/blog/threejs-03-geometry-material) ——
+颜色贴图必须 sRGB，法线/粗糙度/AO 不要设 colorSpace。
+
+## 九、大模型工程姿势（几百 MB 级）
+
+当模型上百 MB 时，朴素加载会让浏览器卡死。几个实战姿势：
+
+### 9.1 切割成多个 chunk
+
+```js
+const chunks = ['part1.glb', 'part2.glb', 'part3.glb', 'part4.glb']
+for (const url of chunks) {
+  const gltf = await load(url)
+  scene.add(gltf.scene)
+  await new Promise(r => requestAnimationFrame(r))  // 让浏览器喘口气
+}
+```
+
+按部件 / 区域分包，**首屏只加载用户能看到的**。
+
+### 9.2 LOD（细节层级）
+
+```js
+import { LOD } from 'three'
+
+const lod = new LOD()
+lod.addLevel(highDetailMesh, 0)     // < 10 单位距离
+lod.addLevel(mediumDetailMesh, 10)
+lod.addLevel(lowDetailMesh, 30)
+scene.add(lod)
+
+// 渲染时 Three.js 自动根据距离切换
+```
+
+远处自动切换到低面数版本——Part 09 会详细讲。
+
+### 9.3 后台预加载
+
+```js
+const link = document.createElement('link')
+link.rel = 'preload'
+link.as = 'fetch'
+link.href = '/next-scene.glb'
+link.crossOrigin = 'anonymous'
+document.head.appendChild(link)
+```
+
+下一场景的资源在当前场景就开始下——切换时无感。
+
+### 9.4 流式 GLTF（KHR_meshopt / extensions）
+
+GLTF 2.0 支持 **KHR_meshopt_compression**、**MSFT_lod**、**EXT_meshopt_compression** 等扩展——
+配合 Meshopt 工具链，可以**边下边显示**。
+
+## 十、加载错误与降级
+
+```js
+async function loadWithFallback(primary, fallback) {
+  try {
+    return await load(primary)
+  } catch (err) {
+    console.warn(`Primary failed, trying fallback`, err)
+    return await load(fallback)
+  }
+}
+
+const model = await loadWithFallback(
+  '/models/character-hd.glb',     // 4K 贴图 PBR 高模
+  '/models/character-lo.glb'      // 简化版兜底
+)
+```
+
+**所有跨网络资产都应该有降级方案**——
+弱网用户、移动端、断点续传失败都会触发。
+
+## 十一、源码地标
+
+| 文件 | 角色 |
+|---|---|
+| [`examples/jsm/loaders/GLTFLoader.js`](https://github.com/mrdoob/three.js/blob/master/examples/jsm/loaders/GLTFLoader.js) | GLTF 解析器，**3000+ 行**，是所有 loader 中最复杂的 |
+| [`examples/jsm/loaders/DRACOLoader.js`](https://github.com/mrdoob/three.js/blob/master/examples/jsm/loaders/DRACOLoader.js) | Draco 解码器封装 |
+| [`examples/jsm/loaders/KTX2Loader.js`](https://github.com/mrdoob/three.js/blob/master/examples/jsm/loaders/KTX2Loader.js) | KTX2 / Basis 加载器 |
+| [`src/loaders/LoadingManager.js`](https://github.com/mrdoob/three.js/blob/master/src/loaders/LoadingManager.js) | 进度统计 |
+| [`src/loaders/Loader.js`](https://github.com/mrdoob/three.js/blob/master/src/loaders/Loader.js) | 所有 loader 基类 |
+| [`src/loaders/TextureLoader.js`](https://github.com/mrdoob/three.js/blob/master/src/loaders/TextureLoader.js) | 单张纹理加载 |
+
+<Callout type="info">
+  GLTFLoader 源码读起来比想象的有意思——
+  它需要处理 **GLTF 标准里所有的扩展、降级、动画通道映射、材质转换**……
+  是学 "怎么写一个工业级解析器" 的极好材料。
+</Callout>
+
+## 十二、实战：完整的加载流程
+
+把这一篇所学拼成"真实项目里加载一个 PBR 模型"的代码：
+
+```js
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
+
+// 1. LoadingManager 统一管理
+const manager = new THREE.LoadingManager()
+manager.onProgress = (url, loaded, total) => {
+  document.querySelector('#progress').textContent =
+    `${((loaded / total) * 100).toFixed(0)}%`
+}
+manager.onLoad = () => document.querySelector('#loading').remove()
+
+// 2. 准备 GLTFLoader + 三件套
+const draco = new DRACOLoader(manager).setDecoderPath('/draco/')
+const ktx2  = new KTX2Loader(manager)
+  .setTranscoderPath('/basis/').detectSupport(renderer)
+
+const gltf = new GLTFLoader(manager)
+  .setDRACOLoader(draco)
+  .setKTX2Loader(ktx2)
+  .setMeshoptDecoder(MeshoptDecoder)
+
+// 3. 加载模型
+gltf.load('/scene.glb', (data) => {
+  // 调整接收阴影 / 投射阴影
+  data.scene.traverse(obj => {
+    if (obj.isMesh) {
+      obj.castShadow = true
+      obj.receiveShadow = true
+    }
+  })
+
+  scene.add(data.scene)
+
+  // 4. 如果有动画
+  if (data.animations.length > 0) {
+    const mixer = new THREE.AnimationMixer(data.scene)
+    data.animations.forEach(clip => mixer.clipAction(clip).play())
+    // 别忘了在 render loop 里 mixer.update(delta)
+  }
+})
+```
+
+**这套骨架几乎覆盖了 90% 的工业项目加载需求**。
+
+## 十三、作业
+
+### 1. 从 Sketchfab 下载一个免费 GLTF
+
+[Sketchfab](https://sketchfab.com)、[Poly Haven](https://polyhaven.com)、[Quaternius](https://quaternius.com) 都有大量免费 PBR 模型。
+下载一个，配 OrbitControls + HDR 环境，看到效果——
+**这是 Three.js 学习里最有成就感的一步**。
+
+### 2. 把它压缩一遍
+
+```bash
+npx gltf-transform optimize input.glb output.glb --texture-compress webp --compress meshopt
+```
+
+对比压缩前后的文件大小、加载速度、显存占用。
+你会立刻理解"为什么 Web 3D 工程压缩链路这么重要"。
+
+### 3. 做一个"进度条 + loading 界面"
+
+把 [Part 04 展厅场景](/blog/threejs-04-lights-shadows) 的模型换成 GLTF 加载，
+配上 LoadingManager 的进度条——
+进入产品级 3D 应用的样子。
+
+## 十四、下一篇预告
+
+[Part 07：着色器入门 —— ShaderMaterial + GLSL](/blog/threejs-07-shaders) 会回答：
+
+- vertex shader 和 fragment shader 在 GPU 上各干什么
+- uniforms / attributes / varyings 区别
+- `ShaderMaterial` 怎么写、为什么大多数情况比 `RawShaderMaterial` 好
+- 怎么把自定义 shader 嵌进现有 PBR 材质（`onBeforeCompile` + chunk inject）
+- 实战：流光、波浪、溶解、卡通描边、屏幕扭曲
+
+这是 Three.js 通往"高级特效"的钥匙——也是和 Babylon / PlayCanvas / R3F 拉开差距的部分。
+
+## 一句话总结
+
+> **Geometry 是你写的，Loader 是你装的。**
+> 行业资产经过 Blender → GLTF → Draco/Meshopt/KTX2 → Web 这套流水线，
+> 已经是高度工业化的工程。学好 Loader 不是学几行 API，
+> 是学这条流水线里**哪一步可以省带宽、省显存、省解码时间**——
+> 这决定一个 Web 3D 应用能不能从 "本地能跑" 变成 "上线能扛"。
+
+## 延伸阅读
+
+### 官方文档
+
+- [GLTFLoader](https://threejs.org/docs/#examples/en/loaders/GLTFLoader)
+- [DRACOLoader](https://threejs.org/docs/#examples/en/loaders/DRACOLoader)
+- [KTX2Loader](https://threejs.org/docs/#examples/en/loaders/KTX2Loader)
+- [LoadingManager](https://threejs.org/docs/#api/en/loaders/LoadingManager)
+- [glTF 2.0 规范](https://github.com/KhronosGroup/glTF/tree/main/specification/2.0)
+
+### 资产工具链
+
+- [gltf.report](https://gltf.report/) —— **在线 GLTF 分析与优化**（强烈推荐）
+- [gltf-transform](https://gltf-transform.dev/) —— Node CLI 优化工具
+- [gltfpack](https://github.com/zeux/meshoptimizer/tree/master/gltf) —— Meshopt 配套
+- [Blender](https://www.blender.org/) —— 免费的 GLTF 导出主力
+- [Don McCurdy GLTF Viewer](https://gltf-viewer.donmccurdy.com/) —— 在线 GLTF 预览
+
+### 免费资产站
+
+- [Poly Haven](https://polyhaven.com/) —— PBR 模型 + HDR + 贴图，CC0 免费
+- [Sketchfab](https://sketchfab.com/) —— 海量模型（注意筛选 CC 协议）
+- [Quaternius](https://quaternius.com/) —— 低多边形角色与场景
+- [Kenney.nl](https://kenney.nl/) —— 游戏资产合集
+- [Mixamo](https://www.mixamo.com/) —— 角色动作捕捉，Adobe 免费
+
+### 深入压缩与优化
+
+- [Draco 项目页](https://google.github.io/draco/)
+- [Meshoptimizer 项目页](https://meshoptimizer.org/)
+- [Basis Universal](https://github.com/BinomialLLC/basis_universal)
+- [glTF 优化最佳实践](https://github.com/KhronosGroup/glTF-Tutorials/blob/master/PerformanceAdvice.md)
+
+### 系列内文章
+
+- 上一篇：[Three.js（五）动画与控制器](/blog/threejs-05-animation-controls)
+- 下一篇：[Three.js（七）着色器入门](/blog/threejs-07-shaders)
+- 系列地图：[Three.js（一）序章](/blog/threejs-01-overview)
