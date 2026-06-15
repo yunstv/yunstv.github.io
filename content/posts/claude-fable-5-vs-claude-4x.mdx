@@ -1,0 +1,271 @@
+---
+title: Claude Fable 5 面世：与 Opus 4.8 / Sonnet 4.6 / Haiku 4.5 全对比
+date: 2026-06-03
+description: Anthropic 刚发的 Fable 5 不是 Opus 4.9——它是一条新命名线。这篇基于官方公告把当前 Claude 模型阵容（Fable 5、Mythos 5、Opus 4.8、Sonnet 4.6、Haiku 4.5）的定位、价格、关键能力差异讲清楚，并诚实说明哪些数据 Anthropic 还没公开。
+tags: [claude, anthropic, fable-5, opus, model-comparison, llm]
+---
+
+<Callout type="info">
+  Anthropic 近期连发了几个公告：5 月底 **Claude Opus 4.8**，紧接着 **Fable 5 与 Mythos 5**。
+  Fable 5 不是 Opus 4.9——它是**一条新命名线**，定位、价格、能力都明显不同。
+  本文基于 [Anthropic 官方 news](https://www.anthropic.com/news) 的公开内容横向对比，
+  没披露的数据（context window、详细 benchmark）会明确标注"未公开"。
+</Callout>
+
+## 一、当前 Claude 模型阵容（2026 年 6 月）
+
+把当下能在 Anthropic API 上看到的模型列在一张表：
+
+| 模型名 | API 标识 | 命名线 | 价格（每百万 token，输入/输出）| 定位 |
+|---|---|---|---|---|
+| **Fable 5** | `claude-fable-5` | Fable | $10 / $50 | 新世代旗舰，带安全分类器 |
+| **Mythos 5** | （Project Glasswing 等受信项目）| Mythos | 同上 | Fable 5 解除部分安全约束的版本 |
+| **Opus 4.8** | `claude-opus-4-8` | Opus 4.x | $5 / $25（标准）/ $10 / $50（Fast）| 旗舰协作模型 |
+| **Sonnet 4.6** | `claude-sonnet-4-6` | Sonnet 4.x | 未在本文范围 | 中型平衡 |
+| **Haiku 4.5** | `claude-haiku-4-5-20251001` | Haiku 4.x | 未在本文范围 | 小型高速 |
+
+## 二、为什么叫"Fable"——命名脉络
+
+Anthropic 自己在 Fable 5 公告里**直接解释了名字**：
+
+> "Fable is from the Latin *fabula*, 'that which is told,' akin to the Greek *mythos*."
+
+Fable（拉丁 _fabula_，"被讲述的故事"）与 Mythos（希腊语"故事/神话"）**是同一语义在两种语言里的对照**——
+这条命名线的精妙在于**两个名字本身就是一对**：Fable 是面向公众的"安全版"，Mythos 是面向受信合作伙伴的"无约束版"。
+
+回头看 Anthropic 的命名史：
+
+| 命名线 | 灵感 | 含义 |
+|---|---|---|
+| Opus | 拉丁"作品" | 旗舰，大而全 |
+| Sonnet | 14 行诗 | 中型，平衡 |
+| Haiku | 3 行诗 | 小型，凝练 |
+| **Fable / Mythos** | "被讲述的故事" | 新世代，安全约束的双胞胎 |
+
+Opus/Sonnet/Haiku 是按**长度/密度**的诗歌形式，Fable/Mythos 是按**叙事**——
+命名本身就暗示这一代模型的差别"在内容生成层面"。
+
+## 三、Fable 5 的关键能力声明（基于官方公告）
+
+Anthropic 给 Fable 5 列了五条主要能力声明：
+
+### 3.1 SOTA on nearly all benchmarks
+
+公告原文："State-of-the-art on nearly all tested benchmarks"——
+**但 Anthropic 没在本次公告里给具体数字对照表**，至少不在可纯文本读取的部分。
+这是和过去 Opus / Sonnet 发布最大的不同：以前发布会贴一张 SWE-bench / MMLU / GPQA 表，这次没有。
+
+### 3.2 Stripe 案例：50M 行代码迁移"月→日"
+
+公告引用了 Stripe 的实证：
+**5 千万行代码库的迁移工作，从原本"数月工程"压缩到"数天"**。
+这是当下 LLM 在企业代码迁移场景里**最具体的工业案例**。
+
+### 3.3 Pokémon FireRed：vision-only 通关
+
+之前的 Claude（Opus 4.x）跑 Pokémon FireRed 需要外部辅助工具——
+Fable 5 **仅用视觉接口**就能通关。这是多模态 + 长程规划能力的标志性测试。
+
+### 3.4 蛋白质设计 10 倍加速
+
+公告称 Fable 5 在**药物 / 蛋白质设计任务上比上一代快 10 倍**。
+**血研究领域的同行盲评**中，约 **80% 的分子生物学新假设**被认为优于 Opus 系列产出。
+
+### 3.5 95%+ 会话不触发 fallback
+
+Fable 5 内置安全分类器——遇到敏感领域会**自动 fallback 到 Opus 4.8**。
+按官方数据，**95% 以上的会话不会触发**这一 fallback，
+意味着大多数情况下用户感受到的就是"完整版" Fable 5 能力。
+
+### 3.6 1000+ 小时 bounty 无通用 jailbreak
+
+External red-team bounty 跑了 1000+ 小时，**未发现通用 jailbreak**。
+这是这一代模型在 alignment / 抗滥用上的硬指标。
+
+## 四、Fable 5 vs Mythos 5：安全分类器是唯一差别
+
+公告里把两者关系讲得很清楚：
+
+```text
+Fable 5  =  Mythos 5 + 三类安全分类器（fallback 到 Opus 4.8）
+Mythos 5 =  无网络安全约束的"内核版"，仅对 Project Glasswing 等受信项目开放
+```
+
+Fable 5 的三类 fallback 触发场景：
+
+1. **Cybersecurity**（漏洞利用、agentic 攻击）
+2. **Biology / Chemistry**（生物武器相邻、基因治疗设计）
+3. **Distillation attempts**（试图蒸馏模型本身）
+
+<Callout type="warning">
+  这是 Anthropic 公开发布的**第一对"双胞胎模型"**——
+  Fable 是**默认给所有人**的安全版，Mythos 是**只给受信项目**的研究版。
+  这种分级发布是大模型治理上的一次新尝试：
+  既不"完全保留高危能力"也不"完全砍掉做研究的人需要的能力"，**让发布与使用分离**。
+</Callout>
+
+## 五、与 Opus 4.8 的关系：互补不是替代
+
+Anthropic 在 5 月 28 日刚发了 **Opus 4.8**，仅仅 12 天后又发 Fable 5——
+这两个模型不是替代关系：
+
+### 5.1 价格定位不同
+
+| 模型 | 标准价 | Fast 价 |
+|---|---|---|
+| Opus 4.8 | $5 / $25 | $10 / $50 |
+| Fable 5 | $10 / $50 | （未列出独立 Fast 价）|
+
+**Fable 5 的标准价等于 Opus 4.8 的 Fast 价**——
+说明 Anthropic 把它定位在"比旗舰还高一档"的位置。
+
+### 5.2 Opus 4.8 是 Fable 5 的"fallback 兜底"
+
+技术架构上，**Fable 5 的安全分类器命中后会自动切到 Opus 4.8**——
+所以 Opus 4.8 本身仍然是"严肃工作"的主力，特别是触及敏感领域时。
+
+### 5.3 Opus 4.8 自己的几个亮点（5 月 28 日公告）
+
+为了不漏掉关系最近的兄弟模型，Opus 4.8 公告里值得记的几点：
+
+- **代码缺陷漏判降低 ~4 倍**——"around four times less likely" 让代码 flaws 不被标注
+- **Dynamic workflows**：并行 subagent 执行大规模任务
+- **Effort control**：用户可控制每次响应的算力投入
+- **Messages API 增强**：消息数组中可插入 system entries 实时调整任务指令
+
+这三个新特性其实**和 Fable 5 是同一代基础设施**——
+都为"长任务 / Agent / 工程级使用"服务，区别只在模型本身的能力上限和价格。
+
+## 六、四档模型怎么选（开发者决策树）
+
+```text
+任务复杂度 ↑
+  │
+  ├─ 严肃工程 / 长任务 / 多步推理 / 创造性任务
+  │    └─ Fable 5  ($10/$50) → fallback 自动 Opus 4.8
+  │
+  ├─ 旗舰级日常 / 中等复杂任务 / 大量代码
+  │    └─ Opus 4.8  ($5/$25 标准, $10/$50 Fast)
+  │
+  ├─ 平衡型 / 多数应用 / 客服 / 内容生成
+  │    └─ Sonnet 4.6
+  │
+  └─ 高频低成本 / 简单分类 / 摘要 / 实时响应
+       └─ Haiku 4.5
+```
+
+**经验法则**：
+
+- **不确定任务复杂度** → 从 Sonnet 4.6 开始测，不行再升 Opus 4.8 / Fable 5
+- **预算敏感** → Haiku 4.5 + 必要时升 Sonnet
+- **追求最强能力 / 不在乎价格** → Fable 5 直接上
+- **写工程级 Agent / Claude Code 类工具** → Opus 4.8（生态更成熟，Fable 5 的工具生态还在跟进）
+
+## 七、价格对照（按官方公告）
+
+| 模型 | 输入 / 百万 tok | 输出 / 百万 tok | 模式 |
+|---|---|---|---|
+| **Fable 5** | $10 | $50 | 标准 |
+| **Opus 4.8** | $5 | $25 | 标准 |
+| **Opus 4.8 Fast** | $10 | $50 | Fast（旧版的 3× 便宜）|
+| Sonnet 4.6 | — | — | 未在本文涵盖 |
+| Haiku 4.5 | — | — | 未在本文涵盖 |
+
+注意 Opus 4.8 公告里特别强调 **Fast 模式价格降到了过去的 1/3**——
+这是过去一年 Claude API 在企业部署上最大的成本利好之一。
+
+## 八、监管事件：US 出口管制对 Fable / Mythos 5 的影响
+
+**这一段必须诚实陈述**：根据 Anthropic 官方 [《Statement on the US government directive》](https://www.anthropic.com/news/fable-mythos-access) 的公告，
+**美国政府发布了出口管制指令，要求暂停对 Fable 5 与 Mythos 5 的访问**。
+
+这意味着：
+
+- 受管制的地区 / 实体**短期内无法使用 Fable 5 / Mythos 5**
+- Opus 4.8 / Sonnet 4.6 / Haiku 4.5 等模型**不受此次管制影响**
+- 长期影响取决于后续 Anthropic 与美方监管的沟通
+
+<Callout type="warning">
+  对开发者的实际影响：**短期内 Opus 4.8 仍然是最稳的"高端选择"**。
+  Fable 5 即便不在受限名单内的地区，工程上也建议保留 Opus 4.8 作降级路径——
+  这种监管类事件证明**应用层不应深度耦合单一最高端模型**。
+</Callout>
+
+## 九、未公开的数据（要诚实讲清楚）
+
+写到这里有几个开发者很关心、但 **Anthropic 当前公告里没披露** 的数据：
+
+| 维度 | Opus 4.8 | Fable 5 |
+|---|---|---|
+| Context window 长度 | **未披露** | **未披露** |
+| 训练数据 cutoff | **未披露** | **未披露** |
+| 参数量 | 未披露 | 未披露 |
+| SWE-bench / MMLU 等具体分数 | 公告引用图表但未给文本可读数字 | 公告说"SOTA 但未列具体数字" |
+| Function calling / tool use 能力差异 | 一般性提升 | 一般性提升 |
+| Vision / 多模态详细能力 | — | Pokémon vision-only 通关，其他未量化 |
+
+如果你做选型时上面这些数据是关键，**等待官方更新的 model card** 或在 Anthropic 文档库里查 model-specific 页。
+**本文不会编造任何具体数字来填这些空格**。
+
+## 十、命名混乱预防：模型 ID 速查
+
+```js
+// 准确的 API 标识符（来自 Anthropic 公告）
+const MODELS = {
+  fable5:    'claude-fable-5',
+  opus48:    'claude-opus-4-8',
+  sonnet46:  'claude-sonnet-4-6',
+  haiku45:   'claude-haiku-4-5-20251001',  // Haiku 带日期戳
+}
+```
+
+注意几个小坑：
+
+- **Haiku 4.5 的 API ID 带日期 `-20251001`**——Anthropic 的小模型一直有"日期版本"传统
+- **Opus 用连字符 `4-8` 不是点 `4.8`**——别在代码里写错
+- **Fable 5 没有数字版本后缀**（暂时）——猜想是因为它是新命名线的首发
+- 写代码时把模型 ID **统一进配置文件**，避免硬编码——监管事件就是最近的例子
+
+## 十一、对系列文章的影响
+
+这意味着我前面写的 [Claude 使用指南](/blog/claude-practical-tips) 里**所有"针对 Claude"的建议依然成立**——
+prompt caching、tool use、上下文管理这些**架构层面的最佳实践**不会因为新模型而变。
+
+但有两件事**要重新调整**：
+
+1. **Effort control 是新的成本控制旋钮**——之前没有这个选项，Opus 4.8 给了
+2. **Dynamic workflows + 并行 subagent**——之前要在应用层自己实现，现在 Messages API 原生支持
+
+如果你在用 Claude API 写应用，**值得专门花一两天读 Opus 4.8 公告里这两个新特性**。
+
+## 十二、一句话总结
+
+> Anthropic 用 Fable 5 开辟了**第二条命名线**：
+> 不是 Opus 的延伸，而是更高一档的能力上限 + 内置安全分类器 + Mythos 5 作受信版双胞胎。
+> Opus 4.8 是当前最稳的"严肃工程"主力——尤其在 Fable 5 受出口管制限制的现实下。
+> 这一代的关键变化不在单个模型，**在于 Anthropic 开始系统性区分**"通用版 vs 研究版"、"模型 vs 安全分类器"——
+> 这是大模型治理向前走了一步的标志。
+
+## 延伸阅读
+
+### 一手信源（本文事实基础）
+
+- [Claude Fable 5 and Mythos 5 公告](https://www.anthropic.com/news/claude-fable-5-mythos-5)（Jun 9, 2026）
+- [Claude Opus 4.8 公告](https://www.anthropic.com/news/claude-opus-4-8)（May 28, 2026）
+- [Statement on US directive 公告](https://www.anthropic.com/news/fable-mythos-access)（Jun 12, 2026）
+- [Anthropic News Hub](https://www.anthropic.com/news) —— 所有发布的入口
+- [Anthropic Docs：模型对比](https://docs.anthropic.com/en/docs/about-claude/models) —— API 标识、context 长度等技术细节查这里
+
+### 配套阅读
+
+- [Claude 使用指南：细小但不可忽视的细节与技巧](/blog/claude-practical-tips) —— 这些技巧跨模型通用
+- [Claude Code 源码研究系列（一）项目总览](/blog/claude-code-source-01-overview) —— 工程化使用 Claude
+- [何为人工智能？对人类的利与弊](/blog/what-is-ai) —— 模型迭代背后的更大叙事
+- [未来五年的风口](/blog/next-five-years) —— AI 应用赛道的判断框架
+
+### 持续追踪 LLM 发布
+
+- [Anthropic Research Blog](https://www.anthropic.com/research)
+- [Latent Space](https://www.latent.space) —— 几乎每次 Anthropic 发布都有深度访谈
+- [Simon Willison's Blog](https://simonwillison.net) —— 每周更新的 LLM 实战观察
+- [Import AI](https://importai.substack.com) —— Anthropic 联创 Jack Clark 的周报
