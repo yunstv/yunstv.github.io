@@ -1,0 +1,231 @@
+---
+name: Unibase Admin Dashboard
+description: Unibase Memory 的内部数据后台——聚合注册 / 活跃 / 使用 / 存储 指标 + KOL 推广漏斗。Next.js 全栈方案：前端 + /api/* + libSQL/Turso 一起部署，FastAPI 仅作 API 契约的参考实现，不上线。
+date: 2026-06-10
+status: wip
+stack: [Next.js, React, TypeScript, Tailwind, Radix Primitives, libSQL, Turso, recharts]
+github: https://github.com/unibaseio/unibase-admin-dashboard
+---
+
+## 一、业务背景：这个后台在解什么
+
+[Unibase Memory](/projects/unibase-website) 上线后，团队同时面对两个需要"看数"的问题：
+
+1. **产品健康度**：注册、DAU/WAU/MAU、auto-sync 钱包数、人均 memory 条数、人均存储 GB、人均使用时长……
+2. **KOL 推广效果**：哪个 KOL 的 link 真的把人带进来用、漏斗在哪一步流失（click → download → open）
+
+之前没有统一数据后台——这些指标散落在 GA、Chrome 商店后台、产品业务库、自有埋点几个地方，
+每周想画一张总览图都要 *手攒数据 → 拷进表格 → 截图发群*。这个项目就是把这件事自动化。
+
+后台**自己不产生数据**，它只做一件事：**聚合并展示三类来源**：
+
+| 来源 | 用途 | 状态 |
+| - | - | - |
+| 自有埋点库（SIWE 登录 + auto-sync 钱包写入） | 注册 / 活跃 / KOL 归因 | 已落 libSQL |
+| 产品业务库（Unibase Memory 产品自己的库） | 每钱包 memory 条数、容量 GB | 待打通（只读访问） |
+| 插件埋点（新增） | 使用时长 | 口径待定，等插件上报 |
+| GA / Chrome 商店 | 流量入口、总下载 | 只读外链，**不与后台对账** |
+
+业务地图被压缩成 **9 个核心 KPI**（团队内部用星级标记 1★–9★），
+当前只有 Unibase Memory 这一个产品的数据**实际接通了真实库**，其它三个产品先用占位豆腐块占位。
+
+## 二、架构决策：Node 全栈，FastAPI 不部署
+
+最值得记的一个决定——**API 后端就是 Next.js 的 `/api/*` Route Handlers + libSQL**。
+`backend/` 目录下的 FastAPI 是**参考实现，不部署**。
+
+为什么砍掉一个独立 Python 服务？
+
+| 维度 | 双服务（前端 + FastAPI + DB） | Node 全栈（Next.js + libSQL/Turso） |
+| - | - | - |
+| 部署单元 | 2 个（Vercel + 某容器平台） | 1 个（Vercel） |
+| 数据库运维 | 自管 Postgres / 托管 | Turso 托管，开发本地 `file:./local.db` |
+| 跨语言 schema 同步 | 手动 | TS 一次写完 |
+| 内部工具体量适配 | 杀鸡用牛刀 | 刚好 |
+
+判断准则：**一个团队 + 一个内部工具 + 中等 QPS** 的场景，Node 全栈是默认答案。
+FastAPI 的 SIWE 签名 / KOL 归因口径有保留价值——所以把 `attribution.py` 留作**口径文档** + `api_contract.md`，
+真正的实现统一用 TS 重写到 `frontend/src/lib`。
+
+## 三、libSQL / Turso：为内部工具量身定做的数据库
+
+[libSQL](https://turso.tech) 是 SQLite 的 fork，加了远程同步能力。这个项目里它扮演两种角色：
+
+```text
+开发：file:./local.db          # SQLite 文件，无服务、无配置
+生产：libsql://xxx.turso.io   # Turso 托管，含连接池、HA、备份
+```
+
+同一份 `@libsql/client` SDK 两种模式无缝切换——开发者**本机零依赖**就能跑全栈，
+线上自动升级到托管版本。
+
+对一个内部后台，这套搭配的隐性收益是巨大的：
+
+- 新人 clone 后 `npm install && npm run dev` 就能看到完整应用（含数据，配 `SEED_DEMO=1`）
+- 不需要 docker-compose、不需要装 Postgres、不需要本地填配置
+- 灾备 / 备份 / 扩缩容由 Turso 接管，团队不操心
+
+`lib/db.ts` 一处暴露 client，下游 `stats.ts` / `kols.ts` / `invite.ts` / `tokens.ts` / `seed.ts`
+各自封装一组业务查询——经典的 Repository 分层，但落地非常轻。
+
+## 四、目录结构（前端即全栈）
+
+```text
+frontend/                         # 部署单元
+├─ src/app/
+│  ├─ login/page.tsx              # 登录
+│  ├─ dashboard/page.tsx          # 主面板
+│  └─ api/                        # Route Handlers
+│     ├─ admin/login/             # 管理员登录
+│     ├─ admin/promo/kol/         # KOL CRUD（含 [code] 动态路由）
+│     ├─ admin/stats/unibase-memory/
+│     │  ├─ route.ts              # 概览
+│     │  ├─ regions/route.ts      # 地区分布
+│     │  ├─ trend/route.ts        # 时间序列
+│     │  └─ wallets/route.ts      # 钱包级数据
+│     └─ promo/                   # 公开漏斗埋点（click / download / open）
+│
+├─ src/components/
+│  ├─ Shell.tsx                   # X 风格三栏外壳
+│  ├─ CenterHeader.tsx            # 中栏头
+│  ├─ Overview.tsx                # 总览（豆腐块 + 趋势图）
+│  ├─ Kol.tsx                     # KOL 漏斗 + 增删改
+│  ├─ Tiles.tsx                   # 产品豆腐块
+│  ├─ RightSidebar.tsx            # 右栏（地区 / Top 用户 / 配置）
+│  ├─ Login.tsx
+│  └─ ui/                         # 通用 UI 原语
+│
+├─ src/lib/                       # 业务层 13 个单职责模块
+│  ├─ db.ts                       # libSQL client
+│  ├─ stats.ts                    # 注册 / 活跃 / DAU/WAU/MAU 查询
+│  ├─ kols.ts                     # KOL CRUD + 漏斗聚合
+│  ├─ funnel.ts                   # click / download / open 埋点写入
+│  ├─ funnelToken.ts              # 公开漏斗的防伪 token
+│  ├─ invite.ts                   # 邀请码
+│  ├─ tokens.ts                   # 管理员 token
+│  ├─ auth.ts                     # 鉴权 middleware 辅助
+│  ├─ products.ts                 # 产品配置
+│  ├─ seed.ts                     # 演示数据灌库
+│  ├─ format.ts                   # 数字格式化
+│  ├─ time.ts                     # 时区 / 周期切片
+│  ├─ api.ts                      # 客户端 fetch wrapper
+│  ├─ useApi.ts                   # React 数据钩子
+│  └─ useAuthGuard.ts             # 路由级登录守卫
+│
+└─ local.db                       # 开发数据库（gitignored）
+
+backend/                          # 参考实现，不部署
+├─ attribution.py                 # SIWE / KOL 归因算法原型
+├─ api_contract.md                # API 契约文档
+└─ README.md
+```
+
+## 五、UI 范式：X 风格三栏
+
+[Shell.tsx](https://github.com/unibaseio/unibase-admin-dashboard/blob/main/frontend/src/components/Shell.tsx) 把整个面板布成 X（旧 Twitter）那种三栏：
+
+```text
+┌─────────┬─────────────────────────────┬─────────────┐
+│  Nav    │  CenterHeader                │             │
+│  (left) │  ────────────────            │             │
+│         │  Overview / Tiles / Kol      │  Right      │
+│  Logout │  豆腐块 + 趋势图              │  Sidebar    │
+│         │  KOL 表 + 漏斗               │  地区/Top   │
+└─────────┴─────────────────────────────┴─────────────┘
+```
+
+为什么这样布局？
+
+- **左栏**永远是导航和身份，固定，节奏稳
+- **中栏**是数据主战场——豆腐块概览 + 漏斗表 + 趋势图按上下顺序自然铺
+- **右栏**装"辅助但不抢戏"的东西——地区分布、Top 钱包、配置入口
+
+这种布局对**内部工具**特别合适——比传统 sidebar + content 二栏多一栏"周边数据"，
+让看数的人不用切页面就能找到对照信息。
+
+## 六、KOL 漏斗：从 click 到 open
+
+KOL 推广的数据闭环是这样的：
+
+```text
+KOL 拿到 promo link
+   ↓ /api/promo/click?code=XXX           # 点击埋点
+用户跳到 Chrome 商店下载
+   ↓ /api/promo/download?token=...       # 下载回调（带 funnelToken 防伪）
+用户安装并首次打开插件
+   ↓ /api/promo/open?token=...           # 插件首启上报
+完成归因
+```
+
+`funnelToken.ts` 是防伪关键——
+公开埋点接口暴露在 `/api/promo/*`，谁都能调，
+所以每个事件都带一个**有时效的 token**，禁止恶意刷量。
+
+后台聚合时按 `code` 维度算转化率：
+
+| KOL | clicks | downloads | opens | click → open |
+| - | -: | -: | -: | -: |
+| KOL-A | 1234 | 312 | 87 | 7.0% |
+| KOL-B | … | … | … | … |
+
+这是 [README](https://github.com/unibaseio/unibase-admin-dashboard/blob/main/README.md) 提到的**"下限估算"——
+Chrome 商店不把邀请参数透传给插件，所以下载和打开的归因只能通过 funnelToken 桥接，
+对账精度不如 web 漏斗——但作为内部决策依据够用。
+
+## 七、技术取舍
+
+| 决策 | 选了什么 | 没选 |
+| - | - | - |
+| 框架 | Next.js **14** App Router | Next.js 16（不必追新，14 LTS 更稳） |
+| 状态 | 不用 zustand / TanStack Query，自己写 `useApi` | 重栈不必要 |
+| 图表 | **recharts** | ECharts（小项目体积过大），shadcn/chart（依赖太多） |
+| Radix | 仅 4 个 primitives（dialog / alert-dialog / tabs / tooltip） | Themes（内部工具不需要主题切换） |
+| 鉴权 | 用 cookie + token（`tokens.ts`） | NextAuth（杀鸡用牛刀） |
+| 部署 | Vercel + Turso | 自建 |
+
+每一项都是 *合适大小*——
+内部工具的工程化诱惑是把生产级技术栈全抄过来，
+但实际上 *简单 = 维护成本低 = 团队没人离职后还能跑* 才是核心目标。
+
+## 八、和姊妹项目的关系
+
+这个项目和 [unibase 官网](/projects/unibase-website) / [Explorer](/projects/unibase-explorer) /
+[BitAgent](/projects/bitagent-frontend) / [x402](/projects/unibase-x402-website) 不一样——
+它**完全对外不可见**，只服务于内部决策。
+
+但它和它们有一条数据通路：
+
+```text
+产品（unibase-website 上的 Memory / AIP / DA / Pay 等）
+   ↓ 产生用户行为
+[GA / Chrome 商店 / 自家 SIWE 埋点 / 插件埋点]
+   ↓ 写入 / 拉取
+unibase-admin-dashboard 聚合展示
+   ↓ 每周输出
+团队决策
+```
+
+可以理解为：**这是 Unibase 产品矩阵的"看板层"**——
+之前缺位，所以"我们这周到底带了多少 KOL 用户"这种基础问题都得等手攒数据。
+
+## 九、时间线
+
+- **2026-06-10** 项目启动——三个 commit 一气搭出：repo config + skill + README、backend API contract + attribution、frontend Next.js 脚手架
+- **2026-06-13**（今天）已完成 admin 登录、KOL CRUD、漏斗埋点全部落 libSQL；注册 / 活跃按 attribution 口径接通；产品库 / 插件埋点等数据源**待打通**
+- 4 天 29 个 commit——典型的 *0→1 内部工具 sprint* 节奏，预期再 1-2 周接通剩余数据源后进入稳定使用期
+
+## 总结：内部工具的"够用就好"
+
+这个项目最有意思的不是技术亮点，而是 **每一处都在选 *不那么先进* 的方案**：
+
+- Next.js 14 不是 16
+- libSQL 而不是 Postgres
+- recharts 而不是 ECharts
+- `useApi` 而不是 TanStack Query
+- 全栈一体而不是前后分离
+- FastAPI 写了但不部署
+
+每一项都是为了**让团队能持续跑下去**——一个 *没有用户* 的内部工具一旦停止维护就立刻死亡，
+所以把每一处复杂度**砍到能跑就行**比什么都重要。
+
+*"该简单的时候简单下来"* 也是一种工程纪律——和 [TwinX](/projects/knowledge-frontend) 选 Privy 而不是 wagmi 是同一种判断力。

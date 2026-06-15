@@ -14,6 +14,7 @@ const PROJECTS = {
   'unibase-x402-website':      '/Users/zhaolihua/www/work-program/mixlabs-web/workspace/projects/unbase-x402-website',
   'knowledge-frontend':        '/Users/zhaolihua/www/work-program/mixlabs-web/workspace/projects/knowledge-frontend',
   'react-element-in-viewport': '/Users/zhaolihua/www/private-program/workspace/packages/react-components/element-in-viewport',
+  'unibase-admin-dashboard':   '/Users/zhaolihua/www/work-program/mixlabs-web/workspace/projects/unibase-admin-dashboard',
 }
 
 for (const [slug, repoPath] of Object.entries(PROJECTS)) {
