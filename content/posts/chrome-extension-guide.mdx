@@ -1,0 +1,709 @@
+---
+title: 谷歌浏览器扩展开发指南：从 Manifest V3 到上架 Chrome Web Store
+date: 2026-06-03
+description: Chrome Extension 是把浏览器变成可编程平台的最低成本工具。这篇按 Manifest V3 标准（V2 已彻底退役）梳理整套开发流程——项目结构、Service Worker、Content Script、消息机制、Storage、权限、调试、上架。配可直接 fork 的最小示例。
+tags: [chrome-extension, browser, manifest-v3, web, javascript]
+---
+
+<Callout type="info">
+  本文按 **Manifest V3** 标准写——V2 已于 2024 年彻底退役，
+  Chrome / Edge / Brave / Arc 等 Chromium 内核浏览器都只接受 V3。
+  Firefox 也已经主要走 V3（兼容部分 V2 API）。
+  **2026 年学扩展开发不需要再了解 V2**，本文跳过历史包袱直接讲现在该怎么写。
+</Callout>
+
+## 一、Chrome 扩展是什么
+
+一句话：**用 HTML + CSS + JavaScript 打包成一个 zip，加载进浏览器，可以读写页面、操作浏览器、跑后台逻辑**。
+
+它在三个层面延伸了浏览器：
+
+| 层面 | 例子 |
+|---|---|
+| **改造网页** | Stylus 替换网站样式、Vimium 全键盘操作、AdBlock 屏蔽广告 |
+| **集成功能** | Grammarly 写作助手、1Password 自动填密码、JSON Viewer 美化 JSON |
+| **后台服务** | Notion Web Clipper 抓页面、Octotree 解析 GitHub 仓库树 |
+
+技术栈对前端开发者几乎没有学习负担——
+**HTML + CSS + JS + 一些 chrome.* API**，仅此而已。
+
+## 二、最小项目结构
+
+```text
+my-extension/
+├── manifest.json         # ★ 入口配置（V3 必备）
+├── service-worker.js     # 后台逻辑
+├── content-script.js     # 注入到网页里跑的脚本
+├── popup/
+│   ├── popup.html        # 点击图标弹出的小窗
+│   ├── popup.js
+│   └── popup.css
+├── options/
+│   └── options.html      # 设置页面
+└── icons/
+    ├── 16.png
+    ├── 48.png
+    └── 128.png
+```
+
+这就够跑了。复杂项目会加：
+
+- `src/` + `dist/`（用 Vite/webpack 打包 TS / React）
+- `assets/`、`_locales/`（多语言）
+- `popup/options/` 用 React 写
+
+## 三、manifest.json：扩展的"身份证"
+
+V3 的最小 manifest：
+
+```json
+{
+  "manifest_version": 3,
+  "name": "My Extension",
+  "version": "1.0.0",
+  "description": "A minimal Chrome Extension",
+
+  "icons": {
+    "16":  "icons/16.png",
+    "48":  "icons/48.png",
+    "128": "icons/128.png"
+  },
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Click me"
+  },
+
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://*.example.com/*"],
+      "js":      ["content-script.js"],
+      "run_at":  "document_idle"
+    }
+  ],
+
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://*.example.com/*"
+  ],
+
+  "options_page": "options/options.html",
+
+  "web_accessible_resources": [
+    {
+      "resources": ["images/injected.png"],
+      "matches":   ["<all_urls>"]
+    }
+  ]
+}
+```
+
+### 3.1 关键字段速查
+
+| 字段 | 作用 |
+|---|---|
+| `manifest_version` | **必须是 3** |
+| `name` / `version` / `description` | 商店展示信息 |
+| `action` | 工具栏图标 + 点击弹窗 |
+| `background.service_worker` | 后台 Service Worker（V3 替代 background page）|
+| `content_scripts` | 注入到匹配 URL 网页的脚本 |
+| `permissions` | API 权限 |
+| `host_permissions` | 网络域名权限（V3 从 permissions 分出来）|
+| `web_accessible_resources` | 允许网页访问的扩展内文件 |
+| `options_page` / `options_ui` | 设置页面 |
+
+## 四、四种执行上下文：分清楚再写代码
+
+Chrome 扩展的代码跑在 **4 个隔离的上下文里**，每个 chrome API 可用度不同——
+这是扩展开发最容易混淆的概念。
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│ ① Service Worker (后台)                                   │
+│    - 没有 DOM, 不能 querySelector                         │
+│    - 可访问所有 chrome.* API                              │
+│    - 不活跃时会被回收, 事件来时重启                       │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ ② Content Script (注入到网页里)                            │
+│    - 能读写页面 DOM                                       │
+│    - 与页面 JS 在「隔离世界」运行 (变量互不可见)         │
+│    - 只能用部分 chrome.* (主要是 chrome.runtime/storage) │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ ③ Popup / Options (扩展的页面)                            │
+│    - 普通 HTML, 完整 DOM                                  │
+│    - 可访问所有 chrome.* API                              │
+│    - 关掉 popup 状态就丢, 用 chrome.storage 持久化       │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ ④ DevTools 页 / Sidepanel 等特殊场景                     │
+│    - 对应专门的 chrome.devtools / sidePanel API          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**这四种上下文通过消息机制通信**——下面详细讲。
+
+## 五、Service Worker（后台逻辑）
+
+V3 用 Service Worker 替代了 V2 的 background page。**关键差异**：
+
+- **没有 DOM**：不能 `document.querySelector`，没有 `window`
+- **会被休眠**：30 秒空闲就回收，事件来时重启
+- **没有 `localStorage`**：用 `chrome.storage.*` 替代
+
+### 5.1 典型用法
+
+```js
+// service-worker.js
+
+// 扩展首次安装 / 更新
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('Installed:', details.reason)  // install / update / chrome_update
+  chrome.storage.local.set({ visits: 0 })
+})
+
+// 监听来自其他上下文的消息
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'GET_VISITS') {
+    chrome.storage.local.get('visits', (data) => {
+      sendResponse({ visits: data.visits ?? 0 })
+    })
+    return true   // ★ 关键: 异步 sendResponse 必须 return true
+  }
+})
+
+// 监听 tab 更新
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
+    chrome.storage.local.get('visits', ({ visits = 0 }) => {
+      chrome.storage.local.set({ visits: visits + 1 })
+    })
+  }
+})
+
+// 处理 action 图标点击 (没有 default_popup 时才触发)
+chrome.action.onClicked.addListener((tab) => {
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func:   () => alert('Hello from extension!'),
+  })
+})
+```
+
+<Callout type="warning">
+  **Service Worker 不能用全局变量持久化状态**——
+  休眠后内存清空，下次重启变量是 `undefined`。
+  所有需要持久的状态都要用 `chrome.storage.*`。
+</Callout>
+
+### 5.2 chrome.alarms 替代 setInterval
+
+定时任务在 V3 必须用 `chrome.alarms`，因为 Service Worker 会休眠：
+
+```js
+// 创建一个定时任务（每分钟）
+chrome.alarms.create('refresh', { periodInMinutes: 1 })
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'refresh') {
+    fetch('https://api.example.com/data')
+      .then(r => r.json())
+      .then(data => chrome.storage.local.set({ data }))
+  }
+})
+```
+
+`periodInMinutes` 最小值是 1 分钟——V3 强制限制后台轮询频率。
+
+## 六、Content Script（注入到网页里）
+
+content script **跑在网页里**，能直接读写 DOM——
+但它在"隔离世界"，**和页面自己的 JS 变量互不可见**。
+
+### 6.1 静态声明（manifest）
+
+```json
+"content_scripts": [
+  {
+    "matches": ["https://github.com/*"],
+    "js":      ["content-script.js"],
+    "css":     ["overlay.css"],
+    "run_at":  "document_idle"
+  }
+]
+```
+
+`run_at` 三种值：
+
+- `document_start`：页面 DOM 还没解析就跑
+- `document_end`：DOM 解析完但资源未加载完
+- `document_idle`：默认，最稳
+
+### 6.2 动态注入（chrome.scripting API）
+
+灵活控制注入时机：
+
+```js
+// service-worker.js 里调用
+chrome.scripting.executeScript({
+  target: { tabId },
+  files: ['injected.js'],
+})
+
+// 或注入一段函数
+chrome.scripting.executeScript({
+  target: { tabId },
+  func: (title) => { document.title = title },
+  args: ['Hijacked!'],
+})
+```
+
+`chrome.scripting` 替代了 V2 的 `chrome.tabs.executeScript`——**所有动态注入都用它**。
+
+### 6.3 隔离世界与"main world"
+
+```js
+chrome.scripting.executeScript({
+  target: { tabId },
+  files:  ['inject-into-page.js'],
+  world:  'MAIN',   // ← 注入到网页自己的 JS world
+})
+```
+
+**默认 world 是 'ISOLATED'**——
+content script 看得到 DOM 但看不到页面的 JS 变量。
+设 `world: 'MAIN'` 进入页面 world，可以读写 `window.somePageGlobal`，**但失去大部分 chrome.* API 访问能力**。
+
+<Callout type="info">
+  **隔离世界**是 Chrome 扩展安全模型的核心——
+  防止网页的恶意 JS 偷取扩展权限。
+  90% 情况你不需要进 MAIN world，**实在要进时用 postMessage 桥接**。
+</Callout>
+
+## 七、消息机制：四种上下文怎么对话
+
+### 7.1 一次性消息
+
+```js
+// content-script.js
+chrome.runtime.sendMessage({ type: 'PING' }, (response) => {
+  console.log('Got reply:', response)
+})
+
+// service-worker.js
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'PING') {
+    sendResponse({ ok: true, from: 'service worker' })
+  }
+})
+```
+
+**双向都可以发**：
+
+- content/popup → service worker：`chrome.runtime.sendMessage`
+- service worker → content：`chrome.tabs.sendMessage(tabId, msg)`
+
+### 7.2 长连接（Port）
+
+需要连续通信时用 Port：
+
+```js
+// content-script.js
+const port = chrome.runtime.connect({ name: 'data-stream' })
+port.postMessage({ hello: 'sw' })
+port.onMessage.addListener((msg) => console.log(msg))
+
+// service-worker.js
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'data-stream') {
+    port.onMessage.addListener((msg) => {
+      port.postMessage({ echo: msg })
+    })
+  }
+})
+```
+
+Port 适合：实时数据推送、流式响应、Long-running 任务进度。
+
+### 7.3 异步响应的"坑"
+
+```js
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'FETCH') {
+    fetch(msg.url)
+      .then(r => r.text())
+      .then(text => sendResponse({ text }))   // 异步回调
+    return true  // ★ 必须 return true, 否则 sendResponse 失效
+  }
+})
+```
+
+**不返回 `true` 异步 `sendResponse` 不工作**——
+这是消息机制最常踩的坑。
+
+## 八、Storage API：四种存储
+
+| 存储 | 容量 | 同步 | 用途 |
+|---|---|---|---|
+| `chrome.storage.local` | ~10 MB | 否 | 默认选择 |
+| `chrome.storage.sync` | ~100 KB | **跨设备同步** | 偏好设置 |
+| `chrome.storage.session` | ~10 MB | 否，**关闭浏览器丢** | 会话临时数据 |
+| `chrome.storage.managed` | 只读 | 企业策略下发 | 企业管理 |
+
+```js
+// 写
+await chrome.storage.local.set({ user: { name: 'Alice', theme: 'dark' } })
+
+// 读
+const { user } = await chrome.storage.local.get('user')
+
+// 监听变化
+chrome.storage.onChanged.addListener((changes, area) => {
+  for (const key in changes) {
+    console.log(`${area}.${key}: ${changes[key].oldValue} → ${changes[key].newValue}`)
+  }
+})
+```
+
+**记得**：
+
+- `localStorage` 在 Service Worker 里不可用，用 `chrome.storage` 替代
+- `chrome.storage.sync` 单 key 上限 ~8KB，超过就静默失败
+- 所有 storage API 都是异步的（Promise / 回调），不要忘 `await`
+
+## 九、Permissions 与 host_permissions
+
+V3 把"功能权限"和"域名权限"分开：
+
+```json
+{
+  "permissions": [
+    "storage",       // 用 chrome.storage
+    "activeTab",     // 当前 tab 临时权限（不需要 host_permissions）
+    "scripting",     // 用 chrome.scripting.executeScript
+    "tabs",          // 读 tab 详细信息（url 等）
+    "alarms",
+    "notifications",
+    "contextMenus",
+    "downloads",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://*.example.com/*",
+    "https://api.github.com/*"
+  ],
+  "optional_host_permissions": [
+    "<all_urls>"     // 用户安装后才动态请求
+  ]
+}
+```
+
+**最小权限原则**：
+
+- 只用 `activeTab` 能搞定就别申请 host_permissions
+- 上架审核会针对每个高敏权限要解释
+- 多余权限 = **审核被打回 / 用户警惕**
+
+<Callout type="warning">
+  V3 的一个重大变化：**用户可以禁用某个域名的扩展权限**。
+  你的代码必须假设 host 权限随时可能消失，**用 `chrome.permissions.contains()` 检查**。
+</Callout>
+
+## 十、常用 chrome.* API 速查
+
+| API | 用途 |
+|---|---|
+| `chrome.tabs` | 操作标签页（创建、切换、读 URL）|
+| `chrome.windows` | 操作窗口 |
+| `chrome.scripting` | 注入脚本 / CSS |
+| `chrome.storage` | 持久化数据 |
+| `chrome.runtime` | 扩展自身（消息、生命周期）|
+| `chrome.action` | 工具栏图标 |
+| `chrome.contextMenus` | 右键菜单 |
+| `chrome.notifications` | 系统通知 |
+| `chrome.alarms` | 定时任务 |
+| `chrome.downloads` | 文件下载 |
+| `chrome.bookmarks` | 书签 |
+| `chrome.history` | 浏览历史 |
+| `chrome.cookies` | Cookie 读写 |
+| `chrome.declarativeNetRequest` | **替代 webRequest 阻断** |
+| `chrome.sidePanel` | Chrome 114+ 侧边栏 |
+| `chrome.identity` | OAuth |
+| `chrome.webNavigation` | 导航事件 |
+
+### 10.1 declarativeNetRequest 替代 webRequest
+
+V3 不再允许同步阻断网络请求。要拦广告 / 改 header / 重定向，必须用 `declarativeNetRequest`：
+
+```json
+"declarative_net_request": {
+  "rule_resources": [{
+    "id": "ads",
+    "enabled": true,
+    "path": "rules.json"
+  }]
+}
+```
+
+```json
+// rules.json
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||doubleclick.net^",
+      "resourceTypes": ["script", "image"]
+    }
+  }
+]
+```
+
+**所有规则要在打包时定义好**，运行时只能启用/禁用，不能任意改——
+这是 V3 对广告拦截类扩展冲击最大的变化。
+
+## 十一、开发与调试流程
+
+### 11.1 加载未打包扩展
+
+1. `chrome://extensions/` 打开扩展页
+2. 右上角开"开发者模式"
+3. 点"加载已解压的扩展"，选你的目录
+4. 修改代码后，**回到扩展页点"重新加载"**
+
+### 11.2 调试 4 种上下文
+
+| 上下文 | 怎么调 |
+|---|---|
+| Service Worker | `chrome://extensions` 该扩展 → "Service Worker" 链接 |
+| Content Script | 网页 DevTools → Sources → Content Scripts |
+| Popup | 右键扩展图标 → "审查弹出内容" |
+| Options | 右键 options 页面 → 审查 |
+
+**Service Worker 调试最容易忘的一点**：它会休眠。
+要测试事件触发后的行为，先 DevTools 让它"重新激活"，再触发事件。
+
+### 11.3 实时重载（开发体验）
+
+社区有 `crx-hotreload`、`webpack-extension-reloader` 等工具——
+**省去频繁点"重新加载"**。Vite + [@crxjs/vite-plugin](https://github.com/crxjs/chrome-extension-tools) 现在是主流。
+
+## 十二、工程化：用 Vite + TypeScript + React 写扩展
+
+2026 年的工业级扩展开发标准栈：
+
+```bash
+npm create vite@latest my-ext -- --template react-ts
+cd my-ext
+npm i -D @crxjs/vite-plugin
+```
+
+`vite.config.ts`：
+
+```ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { crx } from '@crxjs/vite-plugin'
+import manifest from './manifest.json'
+
+export default defineConfig({
+  plugins: [react(), crx({ manifest })],
+})
+```
+
+`manifest.json` 里 popup / options / content_scripts 可以直接指向 `.tsx` 文件——
+crxjs 插件自动处理编译、热重载、HMR。
+
+**`npm run dev` 后**，修改代码立即在浏览器看到效果，体验和写普通 React 应用几乎一致。
+
+## 十三、上架 Chrome Web Store
+
+1. 注册开发者账号（一次性 5 USD 费用）—— [chrome.google.com/webstore/devconsole](https://chrome.google.com/webstore/devconsole)
+2. 把代码打包成 zip（不是 `.crx`，是普通 zip）
+3. 上传 → 填写描述 / 截图（必须 1280×800 或 640×400）/ 图标 / 隐私政策
+4. **首次审核 1–7 天**，后续更新 1–24 小时
+5. 审核标准变严：高敏权限要写"为什么需要"，违反会被拒
+
+### 13.1 审核高频被拒原因
+
+- **权限超用**：申请了 `<all_urls>` 但只用在某个站
+- **混淆代码**：必须可读，**严禁混淆/加密 JS**
+- **远程加载代码**：V3 禁止从远程 URL 加载并执行（CDN 引脚本 = 拒）
+- **隐私政策缺失**：收集任何用户数据都要附 privacy policy URL
+- **欺骗性描述**：名字 / 截图与实际功能不符
+
+<Callout type="success">
+  **遵守这一条就过 80% 审核**：
+  **"申请的权限和你实际用的权限严格一致"**。
+  剩下的 20% 是配套（截图、描述、隐私政策）。
+</Callout>
+
+## 十四、实战：写一个"GitHub PR 速览"扩展
+
+合成本文所学，做一个**最小可用的实战**：
+
+`manifest.json`：
+
+```json
+{
+  "manifest_version": 3,
+  "name": "GitHub PR Glance",
+  "version": "1.0.0",
+  "description": "Show open PR count for any GitHub repo page",
+  "icons": { "128": "icons/128.png" },
+  "action": { "default_popup": "popup.html" },
+  "background": { "service_worker": "sw.js" },
+  "content_scripts": [{
+    "matches": ["https://github.com/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://api.github.com/*"]
+}
+```
+
+`content.js`：
+
+```js
+const match = location.pathname.match(/^\/([^/]+)\/([^/]+)/)
+if (match) {
+  const [, owner, repo] = match
+  chrome.runtime.sendMessage({ type: 'PR_COUNT', owner, repo }, (res) => {
+    const badge = document.createElement('div')
+    badge.style.cssText = 'position:fixed;top:60px;right:20px;background:#000;color:#fff;padding:8px 12px;border-radius:6px;z-index:9999;font:13px/1 sans-serif'
+    badge.textContent = `Open PRs: ${res.count}`
+    document.body.appendChild(badge)
+  })
+}
+```
+
+`sw.js`：
+
+```js
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'PR_COUNT') {
+    fetch(`https://api.github.com/repos/${msg.owner}/${msg.repo}/pulls?state=open&per_page=1`)
+      .then(r => {
+        const link = r.headers.get('Link') || ''
+        const m = link.match(/page=(\d+)>; rel="last"/)
+        sendResponse({ count: m ? parseInt(m[1]) : 0 })
+      })
+    return true
+  }
+})
+```
+
+`popup.html`：
+
+```html
+<!doctype html>
+<html><body style="width:200px;padding:12px;font:14px/1.4 sans-serif">
+  <h3 style="margin:0 0 8px">GitHub PR Glance</h3>
+  <p>Open any GitHub repo to see open PR count.</p>
+</body></html>
+```
+
+加载到 Chrome → 访问任意 GitHub 仓库 → 右上角显示 Open PR 数。
+**60 行代码 + 一个 manifest**——这就是 Chrome 扩展的工程吸引力。
+
+## 十五、其他浏览器的兼容性
+
+| 浏览器 | V3 支持 | 注意 |
+|---|---|---|
+| Chrome | ✅ 完整 | 标杆 |
+| Edge | ✅ 完整 | 同 Chrome（同 Chromium）|
+| Brave | ✅ 完整 | 同 Chrome |
+| Arc | ✅ 完整 | 同 Chrome |
+| Firefox | ✅ 大部分 | manifest_version: 3 已稳，但 declarativeNetRequest 等 API 实现细节不一致 |
+| Safari | 🟡 | 需要重新打包成 Safari Extension（用 xcrun safari-web-extension-converter）|
+
+**写一次跑多家**的工程姿势：
+- 用 [webextension-polyfill](https://github.com/mozilla/webextension-polyfill) 让 `chrome.*` → `browser.*` Promise API
+- manifest 用 [webext-build-tools](https://github.com/aklinker1/webextension-template) 类似工具生成各浏览器对应版本
+
+## 十六、几个常见坑
+
+### 1. Service Worker 全局变量丢失
+
+```js
+let count = 0   // ❌ 重启就归零
+chrome.action.onClicked.addListener(() => count++)
+```
+
+解决：**所有持久状态都进 chrome.storage**。
+
+### 2. setTimeout/setInterval 在 SW 里不可靠
+
+SW 休眠后定时器丢失。用 `chrome.alarms` 替代。
+
+### 3. fetch CORS
+
+Service Worker 中 fetch 不受网页 CORS 限制——
+**但目标域必须在 `host_permissions` 里**，否则被拦。
+
+### 4. 跨上下文不能直接传 DOM / function
+
+`chrome.runtime.sendMessage` 只能传 JSON 可序列化的数据。
+传函数 / DOM 节点 / Promise → 会丢失或报错。
+
+### 5. content_scripts 里 import 语法
+
+content script 不直接支持 ES module import——
+**用打包工具（Vite / webpack）打成一个 bundle**。
+
+## 十七、一句话总结
+
+> Chrome 扩展是把浏览器变成可编程平台的最低成本工具。
+> 学曲线主要在"四个上下文 + 消息机制 + Service Worker 生命周期"——
+> 把这三块搞清楚，**一个工程师用一两天能从零做到上架**。
+> Manifest V3 不是限制，是把过去 V2 的混乱安全模型重写——
+> **熟悉之后写出来的扩展，稳定性和安全性比 V2 时代好得多**。
+
+## 延伸阅读
+
+### 官方权威
+
+- [Chrome Extensions 官方文档](https://developer.chrome.com/docs/extensions/) —— **唯一可靠源**
+- [Manifest V3 迁移指南](https://developer.chrome.com/docs/extensions/develop/migrate)
+- [Chrome 扩展示例仓库](https://github.com/GoogleChrome/chrome-extensions-samples) —— 官方维护，跟着抄代码不会错
+- [Chrome Web Store 开发者控制台](https://chrome.google.com/webstore/devconsole)
+
+### 工程化与脚手架
+
+- [@crxjs/vite-plugin](https://github.com/crxjs/chrome-extension-tools) —— **Vite 写扩展的最佳选择**
+- [WXT](https://wxt.dev/) —— 类似 Next.js 体验的扩展框架（2024 起火）
+- [Plasmo](https://www.plasmo.com/) —— 商业化的扩展开发平台
+- [webextension-polyfill](https://github.com/mozilla/webextension-polyfill) —— Chrome/Firefox 统一 API
+
+### 实战学习
+
+- [Awesome Chrome Extensions](https://github.com/sayanee/awesome-chrome-devtools) —— 优秀开源扩展集合
+- [uBlock Origin 源码](https://github.com/gorhill/uBlock) —— 学习高级扩展架构
+- [Vimium 源码](https://github.com/philc/vimium) —— 学习键盘控制类扩展
+- [Octotree 源码](https://github.com/ovity/octotree) —— 学习 GitHub 增强类扩展
+
+### 调试与工具
+
+- [Extension Source Viewer](https://chrome.google.com/webstore/detail/chrome-extension-source-v/jifpbeccnghkjeaalbbjmodiffmgedin) —— 看别人扩展源码
+- [Chrome Apps & Extensions Developer Tool](https://chrome.google.com/webstore/detail/chrome-apps-extensions-de/ohmmkhmmmpcnpikjeljgnaoabkaalbgc) —— 官方调试辅助
+
+### 上架与运营
+
+- [Chrome Web Store 政策](https://developer.chrome.com/docs/webstore/program-policies/)
+- [Privacy Policy 生成器](https://app.freeprivacypolicy.com/) —— 上架必备的隐私政策
+- [Extension Monitor](https://www.extensionmonitor.com/) —— 跟踪自己扩展的安装数据
