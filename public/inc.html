@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>雨具电商 · 全流程作战地图</title>
+<style>
+/* ============ 设计令牌 ============ */
+:root{
+  --bg:#0b1020; --bg2:#0f162e; --panel:#141c36; --panel2:#1a2444;
+  --line:#28345c; --line2:#334066;
+  --tx:#e8ecf8; --tx2:#a7b2d4; --tx3:#6f7da8;
+  --p1:#6366f1; --p2:#06b6d4; --p3:#f59e0b; --p4:#10b981; --p5:#a855f7;
+  --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --info:#38bdf8;
+  --r:14px; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --fs:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{max-width:100%;overflow-x:clip}   /* clip 不创建滚动容器，sticky 导航不受影响 */
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{background:
+    radial-gradient(1200px 700px at 12% -8%,rgba(99,102,241,.16),transparent 60%),
+    radial-gradient(1000px 600px at 88% 4%,rgba(6,182,212,.12),transparent 60%),
+    radial-gradient(900px 700px at 50% 100%,rgba(168,85,247,.10),transparent 60%),
+    var(--bg);
+  color:var(--tx);font-family:var(--fs);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* ============ 进度条 + 导航 ============ */
+#prog{position:fixed;top:0;left:0;height:3px;width:0;z-index:100;
+  background:linear-gradient(90deg,var(--p1),var(--p2),var(--p3),var(--p4),var(--p5));box-shadow:0 0 12px rgba(99,102,241,.7)}
+nav{position:sticky;top:0;z-index:90;backdrop-filter:blur(18px);
+  background:rgba(11,16,32,.86);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1560px;margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:14px}
+.brand{font-weight:800;font-size:14.5px;letter-spacing:.3px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.brand i{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--p2),var(--p1));box-shadow:0 0 10px var(--p2);display:block}
+.navlinks{display:flex;gap:2px;overflow-x:auto;flex:1 1 0;min-width:0;scrollbar-width:none}
+.navlinks::-webkit-scrollbar{display:none}
+.navlinks a{flex:0 0 auto;padding:6px 10px;border-radius:9px;font-size:12.5px;color:var(--tx2);white-space:nowrap;transition:.16s;border:1px solid transparent}
+.brand{flex:0 0 auto}.nav-in .btn{flex:0 0 auto}
+.navlinks a:hover{color:#fff;background:var(--panel2);border-color:var(--line2)}
+.navlinks a.on{color:#fff;background:rgba(99,102,241,.2);border-color:var(--p1)}
+.btn{background:var(--panel2);border:1px solid var(--line2);color:var(--tx2);padding:6px 12px;border-radius:9px;
+  font-size:12.5px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.16s}
+.btn:hover{color:#fff;border-color:var(--p2)}
+
+/* ============ 布局 ============ */
+.wrap{max-width:1560px;margin:0 auto;padding:0 22px 100px}
+section{padding:56px 0 8px;scroll-margin-top:70px}
+.sec-h{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.sec-n{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:2px;color:var(--tx3)}
+h2{font-size:clamp(21px,2.6vw,30px);font-weight:800;letter-spacing:-.4px;line-height:1.25}
+h2 em{font-style:normal;background:linear-gradient(90deg,var(--p2),var(--p1));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--tx2);font-size:13.5px;max-width:900px;margin:8px 0 26px;line-height:1.75}
+.rule{height:1px;background:linear-gradient(90deg,var(--line2),transparent);margin:14px 0 0}
+h3{font-size:16px;font-weight:750;margin:34px 0 14px;display:flex;align-items:center;gap:9px}
+h3::before{content:"";width:3px;height:15px;border-radius:2px;background:var(--p2);box-shadow:0 0 8px var(--p2)}
+h4{font-size:13px;font-weight:700;color:var(--tx2);letter-spacing:.4px;margin-bottom:10px;text-transform:uppercase}
+
+/* ============ HERO ============ */
+header{padding:66px 0 8px;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;letter-spacing:1.6px;
+  color:var(--p2);border:1px solid rgba(6,182,212,.35);background:rgba(6,182,212,.08);padding:5px 12px;border-radius:99px}
+h1{font-size:clamp(30px,5.4vw,58px);font-weight:850;letter-spacing:-1.6px;line-height:1.06;margin:20px 0 0}
+h1 span{display:block;background:linear-gradient(100deg,#fff 8%,var(--p2) 42%,var(--p1) 70%,var(--p5));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--tx2);font-size:15px;max-width:780px;margin-top:20px;line-height:1.8}
+.lead b{color:var(--tx);font-weight:650}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:11px;margin:34px 0 4px}
+.kpi{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--r);
+  padding:15px 16px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--c,var(--p1));opacity:.9}
+.kpi b{display:block;font-size:clamp(20px,2.4vw,27px);font-weight:800;letter-spacing:-.8px;line-height:1.2;font-family:var(--mono)}
+.kpi small{display:block;color:var(--tx3);font-size:11.5px;margin-top:4px;letter-spacing:.3px}
+.kpi u{display:block;text-decoration:none;color:var(--tx2);font-size:11px;margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)}
+
+/* ============ 通用卡片 ============ */
+.card{background:linear-gradient(165deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--r);padding:18px 19px}
+.grid{display:grid;gap:13px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(258px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(206px,1fr))}
+.g5{grid-template-columns:repeat(auto-fit,minmax(172px,1fr))}
+.tag{display:inline-block;font-size:10.5px;font-family:var(--mono);letter-spacing:.6px;padding:2.5px 8px;border-radius:6px;
+  border:1px solid var(--line2);color:var(--tx2);background:var(--panel2);white-space:nowrap}
+.tag.hi{border-color:rgba(239,68,68,.5);color:#fca5a5;background:rgba(239,68,68,.1)}
+.tag.mid{border-color:rgba(245,158,11,.45);color:#fcd34d;background:rgba(245,158,11,.1)}
+.tag.ok{border-color:rgba(34,197,94,.45);color:#86efac;background:rgba(34,197,94,.1)}
+.tag.in{border-color:rgba(56,189,248,.45);color:#7dd3fc;background:rgba(56,189,248,.1)}
+ul.tk{list-style:none;display:flex;flex-direction:column;gap:7px}
+ul.tk li{position:relative;padding-left:17px;font-size:13px;color:var(--tx2);line-height:1.65}
+ul.tk li::before{content:"";position:absolute;left:3px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--p2);opacity:.85}
+ul.tk li b{color:var(--tx);font-weight:650}
+.mono{font-family:var(--mono)}
+
+/* ============ 阶段时间轴 ============ */
+.rail{position:relative;margin:8px 0 22px;padding-top:4px}
+.rail-line{position:absolute;left:0;right:0;top:34px;height:2px;
+  background:linear-gradient(90deg,var(--p1),var(--p2),var(--p3),var(--p4),var(--p5))}
+.rail-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;position:relative}
+.ph{padding-top:56px;position:relative}
+.ph::before{content:"";position:absolute;left:50%;top:26px;width:17px;height:17px;margin-left:-8.5px;border-radius:50%;
+  background:var(--bg);border:3px solid var(--c);box-shadow:0 0 0 4px rgba(11,16,32,.9),0 0 18px var(--c);z-index:2}
+.ph-card{background:linear-gradient(170deg,var(--panel),var(--bg2));border:1px solid var(--line);border-top:3px solid var(--c);
+  border-radius:var(--r);padding:15px 16px;height:100%;position:relative;transition:.2s}
+.ph-card:hover{transform:translateY(-4px);border-color:var(--c);box-shadow:0 14px 36px rgba(0,0,0,.4)}
+.ph-t{font-family:var(--mono);font-size:11px;letter-spacing:1.2px;color:var(--c);font-weight:700}
+.ph-card h5{font-size:17px;font-weight:800;margin:5px 0 3px;letter-spacing:-.3px}
+.ph-goal{font-size:12px;color:var(--tx3);margin-bottom:11px;padding-bottom:11px;border-bottom:1px dashed var(--line)}
+.ph-card ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.ph-card li{font-size:12.3px;color:var(--tx2);padding-left:15px;position:relative;line-height:1.55}
+.ph-card li::before{content:"▸";position:absolute;left:0;color:var(--c);font-size:10px;top:1px}
+.ph-out{margin-top:12px;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid var(--line);
+  font-size:11.5px;font-family:var(--mono);color:var(--c);letter-spacing:.2px}
+.gates{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-top:11px}
+.gate{border:1px dashed var(--line2);border-radius:11px;padding:10px 12px;font-size:11.5px;color:var(--tx2);background:rgba(255,255,255,.02)}
+.gate b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:1px;color:var(--warn);margin-bottom:4px}
+
+/* ============ 流程图原语 ============ */
+.flow{display:flex;flex-direction:column;align-items:stretch;gap:0}
+.nd{background:linear-gradient(165deg,var(--panel),var(--bg2));border:1px solid var(--line2);border-radius:11px;
+  padding:11px 14px;position:relative;transition:.18s}
+.nd:hover{border-color:var(--p2)}
+.nd .nt{font-size:13.5px;font-weight:700;letter-spacing:-.1px}
+.nd .nd-s{font-size:11.8px;color:var(--tx3);margin-top:3px;line-height:1.5}
+.nd.start{border-color:var(--p2);background:linear-gradient(165deg,rgba(6,182,212,.14),var(--bg2))}
+.nd.start .nt{color:#67e8f9}
+.nd.dec{border-color:var(--warn);background:linear-gradient(165deg,rgba(245,158,11,.13),var(--bg2))}
+.nd.dec .nt{color:#fcd34d}
+.nd.dec .nt::before{content:"◆ ";font-size:10px;opacity:.85}
+.nd.good{border-color:var(--ok);background:linear-gradient(165deg,rgba(34,197,94,.12),var(--bg2))}
+.nd.good .nt{color:#86efac}
+.nd.stop{border-color:var(--bad);background:linear-gradient(165deg,rgba(239,68,68,.12),var(--bg2))}
+.nd.stop .nt{color:#fca5a5}
+.nd.act{border-color:var(--p1);background:linear-gradient(165deg,rgba(99,102,241,.12),var(--bg2))}
+.ar{height:26px;position:relative;display:flex;justify-content:center;align-items:center}
+.ar::before{content:"";position:absolute;top:0;bottom:0;width:1.5px;background:var(--line2)}
+.ar::after{content:"";position:absolute;bottom:1px;width:0;height:0;border:5px solid transparent;border-top-color:var(--line2)}
+.ar span{position:relative;z-index:2;background:var(--bg);border:1px solid var(--line2);border-radius:6px;
+  padding:1px 7px;font-size:10.5px;font-family:var(--mono);color:var(--tx2)}
+.split{display:grid;gap:11px;position:relative}
+.split.s2{grid-template-columns:1fr 1fr}.split.s3{grid-template-columns:repeat(3,1fr)}.split.s4{grid-template-columns:repeat(4,1fr)}
+.lane{display:grid;grid-template-columns:118px 1fr;gap:11px;align-items:stretch;margin-bottom:11px}
+.lane-l{border-radius:11px;padding:12px;display:flex;flex-direction:column;justify-content:center;
+  background:linear-gradient(160deg,rgba(255,255,255,.05),transparent);border:1px solid var(--line);border-left:3px solid var(--c)}
+.lane-l b{font-size:13.5px;font-weight:750}
+.lane-l small{color:var(--tx3);font-size:11px;margin-top:2px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}
+.step{flex:1 1 148px;min-width:132px;background:linear-gradient(165deg,var(--panel),var(--bg2));border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;position:relative;transition:.18s}
+.step:hover{border-color:var(--c);transform:translateY(-2px)}
+.step em{font-style:normal;font-family:var(--mono);font-size:10px;color:var(--c);letter-spacing:1px;font-weight:700}
+.step b{display:block;font-size:12.8px;font-weight:700;margin:2px 0 3px}
+.step p{font-size:11.4px;color:var(--tx3);line-height:1.5}
+.step:not(:last-child)::after{content:"›";position:absolute;right:-9px;top:50%;transform:translateY(-50%);
+  color:var(--line2);font-size:20px;z-index:3}
+
+/* ============ 指标 / 阈值 ============ */
+.mtr{background:linear-gradient(165deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:12px;padding:14px}
+.mtr-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:3px}
+.mtr-h b{font-size:13.2px;font-weight:750}
+.mtr-v{font-family:var(--mono);font-size:15px;font-weight:800;color:var(--c)}
+.mtr p{font-size:11.5px;color:var(--tx3);line-height:1.55;margin-top:5px}
+.bar{height:6px;border-radius:99px;background:var(--panel2);overflow:hidden;margin:9px 0 3px;border:1px solid var(--line)}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 45%,#fff));
+  width:0;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+.thr{display:flex;justify-content:space-between;font-size:10.5px;font-family:var(--mono);color:var(--tx3)}
+
+/* ============ 资金条 ============ */
+.fund{display:flex;flex-direction:column;gap:9px}
+.frow{display:grid;grid-template-columns:170px 1fr 92px;gap:12px;align-items:center}
+.frow>span:first-child{font-size:12.8px;color:var(--tx2)}
+.ftrack{height:22px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);position:relative;overflow:hidden}
+.ftrack i{position:absolute;top:0;bottom:0;left:0;border-radius:6px;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 40%,transparent));
+  width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.ftrack u{position:absolute;top:0;bottom:0;border-left:2px dashed rgba(255,255,255,.5)}
+.frow>span:last-child{font-family:var(--mono);font-size:12.5px;text-align:right;color:var(--c);font-weight:700}
+
+/* ============ 矩阵 / 表 ============ */
+.mx{display:grid;grid-template-columns:88px 1fr 1fr;gap:9px}
+.mx-h{font-size:11.5px;font-family:var(--mono);color:var(--tx3);text-align:center;padding-bottom:4px;letter-spacing:.8px}
+.mx-l{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;writing-mode:vertical-rl;
+  border-radius:10px;padding:8px 0;letter-spacing:2px}
+.cell{border-radius:11px;padding:11px;display:flex;flex-direction:column;gap:7px;min-height:96px;border:1px solid var(--line)}
+.risk{background:rgba(255,255,255,.03);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:9px;padding:8px 10px}
+.risk b{display:block;font-size:12.4px;font-weight:700;margin-bottom:3px}
+.risk p{font-size:11.3px;color:var(--tx3);line-height:1.5}
+table{width:100%;border-collapse:collapse;font-size:12.6px}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;font-family:var(--mono);letter-spacing:.8px;color:var(--tx3);text-transform:uppercase;
+  background:rgba(255,255,255,.03);white-space:nowrap}
+td{color:var(--tx2)}td b{color:var(--tx)}
+tbody tr:hover td{background:rgba(255,255,255,.025)}
+.tw{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;overflow-x:auto}
+
+/* ============ 公式 ============ */
+.eq{font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.28);border:1px solid var(--line2);border-radius:10px;
+  padding:12px 14px;line-height:1.9;color:#c7d2fe;overflow-x:auto;white-space:nowrap}
+.eq b{color:#fcd34d;font-weight:700}.eq i{color:#86efac;font-style:normal}
+
+/* ============ 折叠 ============ */
+details{border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.022);overflow:hidden;margin-bottom:9px}
+details[open]{border-color:var(--line2)}
+summary{cursor:pointer;padding:12px 15px;font-size:13.2px;font-weight:700;list-style:none;display:flex;align-items:center;gap:10px;transition:.15s}
+summary::-webkit-details-marker{display:none}
+summary:hover{background:rgba(255,255,255,.035)}
+summary::after{content:"+";margin-left:auto;font-family:var(--mono);color:var(--tx3);font-size:16px;transition:.2s}
+details[open] summary::after{content:"−";color:var(--p2)}
+summary .cnt{font-family:var(--mono);font-size:10.5px;color:var(--tx3);border:1px solid var(--line2);padding:1px 7px;border-radius:6px}
+.dbody{padding:2px 15px 15px;border-top:1px solid var(--line)}
+
+/* ============ 时钟 / 节奏 ============ */
+.clock{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px}
+.slot{border:1px solid var(--line);border-radius:12px;padding:13px;background:linear-gradient(165deg,var(--panel),var(--bg2));border-top:3px solid var(--c)}
+.slot em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--c);letter-spacing:1px;font-weight:700}
+.slot b{display:block;font-size:13.4px;margin:3px 0 6px}
+.slot ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+.slot li{font-size:11.7px;color:var(--tx2);padding-left:13px;position:relative;line-height:1.5}
+.slot li::before{content:"·";position:absolute;left:3px;color:var(--c);font-weight:800}
+
+/* ============ 动画 ============ */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1)}
+.rv.in{opacity:1;transform:none}
+footer{border-top:1px solid var(--line);margin-top:60px;padding:26px 0;color:var(--tx3);font-size:12px;
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+
+@media(max-width:1080px){
+  .rail-line{display:none}.rail-grid,.gates{grid-template-columns:1fr}.ph{padding-top:0}.ph::before{display:none}
+  .lane{grid-template-columns:1fr}.mx{grid-template-columns:1fr}.mx-l{writing-mode:horizontal-tb}
+  .frow{grid-template-columns:130px 1fr 78px}
+}
+@media(max-width:860px){
+  .split.s3,.split.s4{grid-template-columns:1fr}
+  .wrap{padding:0 14px 80px}
+}
+@media(max-width:640px){
+  .split.s2{grid-template-columns:1fr}
+  .frow{grid-template-columns:1fr;gap:4px}.frow>span:last-child{text-align:left}
+  .step:not(:last-child)::after{display:none}
+  .brand{font-size:0}.brand i{margin-right:0}
+}
+@media print{
+  body{background:#fff;color:#000}nav,#prog,.btn{display:none}
+  .card,.nd,.step,.ph-card,.mtr,.slot{border-color:#bbb;background:#fff!important}
+  .rv{opacity:1;transform:none}details{break-inside:avoid}details>*{display:block!important}
+}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand"><i></i>雨具电商 · 作战地图</div>
+    <div class="navlinks" id="nl">
+      <a href="#overview">总览</a>
+      <a href="#axioms">五条铁律</a>
+      <a href="#timeline">阶段主线</a>
+      <a href="#prep">准备期</a>
+      <a href="#money">资金</a>
+      <a href="#equity">股权治理</a>
+      <a href="#cost">成本核算</a>
+      <a href="#shop">开店</a>
+      <a href="#logi">物流</a>
+      <a href="#test">测试期</a>
+      <a href="#ads">测款决策树</a>
+      <a href="#metrics">指标红线</a>
+      <a href="#grade">砍款分级</a>
+      <a href="#stock">备货库存</a>
+      <a href="#profit">毛利</a>
+      <a href="#gate">跑通验收</a>
+      <a href="#hire">招人</a>
+      <a href="#wms">云仓</a>
+      <a href="#grow">成长期</a>
+      <a href="#risk">风险矩阵</a>
+      <a href="#rhythm">运营节奏</a>
+      <a href="#raci">分工</a>
+    </div>
+    <button class="btn" id="tog">展开全部</button>
+    <button class="btn" onclick="print()">打印</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ============ HERO ============ -->
+<header>
+  <span class="eyebrow">◇ 源文件：流程规划-总表(3).xlsx · 全流程总表 · 230 条事项 · 24 个模块</span>
+  <h1>从 0 到日单 1000<span>雨具电商全流程作战地图</span></h1>
+  <p class="lead">
+    一张表格里的 <b>230 条事项</b>被重绘成 <b>21 张流程图</b>：五个阶段串成主线，每个阶段拆成并行泳道、决策树、阈值仪表和风险矩阵。
+    核心逻辑只有一句 —— <b>先跑通，再花钱；先出 SOP，再招人；先验收，再放大。</b>
+  </p>
+  <div class="kpis">
+    <div class="kpi" style="--c:var(--p1)"><b>60万</b><small>总启动资金</small><u>4 位股东出资</u></div>
+    <div class="kpi" style="--c:var(--p2)"><b>12个月</b><small>规划周期</small><u>5 个阶段 + 4 道关卡</u></div>
+    <div class="kpi" style="--c:var(--p3)"><b>ROI≥1.5</b><small>广告生死线</small><u>低于即砍</u></div>
+    <div class="kpi" style="--c:var(--p4)"><b>15~20万</b><small>紧急备用金</small><u>任何时候不动</u></div>
+    <div class="kpi" style="--c:var(--p5)"><b>80~100</b><small>跑通验收日单</small><u>连续 1 个月</u></div>
+    <div class="kpi" style="--c:var(--bad)"><b>23项</b><small>已识别风险</small><u>5 项高危</u></div>
+  </div>
+</header>
+
+<!-- ============ 1 总览 ============ -->
+<section id="overview">
+  <div class="sec-h"><span class="sec-n">01</span><h2>整体逻辑：一条<em>单向主线</em> + 四道关卡</h2></div>
+  <p class="sub">整份规划不是并列的 24 个模块，而是一条有前后依赖的链路。每个阶段末尾都有一道「不通过就不准往下走」的关卡，这是全表最重要的隐含结构。</p>
+
+  <div class="flow">
+    <div class="nd start"><div class="nt">起点 · 你手上的三张牌</div>
+      <div class="nd-s">① 60万资金（4人凑）　② 你懂伞面布料成本 —— 全行业最难算准的那一项，你天生算得准　③ 上虞崧厦本地伞厂产业带 + 可出面的嫂子/堂弟</div></div>
+    <div class="ar"><span>把牌变成产能</span></div>
+    <div class="split s3">
+      <div class="nd act"><div class="nt">主体：公司 + 店面</div><div class="nd-s">嫂子任法人 → 有限责任公司 → 店面同时是办公室/样品间/仓库/打包间</div></div>
+      <div class="nd act"><div class="nt">底价：成本核算表</div><div class="nd-s">拆到零件级算出完全成本 → 当作比价标尺去砍供应商报价</div></div>
+      <div class="nd act"><div class="nt">通路：店铺 + 快递</div><div class="nd-s">1 个平台跑通 + 2~3 家快递协议价 + 电子面单</div></div>
+    </div>
+    <div class="ar"><span>三者齐备 → 出首单</span></div>
+    <div class="nd dec"><div class="nt">关卡 1 · 测试期验收（第 3 个月末）</div>
+      <div class="nd-s">日单 30~50 且毛利为正 且 测出 3~5 个稳定出单款 —— 不通过则回到选品/视觉/价格复盘，最长 2 个月不见起色就考虑转型</div></div>
+    <div class="ar"><span>通过</span></div>
+    <div class="nd dec"><div class="nt">关卡 2 · 跑通确认验收（第 4 个月末）</div>
+      <div class="nd-s">日单稳定 80~100 连续 1 月 · 连续 2 月毛利为正 ROI≥1.5 · 退款&lt;10% 且 48h 发货 100% · 5 份 SOP 齐全</div></div>
+    <div class="ar"><span>通过才允许花钱招人</span></div>
+    <div class="nd dec"><div class="nt">关卡 3 · 起量期触发器</div>
+      <div class="nd-s">招人：出现 ≥2 个招人信号　嫂子全职：满足 ≥2 个条件　云仓：日单 200+ 且自营成本/出错率上升</div></div>
+    <div class="ar"><span>放大</span></div>
+    <div class="nd dec"><div class="nt">关卡 4 · 成长期门槛</div>
+      <div class="nd-s">主平台日单 200+ 稳定 且 团队有人能独立管店 → 才允许开第二个平台；每开一个至少稳定 3 个月再开下一个</div></div>
+    <div class="ar"><span>年末复盘</span></div>
+    <div class="nd good"><div class="nt">终点 · 第 12 个月复盘三问</div>
+      <div class="nd-s">哪些品类赚钱？哪些平台赚钱？团队配齐没有？—— 三个答案决定第二年打法</div></div>
+  </div>
+</section>
+
+<!-- ============ 2 铁律 ============ -->
+<section id="axioms">
+  <div class="sec-h"><span class="sec-n">02</span><h2>五条<em>铁律</em>：贯穿全程的约束条件</h2></div>
+  <p class="sub">这五条不属于任何单一阶段，而是所有决策的前置过滤器。任何具体动作和它们冲突，都以它们为准。</p>
+  <div class="grid g5">
+    <div class="card" style="border-top:3px solid var(--p1)">
+      <span class="tag in">原则 ①</span>
+      <h3 style="margin:11px 0 8px;font-size:14.5px">出面原则</h3>
+      <p style="font-size:12.6px;color:var(--tx2)">你本人不出面跑货源/工厂，由<b style="color:var(--tx)">嫂子或堂弟</b>出面。公司品牌独立注册即可，不需要过度隐身。</p>
+      <ul class="tk" style="margin-top:10px"><li>你在卖伞布，不出现在伞厂面前就没有暴露问题</li><li>唯一注意：<b>尽量避开你自己的布料客户工厂</b> —— 不是不能，是省事</li></ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--p2)">
+      <span class="tag in">原则 ②</span>
+      <h3 style="margin:11px 0 8px;font-size:14.5px">先跑通再招人</h3>
+      <p style="font-size:12.6px;color:var(--tx2)">任何岗位<b style="color:var(--tx)">先自己干出 SOP 再招人</b>，不提前配齐团队。</p>
+      <ul class="tk" style="margin-top:10px"><li>没有 SOP 别招人 —— 招来也带不动</li><li>人力成本红线：月人力 ≤ 月毛利 40%</li></ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--p3)">
+      <span class="tag in">原则 ③</span>
+      <h3 style="margin:11px 0 8px;font-size:14.5px">资金纪律</h3>
+      <p style="font-size:12.6px;color:var(--tx2)">紧急备用金 <b style="color:var(--tx)">15~20万雷打不动</b>，不跑通不囤货。</p>
+      <ul class="tk" style="margin-top:10px"><li>旺季前 1~2 个月才集中备货</li><li>每笔广告费都要复盘 ROI</li><li>货款占用 ≤ 总资金 30%（≈18万滚动）</li></ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--p4)">
+      <span class="tag in">原则 ④</span>
+      <h3 style="margin:11px 0 8px;font-size:14.5px">亲戚协议先行</h3>
+      <p style="font-size:12.6px;color:var(--tx2)">股权/工资/分红/退出/决策权<b style="color:var(--tx)">白纸黑字</b>，丑话说在前面。</p>
+      <ul class="tk" style="margin-top:10px"><li>干活拿工资、出钱拿分红，两笔账分开</li><li>协议花 2000 块律师费，比以后伤感情便宜得多</li></ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--p5)">
+      <span class="tag in">原则 ⑤</span>
+      <h3 style="margin:11px 0 8px;font-size:14.5px">发货合规</h3>
+      <p style="font-size:12.6px;color:var(--tx2)">前期<b style="color:var(--tx)">店面自营</b>（电子面单 + 48 小时），日单 200+ 再评估云仓。</p>
+      <ul class="tk" style="margin-top:10px"><li>红线：不跨平台转单、不虚假发货、不用非电子面单的「无货源」模式</li></ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:13px;border-left:3px solid var(--info)">
+    <h4 style="margin-bottom:8px">附加设定 · 两个弹性开关</h4>
+    <div class="grid g2">
+      <div><b style="font-size:13px">嫂子不辞职方案</b><p style="font-size:12.3px;color:var(--tx2);margin-top:4px">跑通期<b style="color:var(--tx)">远程管店</b>，报酬写死为「不给或象征性补贴 2000/月」；满足触发条件后再全职，全职按店长市场价 6000~8000 + 提成。</p></div>
+      <div><b style="font-size:13px">品类弹性</b><p style="font-size:12.3px;color:var(--tx2);margin-top:4px">公司不局限于雨伞 —— 淡季卖<b style="color:var(--tx)">拖鞋/雨衣/百货</b>平滑现金流。所以公司名不带「伞」字、经营范围一次写全。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 时间轴 ============ -->
+<section id="timeline">
+  <div class="sec-h"><span class="sec-n">03</span><h2>五阶段<em>主线</em>与出口条件</h2></div>
+  <p class="sub">每个阶段只有一个核心命题，出口条件是量化的。阶段之间不是时间到了就走，是<b>指标到了才走</b>。</p>
+  <div class="rail">
+    <div class="rail-line"></div>
+    <div class="rail-grid">
+      <div class="ph" style="--c:var(--p1)"><div class="ph-card">
+        <div class="ph-t">第 0~3 周</div><h5>准备期</h5>
+        <div class="ph-goal">命题：把「公司+店面+店铺」立起来</div>
+        <ul><li>租店面（办公+样品+仓储+打包一体）</li><li>注册公司 + 签股东协议</li><li>零部件成本核算 → 推成品成本 → 比价找货源</li><li>定公司名 / 品牌名</li><li>谈物流，签 2~3 家快递</li><li>平台开店 + 申请电子面单</li><li>上架 20~30 款</li></ul>
+        <div class="ph-out">出口：执照+协议+店面+物流+货源+店铺全落地，出首单</div>
+      </div></div>
+      <div class="ph" style="--c:var(--p2)"><div class="ph-card">
+        <div class="ph-t">第 1~3 个月</div><h5>测试期</h5>
+        <div class="ph-goal">命题：测款跑通，找到能赚钱的款</div>
+        <ul><li>店面自营发货</li><li>兼职美工做主图</li><li>小预算广告测款</li><li>嫂子远程管店（不辞职）</li></ul>
+        <div class="ph-out">出口：出首单 → 日单稳定 30~50</div>
+      </div></div>
+      <div class="ph" style="--c:var(--p3)"><div class="ph-card">
+        <div class="ph-t">第 3~4 个月</div><h5>跑通确认</h5>
+        <div class="ph-goal">命题：验证盈利模型能不能复制</div>
+        <ul><li>砍掉不卖的款</li><li>爆款备货</li><li>打包流程 SOP 化</li><li>复盘成本毛利</li></ul>
+        <div class="ph-out">出口：日单 80~100 · 连续 2 月毛利正 · ROI≥1.5</div>
+      </div></div>
+      <div class="ph" style="--c:var(--p4)"><div class="ph-card">
+        <div class="ph-t">第 4~6 个月</div><h5>起量期</h5>
+        <div class="ph-goal">命题：放大 + 第一次招人</div>
+        <ul><li>招人落地：客服→美工→打包→运营助理</li><li>评估切换云仓</li><li>考虑嫂子全职</li></ul>
+        <div class="ph-out">出口：日单 200~500</div>
+      </div></div>
+      <div class="ph" style="--c:var(--p5)"><div class="ph-card">
+        <div class="ph-t">第 6~12 个月</div><h5>成长期</h5>
+        <div class="ph-goal">命题：多平台 / 多品类 / 供应链下沉</div>
+        <ul><li>开多平台</li><li>加专职投手</li><li>直连工厂谈价</li><li>淡季品类扩展</li></ul>
+        <div class="ph-out">出口：日单 500~1000</div>
+      </div></div>
+    </div>
+  </div>
+  <div class="gates">
+    <div class="gate"><b>关卡 · 首单</b>执照/店面/物流/店铺全通，20~30 款在线可购买</div>
+    <div class="gate"><b>关卡 · 3~5 个款</b>测出稳定出单款，日单 30~50，毛利为正</div>
+    <div class="gate"><b>关卡 · 四项验收</b>单量/毛利/服务/SOP 全达标，才允许招人</div>
+    <div class="gate"><b>关卡 · 触发器</b>招人信号≥2 / 全职条件≥2 / 云仓日单 200+</div>
+    <div class="gate"><b>关卡 · 3 个月稳定</b>每开一个平台稳定 3 个月才开下一个</div>
+  </div>
+</section>
+
+<!-- ============ 4 准备期 ============ -->
+<section id="prep">
+  <div class="sec-h"><span class="sec-n">04</span><h2>准备期<em>五条并行泳道</em>（第 0~3 周）</h2></div>
+  <p class="sub">准备期最容易做错的是「串行做」。这五条线其实<b>可以同时开工</b>，只有一处强依赖：营业执照必须先出来，平台开店才能进行。</p>
+
+  <div class="lane" style="--c:var(--p1)">
+    <div class="lane-l"><b>泳道 A</b><small>店面选址与租赁</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p1)"><em>A1</em><b>定位 30~60㎡</b><p>办公室+样品间+仓库+打包间四合一，不另租仓库</p></div>
+      <div class="step" style="--c:var(--p1)"><em>A2</em><b>选地段</b><p>不要临街旺铺（贵 3~5 倍）；优先电商园/物流园/工业区</p></div>
+      <div class="step" style="--c:var(--p1)"><em>A3</em><b>要带简装</b><p>省下 2~5 万装修费就是利润；不为豪华装修付溢价</p></div>
+      <div class="step" style="--c:var(--p1)"><em>A4</em><b>查基础设施</b><p>大功率插座/宽带/能装货架/卫生间/卸货停车</p></div>
+      <div class="step" style="--c:var(--p1)"><em>A5</em><b>过 6 项清单</b><p>全过再签，先列 3 家候选实地对比</p></div>
+      <div class="step" style="--c:var(--p1)"><em>A6</em><b>签 6~12 月短约</b><p>押一付一优先，约定优先续租权</p></div>
+    </div>
+  </div>
+  <div class="lane" style="--c:var(--p2)">
+    <div class="lane-l"><b>泳道 B</b><small>公司注册与股权</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p2)"><em>B1</em><b>定股东结构</b><p>你 50% / 姐姐·堂弟·嫂子 各 16.67%</p></div>
+      <div class="step" style="--c:var(--p2)"><em>B2</em><b>嫂子任法人</b><p>你做隐名股东，代持方案找律师设计</p></div>
+      <div class="step" style="--c:var(--p2)"><em>B3</em><b>经营范围写全</b><p>雨伞/雨衣/鞋帽/日用品/百货 + 互联网销售</p></div>
+      <div class="step" style="--c:var(--p2)"><em>B4</em><b>签 5 份协议</b><p>工资制/决策权/分红/退出/财务透明</p></div>
+      <div class="step" style="--c:var(--p2)"><em>B5</em><b>找代账公司</b><p>200~400 元/月，前期不养专职财务</p></div>
+    </div>
+  </div>
+  <div class="lane" style="--c:var(--p3)">
+    <div class="lane-l"><b>泳道 C</b><small>成本核算与货源</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p3)"><em>C1</em><b>拆零件</b><p>伞面布+伞骨+伞柄+伞珠帽+弹簧件+包装+人工</p></div>
+      <div class="step" style="--c:var(--p3)"><em>C2</em><b>算你最准的一项</b><p>用布量㎡ × 布价 + 损耗 5%</p></div>
+      <div class="step" style="--c:var(--p3)"><em>C3</em><b>询价 2~3 家</b><p>伞骨/配件/加工费分别问，问"不带料的加工费"</p></div>
+      <div class="step" style="--c:var(--p3)"><em>C4</em><b>汇总完全成本</b><p>得出目标出厂价参考（+15~25% 毛利）</p></div>
+      <div class="step" style="--c:var(--p3)"><em>C5</em><b>拿标尺去比价</b><p>厂家报价 − 你的推算 = 对方利润空间</p></div>
+      <div class="step" style="--c:var(--p3)"><em>C6</em><b>样品实测</b><p>伞骨强度/防水/开关顺滑/做工，合格才谈批量</p></div>
+    </div>
+  </div>
+  <div class="lane" style="--c:var(--p4)">
+    <div class="lane-l"><b>泳道 D</b><small>品牌与开店</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p4)"><em>D1</em><b>公司名不带"伞"</b><p>以商贸/电商/供应链结尾，为淡季换品留路</p></div>
+      <div class="step" style="--c:var(--p4)"><em>D2</em><b>品牌名备 3 个</b><p>中文+英文，不与布料公司相似</p></div>
+      <div class="step" style="--c:var(--p4)"><em>D3</em><b>注册商标</b><p>第 20 类必注，第 25 类建议；500~1000 元/类</p></div>
+      <div class="step" style="--c:var(--p4)"><em>D4</em><b>开店 10 步</b><p>见下方开店流水线</p></div>
+      <div class="step" style="--c:var(--p4)"><em>D5</em><b>上架 20~30 款</b><p>每款主图 3~5 张 + 详情页</p></div>
+    </div>
+  </div>
+  <div class="lane" style="--c:var(--p5)">
+    <div class="lane-l"><b>泳道 E</b><small>物流与发货</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p5)"><em>E1</em><b>定位自营发货</b><p>店面存货+自己打包+上门揽收，云仓后置</p></div>
+      <div class="step" style="--c:var(--p5)"><em>E2</em><b>联系 6 家网点</b><p>中通/圆通/申通/韵达/极兔/邮政</p></div>
+      <div class="step" style="--c:var(--p5)"><em>E3</em><b>四点谈判</b><p>价格/账期/服务/赔付 —— 见下方物流谈判表</p></div>
+      <div class="step" style="--c:var(--p5)"><em>E4</em><b>签 2~3 家</b><p>主用 1 + 备用 1~2，防涨价爆仓停运</p></div>
+      <div class="step" style="--c:var(--p5)"><em>E5</em><b>开电子面单</b><p>绑定店铺，先测试打单再上线</p></div>
+      <div class="step" style="--c:var(--p5)"><em>E6</em><b>采打包设备</b><p>2000~3000 元全套，别买自动打包机</p></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;border-left:3px solid var(--warn)">
+    <h4>依赖与顺序提醒</h4>
+    <div class="grid g3" style="margin-top:4px">
+      <div><span class="tag mid">强依赖</span><p style="font-size:12.3px;color:var(--tx2);margin-top:6px">泳道 B（执照）→ 泳道 D（平台开店、对公账户）。执照没出来，开店卡死。</p></div>
+      <div><span class="tag in">软依赖</span><p style="font-size:12.3px;color:var(--tx2);margin-top:6px">泳道 A（店面地址）→ 注册地址 / 退货地址 / 快递揽收地址，三处都要用。</p></div>
+      <div><span class="tag ok">可提前</span><p style="font-size:12.3px;color:var(--tx2);margin-top:6px">泳道 C 的询价完全不依赖执照，由嫂子/堂弟第 0 周就能开始跑。</p></div>
+    </div>
+  </div>
+
+  <h3>店面判断清单：6 项全过才签</h3>
+  <div class="grid g3">
+    <div class="card" style="padding:13px"><span class="mono" style="color:var(--p1);font-size:11px">CHECK 01</span><b style="display:block;margin-top:3px">商用性质，可注册？</b><p style="font-size:12px;color:var(--tx3)">店面优于公寓的第一点 —— 不怕「住改商」被查</p></div>
+    <div class="card" style="padding:13px"><span class="mono" style="color:var(--p1);font-size:11px">CHECK 02</span><b style="display:block;margin-top:3px">消防达标？</b><p style="font-size:12px;color:var(--tx3)">存货 + 打包场所，消防是硬门槛</p></div>
+    <div class="card" style="padding:13px"><span class="mono" style="color:var(--p1);font-size:11px">CHECK 03</span><b style="display:block;margin-top:3px">快递能上门揽收？</b><p style="font-size:12px;color:var(--tx3)">店面优于公寓的第三点 —— 快递主动上门</p></div>
+    <div class="card" style="padding:13px"><span class="mono" style="color:var(--p1);font-size:11px">CHECK 04</span><b style="display:block;margin-top:3px">宽带到位？</b><p style="font-size:12px;color:var(--tx3)">客服 + 打单 + ERP 全靠它</p></div>
+    <div class="card" style="padding:13px"><span class="mono" style="color:var(--p1);font-size:11px">CHECK 05</span><b style="display:block;margin-top:3px">月租 ≤ 6000？</b><p style="font-size:12px;color:var(--tx3)">总资金 1% 封顶，租金是烧得最快的固定成本</p></div>
+    <div class="card" style="padding:13px"><span class="mono" style="color:var(--p1);font-size:11px">CHECK 06</span><b style="display:block;margin-top:3px">可短租？</b><p style="font-size:12px;color:var(--tx3)">没跑通前绝不签 3 年长约</p></div>
+  </div>
+
+  <details style="margin-top:14px"><summary>合同避坑 5 条 + 砍价技巧 <span class="cnt">展开</span></summary>
+    <div class="dbody"><div class="grid g2">
+      <div><h4>合同必写清</h4><ul class="tk">
+        <li>水电物业费<b>谁出</b></li><li>能否<b>改造</b>（装货架/挂招牌）</li><li><b>转租</b>条款</li>
+        <li>提前解约<b>违约金</b></li><li>房东<b>产权证核对</b> —— 别租二房东没授权的房子</li>
+        <li>所有<b>口头承诺</b>都写进合同</li></ul></div>
+      <div><h4>砍价技巧</h4><ul class="tk">
+        <li>月租<b>对半砍</b>起步</li><li><b>押一付一</b>优先，押金退还条件写清楚</li>
+        <li>一次签 1 年，谈<b>免 1 个月租金</b></li>
+        <li>招牌挂品牌名即可 —— 公司/品牌与布料生意分开就够，不用过度避讳</li></ul></div>
+    </div></div>
+  </details>
+</section>
+
+<!-- ============ 5 资金 ============ -->
+<section id="money">
+  <div class="sec-h"><span class="sec-n">05</span><h2>60万<em>资金分配</em>与现金流纪律</h2></div>
+  <p class="sub">条形长度按上限值绘制，虚线是下限。<b>注意：所有项取上限合计约 79 万，超出 60 万</b> —— 也就是说这份预算是「区间预算」，实际必须在货款/广告/工资三项上取偏下限，才能保住 15~20 万备用金不动。</p>
+
+  <div class="card">
+    <div class="fund" id="fund">
+      <div class="frow" style="--c:var(--p1)"><span>店面租金 + 押金</span><div class="ftrack"><i data-w="5.1"></i><u style="left:2.5%"></u></div><span>2~4 万</span></div>
+      <div class="frow" style="--c:var(--p1)"><span>布置 + 打包设备</span><div class="ftrack"><i data-w="2.5"></i><u style="left:1.2%"></u></div><span>1~2 万</span></div>
+      <div class="frow" style="--c:var(--p2)"><span>平台保证金 + 软件</span><div class="ftrack"><i data-w="3.8"></i><u style="left:2.5%"></u></div><span>2~3 万</span></div>
+      <div class="frow" style="--c:var(--p3)"><span>首批货款（滚动库存）</span><div class="ftrack"><i data-w="25.3"></i><u style="left:19%"></u></div><span>15~20 万</span></div>
+      <div class="frow" style="--c:var(--p4)"><span>广告推广费</span><div class="ftrack"><i data-w="12.7"></i><u style="left:10.1%"></u></div><span>8~10 万</span></div>
+      <div class="frow" style="--c:var(--p5)"><span>工资 + 杂费</span><div class="ftrack"><i data-w="12.7"></i><u style="left:10.1%"></u></div><span>8~10 万</span></div>
+      <div class="frow" style="--c:var(--bad)"><span>紧急备用金（不动）</span><div class="ftrack"><i data-w="25.3"></i><u style="left:19%"></u></div><span>15~20 万</span></div>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-top:13px">
+    <div class="card" style="border-top:3px solid var(--bad)"><h4>纪律 ①</h4><b style="font-size:14px">备用金雷打不动</b><p style="font-size:12.2px;color:var(--tx2);margin-top:5px">15~20 万只用于旺季备货、突发支出、试错成本 —— 任何时候不动。</p></div>
+    <div class="card" style="border-top:3px solid var(--warn)"><h4>纪律 ②</h4><b style="font-size:14px">不跑通不囤货</b><p style="font-size:12.2px;color:var(--tx2);margin-top:5px">前期只备爆款小批量。货款占用 ≤ 总资金 30%（≈18 万滚动）。</p></div>
+    <div class="card" style="border-top:3px solid var(--p2)"><h4>纪律 ③</h4><b style="font-size:14px">旺季前才集中备货</b><p style="font-size:12.2px;color:var(--tx2);margin-top:5px">雨季前 1~2 个月，按去年同季 × 1.5 预估。雨具压货 = 压现金流。</p></div>
+    <div class="card" style="border-top:3px solid var(--p4)"><h4>纪律 ④</h4><b style="font-size:14px">每笔广告费复盘 ROI</b><p style="font-size:12.2px;color:var(--tx2);margin-top:5px">前 3 个月约 2~3 万/月，ROI≥1.5 为红线，每款单独记账。</p></div>
+  </div>
+
+  <h3>月固定成本 → 保本单量</h3>
+  <div class="card">
+    <div class="eq">保本单量 = <b>月固定成本</b>（房租 + 工资 + 杂费）<b>÷ 单均毛利</b>　　<i>// 低于保本单量，就是在亏</i></div>
+    <ul class="tk" style="margin-top:12px">
+      <li>房租按封顶 6000/月估；嫂子全职前按「不给或象征性 2000/月」，全职后 6000~8000 + 提成</li>
+      <li>这个数字要<b>每月重算一次</b>，因为招人后固定成本会跳台阶 —— 招一个人就等于抬高一次保本线</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 6 股权 ============ -->
+<section id="equity">
+  <div class="sec-h"><span class="sec-n">06</span><h2>股权结构与<em>决策权设计</em></h2></div>
+  <p class="sub">这份股权表最精妙的一处是：<b>你 50% + 嫂子 16.67% = 66.7%，刚好压过 2/3 线</b> —— 重大事项的表决门槛被设计成「你和实际干活的人达成一致即可通过」。</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4>出资与持股</h4>
+      <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <svg width="188" height="188" viewBox="0 0 188 188" style="flex-shrink:0">
+          <circle cx="94" cy="94" r="66" fill="none" stroke="#1a2444" stroke-width="26"/>
+          <circle cx="94" cy="94" r="66" fill="none" stroke="#6366f1" stroke-width="26"
+            stroke-dasharray="207.3 414.7" stroke-dashoffset="0" transform="rotate(-90 94 94)" stroke-linecap="butt"/>
+          <circle cx="94" cy="94" r="66" fill="none" stroke="#06b6d4" stroke-width="26"
+            stroke-dasharray="69.1 552.9" stroke-dashoffset="-207.3" transform="rotate(-90 94 94)"/>
+          <circle cx="94" cy="94" r="66" fill="none" stroke="#f59e0b" stroke-width="26"
+            stroke-dasharray="69.1 552.9" stroke-dashoffset="-276.4" transform="rotate(-90 94 94)"/>
+          <circle cx="94" cy="94" r="66" fill="none" stroke="#10b981" stroke-width="26"
+            stroke-dasharray="69.1 552.9" stroke-dashoffset="-345.5" transform="rotate(-90 94 94)"/>
+          <text x="94" y="88" text-anchor="middle" fill="#e8ecf8" font-size="25" font-weight="800" font-family="ui-monospace,monospace">60万</text>
+          <text x="94" y="107" text-anchor="middle" fill="#6f7da8" font-size="11" font-family="ui-monospace,monospace">注册资本</text>
+        </svg>
+        <div style="flex:1;min-width:190px;display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:9px"><i style="width:11px;height:11px;border-radius:3px;background:#6366f1;flex-shrink:0"></i>
+            <b style="font-size:13.5px;flex:1">你</b><span class="mono" style="font-size:12.5px;color:var(--tx2)">30万</span><span class="mono" style="font-size:13px;color:#818cf8;font-weight:700">50%</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><i style="width:11px;height:11px;border-radius:3px;background:#06b6d4;flex-shrink:0"></i>
+            <b style="font-size:13.5px;flex:1">嫂子 <span class="tag ok" style="margin-left:4px">法人 · 店长</span></b><span class="mono" style="font-size:12.5px;color:var(--tx2)">10万</span><span class="mono" style="font-size:13px;color:#22d3ee;font-weight:700">16.67%</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><i style="width:11px;height:11px;border-radius:3px;background:#f59e0b;flex-shrink:0"></i>
+            <b style="font-size:13.5px;flex:1">堂弟 <span class="tag mid" style="margin-left:4px">出面跑厂</span></b><span class="mono" style="font-size:12.5px;color:var(--tx2)">10万</span><span class="mono" style="font-size:13px;color:#fbbf24;font-weight:700">16.67%</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><i style="width:11px;height:11px;border-radius:3px;background:#10b981;flex-shrink:0"></i>
+            <b style="font-size:13.5px;flex:1">姐姐 <span class="tag" style="margin-left:4px">纯出资</span></b><span class="mono" style="font-size:12.5px;color:var(--tx2)">10万</span><span class="mono" style="font-size:13px;color:#34d399;font-weight:700">16.67%</span></div>
+          <div style="margin-top:6px;padding:9px 11px;border-radius:9px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.35)">
+            <b class="mono" style="font-size:12px;color:#a5b4fc">你 + 嫂子 = 66.7% &gt; 2/3</b>
+            <p style="font-size:11.5px;color:var(--tx2);margin-top:3px">重大事项表决门槛刚好被跨过</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>决策权分层</h4>
+      <div class="flow" style="margin-top:6px">
+        <div class="nd act"><div class="nt">日常经营 · 嫂子 + 你拍板</div><div class="nd-s">选品 / 定价 / 进货 —— 不需要开股东会</div></div>
+        <div class="ar"><span>金额或性质升级</span></div>
+        <div class="nd dec"><div class="nt">是否属于重大事项？</div>
+          <div class="nd-s">单笔支出 &gt; 2 万 · 分红方案 · 新增股东 · 停业</div></div>
+        <div class="split s2" style="margin-top:11px">
+          <div class="nd good"><div class="nt">否 → 直接执行</div><div class="nd-s">按日常经营流程走</div></div>
+          <div class="nd dec"><div class="nt">是 → 需 ≥2/3 股权同意</div><div class="nd-s">你 + 嫂子 66.7% 即可通过</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>五份协议：把丑话说在前面</h3>
+  <div class="grid g5">
+    <div class="card" style="border-top:3px solid var(--p1);padding:14px"><span class="tag in">协议 ①</span><b style="display:block;margin:8px 0 5px;font-size:13.5px">工资制</b><p style="font-size:12px;color:var(--tx2)">嫂子全职后按 6000。<b style="color:var(--tx)">干活拿工资、出钱拿分红，两笔账分开。</b></p></div>
+    <div class="card" style="border-top:3px solid var(--p2);padding:14px"><span class="tag in">协议 ②</span><b style="display:block;margin:8px 0 5px;font-size:13.5px">决策权</b><p style="font-size:12px;color:var(--tx2)">日常由嫂子+你拍板；重大事项需 ≥2/3 股权同意。</p></div>
+    <div class="card" style="border-top:3px solid var(--p3);padding:14px"><span class="tag in">协议 ③</span><b style="display:block;margin:8px 0 5px;font-size:13.5px">分红</b><p style="font-size:12px;color:var(--tx2)">每季度或半年一次，<b style="color:var(--tx)">利润留存 30%</b> 做发展资金。让姐姐堂弟清楚钱什么时候能回。</p></div>
+    <div class="card" style="border-top:3px solid var(--p4);padding:14px"><span class="tag in">协议 ④</span><b style="display:block;margin:8px 0 5px;font-size:13.5px">退出</b><p style="font-size:12px;color:var(--tx2)"><b style="color:var(--tx)">2 年内不得退股</b>；退出按净资产或协商价 —— 防止旺季前有人撤资。</p></div>
+    <div class="card" style="border-top:3px solid var(--p5);padding:14px"><span class="tag in">协议 ⑤</span><b style="display:block;margin:8px 0 5px;font-size:13.5px">财务透明</b><p style="font-size:12px;color:var(--tx2)">每月给 3 位股东发报表（收入/支出/库存/利润）—— 安抚不干活股东的唯一方式。</p></div>
+  </div>
+
+  <h3>身份隔离：只做低成本动作</h3>
+  <div class="grid g2">
+    <div class="card" style="border-left:3px solid var(--ok)"><h4>值得做（成本≈0）</h4><ul class="tk">
+      <li>你本人不出面跑货源/工厂，嫂子或堂弟去</li>
+      <li>公司名/品牌与布料生意<b>无关联</b>，工商信息、店铺名分开</li>
+      <li>别用布料公司关联手机号注册平台账号</li>
+      <li>进货尽量<b>避开你自己的布料客户工厂</b> —— 不是不能，是省事</li></ul></div>
+    <div class="card" style="border-left:3px solid var(--bad)"><h4>不值得做（过度隐身）</h4><ul class="tk">
+      <li>别为「隐身」花额外成本 —— 嫂子/堂弟正常跑工厂、询价、谈价即可</li>
+      <li>合规红线跟隐身无关，必须守：<b>电子面单 / 48h 发货 / 物流轨迹真实</b></li>
+      <li>红线三不：不跨平台转单、不虚假发货、不用非电子面单的「无货源」模式</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ 7 成本核算 ============ -->
+<section id="cost">
+  <div class="sec-h"><span class="sec-n">07</span><h2>成本核算：把<em>你的信息差</em>变成议价权</h2></div>
+  <p class="sub">这是整份规划里最有独特价值的一节。别人拿到报价只能猜贵不贵，你能<b>自下而上算出这把伞该值多少钱</b>，然后拿这个数字当标尺去砍价。</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4>成本拆解树</h4>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <div class="nd start" style="text-align:center"><div class="nt">一把成品伞</div></div>
+        <div class="ar" style="height:20px"></div>
+        <div class="split s2" style="gap:8px">
+          <div class="nd" style="border-color:var(--p3);background:linear-gradient(165deg,rgba(245,158,11,.14),var(--bg2))">
+            <div class="nt" style="color:#fcd34d">① 伞面布 <span class="tag ok" style="margin-left:5px">你最准</span></div>
+            <div class="nd-s">用布量(㎡) × 布价 + 损耗 5%　—— 其他卖家算不了这么精，这就是你的优势</div></div>
+          <div class="nd" style="border-color:var(--line2)"><div class="nt">② 伞骨 <span class="tag mid" style="margin-left:5px">成本大头</span></div>
+            <div class="nd-s">铁骨 / 玻纤骨 / 碳纤骨，按规格或按把报；决定伞的档次，多询几家</div></div>
+        </div>
+        <div class="split s2" style="gap:8px">
+          <div class="nd"><div class="nt">③ 配件</div><div class="nd-s">伞柄（塑料/木/弯钩）、伞珠、伞帽、开关弹簧 —— 1688 搜「伞配件」批量价可谈</div></div>
+          <div class="nd"><div class="nt">④ 人工加工费</div><div class="nd-s">缝伞面 / 装骨 / 包装分开问；问「不带料的加工费」，摸清上虞崧厦当地行情</div></div>
+        </div>
+        <div class="split s2" style="gap:8px">
+          <div class="nd"><div class="nt">⑤ 包装 <span class="tag hi" style="margin-left:5px">隐形利润杀手</span></div><div class="nd-s">伞套 + 吊牌 + 快递袋 + 气泡膜，单把 0.3~1 元，别漏算</div></div>
+          <div class="nd"><div class="nt">⑥ 损耗</div><div class="nd-s">统一按 5% 计入</div></div>
+        </div>
+      </div>
+      <div class="eq" style="margin-top:12px">成本价 = 面料 + 伞骨 + 配件 + 人工 + 包装 + <b>损耗(5%)</b><br>目标出厂价参考 = 完全成本 <b>× (1 + 15~25%)</b></div>
+      <p style="font-size:12px;color:var(--tx3);margin-top:8px">※ 直杆 / 折叠 / 自动三种款式零部件不同，<b style="color:var(--tx2)">必须按款分别算</b>。</p>
+    </div>
+
+    <div class="card">
+      <h4>比价判断决策树</h4>
+      <div class="flow" style="margin-top:8px">
+        <div class="nd start"><div class="nt">拿着你算出的成本价去要报价</div><div class="nd-s">1688 / 本地工厂，由嫂子或堂弟出面</div></div>
+        <div class="ar"><span>计算差价</span></div>
+        <div class="eq" style="margin:0 0 11px">差价率 = (<b>厂家报价</b> − <i>你的成本推算</i>) ÷ <i>你的成本推算</i></div>
+        <div class="nd dec"><div class="nt">差价率落在哪个区间？</div></div>
+        <div class="split s3" style="margin-top:11px">
+          <div class="nd stop"><div class="nt">&lt; 0%</div><div class="nd-s">低于你的成本 → <b>警惕亏本引流</b>，品质可能翻车</div></div>
+          <div class="nd good"><div class="nt">0 ~ 10%</div><div class="nd-s"><b>合理</b> —— 接近或略高于推算，正常工厂利润</div></div>
+          <div class="nd" style="border-color:var(--warn)"><div class="nt" style="color:#fcd34d">&gt; 20%</div><div class="nd-s">被宰 <b>或</b> 工艺确实更好 → 必须问清差异在哪，否则换一家</div></div>
+        </div>
+        <div class="ar"><span>报价过关</span></div>
+        <div class="nd act"><div class="nt">样品验证（不可跳过）</div>
+          <div class="nd-s">实测伞骨强度 / 布面防水 / 开关顺滑 / 细节做工；<b>样品费和退样条款提前谈清</b></div></div>
+        <div class="ar"><span>样品合格</span></div>
+        <div class="nd good"><div class="nt">才谈批量进货</div><div class="nd-s">每家多备 2~3 个备选供应商</div></div>
+      </div>
+    </div>
+  </div>
+
+  <details style="margin-top:14px"><summary>询价执行细节：话术模板 + 白名单工厂清单 <span class="cnt">3 条</span></summary>
+    <div class="dbody"><div class="grid g3">
+      <div><h4>询价话术</h4><p style="font-size:12.5px;color:var(--tx2);padding:10px;background:rgba(0,0,0,.25);border-radius:9px;border:1px solid var(--line)">「你好，我是做电商的，想了解 X 规格伞的批量拿货价，<b style="color:var(--tx)">月销 3000 把</b>左右，支持电子面单代发吗？」</p></div>
+      <div><h4>成本核算表</h4><p style="font-size:12.5px;color:var(--tx2)">单独建一个 Excel：<b style="color:var(--tx)">每款伞一行，成本列全</b>，比价时直接把厂家报价填进去对比。</p></div>
+      <div><h4>你的隐藏优势</h4><p style="font-size:12.5px;color:var(--tx2)">卖布料最清楚哪家工厂工艺好、用料足、成本多少 → 列一份<b style="color:var(--tx)">「白名单工厂清单」</b>给嫂子/堂弟去对接。<b style="color:var(--tx)">你出脑子，他们出脸。</b></p></div>
+    </div></div>
+  </details>
+</section>
+
+<!-- ============ 8 开店 ============ -->
+<section id="shop">
+  <div class="sec-h"><span class="sec-n">08</span><h2>平台开店<em>10 步流水线</em></h2></div>
+  <p class="sub">前期<b>集中 1 个平台跑通，别贪多</b>。新手优先拼多多（门槛低、流量大、适合低客单），淘宝搜索流量稳，抖音需要做视频。</p>
+
+  <div class="lane" style="--c:var(--p2)">
+    <div class="lane-l"><b>开店 1~5</b><small>资质与账号</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p2)"><em>01</em><b>选平台</b><p>只开 1 个跑通；拼多多 → 淘宝 → 抖音</p></div>
+      <div class="step" style="--c:var(--p2)"><em>02</em><b>注册账号</b><p>手机号实名；<b>别用布料公司关联号</b>；先查一证一店规则</p></div>
+      <div class="step" style="--c:var(--p2)"><em>03</em><b>上传执照</b><p>执照 + 法人身份证，照片清晰信息一致，审核 1~3 天</p></div>
+      <div class="step" style="--c:var(--p2)"><em>04</em><b>缴保证金</b><p>1000~2000 元起（按类目），可退；抖音更高</p></div>
+      <div class="step" style="--c:var(--p2)"><em>05</em><b>设置店铺</b><p>店名/logo/公告/运费模板/退货地址（用店面）</p></div>
+    </div>
+  </div>
+  <div class="lane" style="--c:var(--p4)">
+    <div class="lane-l"><b>开店 6~10</b><small>收款、发货与上架</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p4)"><em>06</em><b>开通支付</b><p>绑对公账户/支付宝/微信商户号；<b>法人（嫂子）本人去银行，提前预约</b></p></div>
+      <div class="step" style="--c:var(--p4)"><em>07</em><b>申请电子面单</b><p>对接已签约快递 —— 合规第一条，没有 = 无货源打击风险</p></div>
+      <div class="step" style="--c:var(--p4)"><em>08</em><b>查类目资质</b><p>雨伞一般不需质检报告，但上架前先查，避免下架扣分</p></div>
+      <div class="step" style="--c:var(--p4)"><em>09</em><b>店铺装修</b><p>基础即可（banner/分类/详情模板），<b>重点钱花在主图</b></p></div>
+      <div class="step" style="--c:var(--p4)"><em>10</em><b>上架 20~30 款</b><p>每款主图 3~5 张 + 详情；查「重复铺货」规则</p></div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card" style="border-left:3px solid var(--bad)">
+      <h4>平台避坑 5 条</h4>
+      <ul class="tk">
+        <li>别信<b>「代运营」</b> —— 前期自己干，代运营水太深</li>
+        <li>别买<b>「刷单」</b> —— 封店风险</li>
+        <li>保证金<b>别一次交多店</b></li>
+        <li>开店后 <b>7 天内必须上架</b>商品，长期空店会被清退</li>
+        <li><b>客服响应率是权重指标</b>：拼多多 3 分钟、淘宝 5 分钟 —— 嫂子要盯住</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--info)">
+      <h4>命名规则（为未来留路）</h4>
+      <ul class="tk">
+        <li>公司名：以<b>商贸/电子商务/供应链</b>结尾，<b>不带「伞」字</b> —— 为淡季卖拖鞋/雨衣/百货留路；注册前搜重名</li>
+        <li>品牌名：中文 + 英文，大众化易记，<b>备 3 个</b>防被占用；别和布料公司同名相似</li>
+        <li>商标：<b>第 20 类（家具/伞具）必注</b>，第 25 类（服装鞋帽）建议注册，500~1000 元/类</li>
+        <li>店铺名：与品牌一致，可加类目词（如「XX旗舰店」），也<b>先想好 3 个备选</b></li>
+        <li>经营范围一次写全：雨伞/雨衣/鞋帽/日用品/家用百货/互联网销售 —— <b>写全了以后加品不用改执照</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:13px;border-left:3px solid var(--warn)">
+    <p style="font-size:12.5px;color:var(--tx2)">⚠ 开店前先看平台《商家入驻规则》和《发货管理规则》—— <b style="color:var(--tx)">政策变化快，一切以官方公告为准</b>，本图中的保证金、响应时长等数值仅作规划参考。</p>
+  </div>
+</section>
+
+<!-- ============ 9 物流 ============ -->
+<section id="logi">
+  <div class="sec-h"><span class="sec-n">09</span><h2>物流：<em>四点谈判</em>与发货 SOP</h2></div>
+  <p class="sub">低客单类目里，快递费是最大成本之一。散客价 8~12 元、电商协议价 3~5 元 —— <b>这中间的差价直接决定你有没有毛利</b>。</p>
+
+  <div class="grid g4">
+    <div class="card" style="border-top:3px solid var(--p1)"><span class="tag in">谈判点 ①</span><b style="display:block;margin:8px 0 6px;font-size:14px">价格</b>
+      <p style="font-size:12.2px;color:var(--tx2)">首重 1kg 内目标 <b style="color:var(--tx)">3~5 元/单</b>；谈<b style="color:var(--tx)">全国均价</b>而非分区价。报价时先报量「月发 3000 单」。</p></div>
+    <div class="card" style="border-top:3px solid var(--p2)"><span class="tag in">谈判点 ②</span><b style="display:block;margin:8px 0 6px;font-size:14px">账期</b>
+      <p style="font-size:12.2px;color:var(--tx2)">谈<b style="color:var(--tx)">月结</b>（月底对账付款），别现结 —— 月结省现金流，现结没有任何优势。</p></div>
+    <div class="card" style="border-top:3px solid var(--p3)"><span class="tag in">谈判点 ③</span><b style="display:block;margin:8px 0 6px;font-size:14px">服务</b>
+      <p style="font-size:12.2px;color:var(--tx2)">电子面单支持、上门揽收时间、超重续重价、<b style="color:var(--tx)">偏远地区加价</b>（新疆/西藏/内蒙/青海）提前问清，否则亏运费。</p></div>
+    <div class="card" style="border-top:3px solid var(--p4)"><span class="tag in">谈判点 ④</span><b style="display:block;margin:8px 0 6px;font-size:14px">赔付</b>
+      <p style="font-size:12.2px;color:var(--tx2)">丢件/破损赔付标准、时效承诺、异常件处理流程 —— <b style="color:var(--tx)">赔付标准写进合同</b>，高价值件考虑保价。</p></div>
+  </div>
+
+  <div class="card" style="margin-top:13px;border-left:3px solid var(--p2)">
+    <h4>快递谈判话术（多家报价互相压价）</h4>
+    <p style="font-size:13px;color:var(--tx2);padding:11px 13px;background:rgba(0,0,0,.25);border-radius:10px;border:1px solid var(--line);margin-top:4px">
+      「我这边电商月发货量稳定增长，现在<b style="color:var(--tx)">月发 3~5 千单</b>，想谈协议价，<b style="color:var(--tx)">全国均价 4 块以内能做吗？电子面单能开通吗？可以月结吗？</b>」</p>
+    <ul class="tk" style="margin-top:11px">
+      <li><b>旺季（雨季前）快递会涨价</b> → 提前 1~2 个月锁定价格，合同写明旺季价格上浮上限</li>
+      <li><b>进货物流单独谈</b>：工厂→店面的货走普通货运/物流（大件走物流、小件走快递），和发货快递分开</li>
+      <li><b>至少签 2~3 家</b>：主用 1 家 + 备用 1~2 家，防一家涨价/爆仓/停运时被动</li>
+    </ul>
+  </div>
+
+  <h3>发货 SOP：六步 + 两条硬约束</h3>
+  <div class="lane" style="--c:var(--p5)">
+    <div class="lane-l"><b>每日发货</b><small>店面自营</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p5)"><em>S1</em><b>订单</b><p>平台后台同步</p></div>
+      <div class="step" style="--c:var(--p5)"><em>S2</em><b>打单</b><p>热敏打印机 + 电子面单</p></div>
+      <div class="step" style="--c:var(--p5)"><em>S3</em><b>拣货</b><p>货架分区：爆款区/常规区/待清仓区，先进先出</p></div>
+      <div class="step" style="--c:var(--p5)"><em>S4</em><b>称重复核</b><p>电子秤逐单核重 —— <b>多一公斤 = 多几块运费</b></p></div>
+      <div class="step" style="--c:var(--p5)"><em>S5</em><b>打包贴单</b><p>雨伞加气泡膜，防压防湿</p></div>
+      <div class="step" style="--c:var(--p5)"><em>S6</em><b>快递揽收</b><p>每天固定时间交件</p></div>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:2px">
+    <div class="card" style="border-left:3px solid var(--warn)"><b style="font-size:13.5px">硬约束 ① 截单时间</b>
+      <p style="font-size:12.3px;color:var(--tx2);margin-top:5px">定好每天截单时间（如 <b class="mono" style="color:var(--tx)">17:00</b>），超时订单次日发，避免超时罚款。<b>48 小时内发货率必须 100%。</b></p></div>
+    <div class="card" style="border-left:3px solid var(--warn)"><b style="font-size:13.5px">硬约束 ② 打包标准写成 SOP</b>
+      <p style="font-size:12.3px;color:var(--tx2);margin-top:5px">每天核对发货率和异常件。设备总投入 2000~3000 元足够：电子秤/热敏打印机/打包台/气泡膜/快递袋/胶带/货架 —— <b>别买贵的自动打包机</b>。</p></div>
+  </div>
+</section>
+
+<!-- ============ 10 测试期 ============ -->
+<section id="test">
+  <div class="sec-h"><span class="sec-n">10</span><h2>测试期<em>周级作战表</em>（第 1~3 个月）</h2></div>
+  <p class="sub">测试期的目标不是盈利，是<b>「找到能赚钱的款」</b>。找到款之后再谈利润。第 1 个月别急着投大广告 —— 没有转化基础的广告就是烧钱。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>时间</th><th>主题</th><th>关键动作</th><th>里程碑 / 验收</th></tr></thead>
+      <tbody>
+        <tr><td><b class="mono">M1 W1</b></td><td><b>店面 + 开店收尾</b></td>
+          <td>店面布置（货架/打包台/设备到位）· 快递谈判签约 · 平台店铺开通 + 电子面单绑定</td>
+          <td><span class="tag ok">店面能打包 · 快递能揽收 · 店铺能下单</span></td></tr>
+        <tr><td><b class="mono">M1 W2</b></td><td><b>首批货源 + 上架</b></td>
+          <td>嫂子/堂弟跑工厂或 1688 拿首批样品 · 兼职美工做前 10 款主图 · 上架 10 款</td>
+          <td><span class="tag ok">10 款商品在线可购买</span></td></tr>
+        <tr><td><b class="mono">M1 W3</b></td><td><b>上满 20~30 款</b></td>
+          <td>补齐上架 · 报名平台新店活动 · 开始小预算测款广告 · 客服话术模板初版</td>
+          <td><span class="tag ok">出首单 🎉</span></td></tr>
+        <tr><td><b class="mono">M1 W4</b></td><td><b>数据起步</b></td>
+          <td>每天记录曝光/点击/转化 · 测图优化 · <b>砍掉 0 曝光款</b></td>
+          <td><span class="tag ok">日访客 50+ · 日单 1~5</span></td></tr>
+        <tr><td><b class="mono">M2</b></td><td><b>集中测款</b></td>
+          <td>广告预算加到 2~3 万/月 · 重点测 10~15 款 · 每周复盘调整</td>
+          <td><span class="tag ok">测出 3~5 个稳定出单的款 · 日单 10~20</span></td></tr>
+        <tr><td><b class="mono">M3</b></td><td><b>定型跑量</b></td>
+          <td>砍掉不卖的款 · 爆款小批量备货 · 优化毛利（压进价/谈快递）· <b>SOP 写成文档</b></td>
+          <td><span class="tag ok">日单 30~50 且毛利为正</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>嫂子远程协作：书面化 + 固定节奏</h3>
+  <p class="sub" style="margin-bottom:14px">远程协作的核心是<b>所有指令用文字留痕，别只口头说</b>。平台/支付/快递账号权限分开，嫂子为主、你审核。</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag in">日</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">每日对会 30 分钟</b><p style="font-size:12.2px;color:var(--tx2)">晚上固定时段：<b style="color:var(--tx)">今天数据、明天计划</b>。微信/钉钉/飞书语音或视频。</p></div>
+    <div class="card"><span class="tag in">日</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">客服值班</b><p style="font-size:12.2px;color:var(--tx2)">嫂子工作日白天 + 晚上各 1 小时处理咨询，<b style="color:var(--tx)">设置自动回复兜底</b>。用千牛/商家后台 APP。</p></div>
+    <div class="card"><span class="tag in">日</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">数据记录</b><p style="font-size:12.2px;color:var(--tx2)">嫂子每天填日报表（订单/曝光/广告花费），腾讯文档或飞书表格共享 —— <b style="color:var(--tx)">嫂子记，你看</b>。</p></div>
+    <div class="card"><span class="tag mid">分工</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">上架：执行 vs 审核</b><p style="font-size:12.2px;color:var(--tx2)">嫂子执行上架，<b style="color:var(--tx)">你审核定价</b>。共享表格排期，避免重复上架。</p></div>
+    <div class="card"><span class="tag mid">分工</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">广告：执行 vs 定策略</b><p style="font-size:12.2px;color:var(--tx2)">嫂子按你定的预算执行投放，<b style="color:var(--tx)">你每周定策略</b>。账号权限分开避免误操作。</p></div>
+    <div class="card"><span class="tag mid">分工</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">财务记录</b><p style="font-size:12.2px;color:var(--tx2)">嫂子记流水（进货/快递/广告/收入），固定格式，每月给代账。</p></div>
+    <div class="card" style="border-left:3px solid var(--bad)"><span class="tag hi">升级</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">紧急事项</b><p style="font-size:12.2px;color:var(--tx2)">差评/纠纷/发货异常 → <b style="color:var(--tx)">嫂子先处理，处理不了当天升级给你</b>。升级标准写进 SOP。</p></div>
+    <div class="card" style="border-left:3px solid var(--p4)"><span class="tag ok">沉淀</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">交接文档</b><p style="font-size:12.2px;color:var(--tx2)">所有操作流程写成 SOP 存共享云盘 —— <b style="color:var(--tx)">嫂子来绍兴全职时直接接手</b>。</p></div>
+    <div class="card" style="border-left:3px solid var(--p5)"><span class="tag">兜底</span><b style="display:block;margin:7px 0 5px;font-size:13.5px">店面发货</b><p style="font-size:12.2px;color:var(--tx2)">嫂子全职前：店面由<b style="color:var(--tx)">临时负责人 / 堂弟</b>按发货 SOP 执行，每天核对发货率。</p></div>
+  </div>
+</section>
+
+<!-- ============ 11 测款决策树 ============ -->
+<section id="ads">
+  <div class="sec-h"><span class="sec-n">11</span><h2>广告测款<em>决策树</em>：全表最关键的一张图</h2></div>
+  <p class="sub">原则四个字：<b>小预算、多款、快止损，不押注单款</b>。每款日预算 30~50 元封顶，先测 10~15 款，让数据说话。</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4>主决策树</h4>
+      <div class="flow" style="margin-top:8px">
+        <div class="nd start"><div class="nt">前置条件（不满足别开广告）</div>
+          <div class="nd-s">主图 3~5 张做好 · 标题含核心词 · 先做基础销量（1元秒杀/拼团起量）—— <b>没有视觉和基础销量的测款 = 浪费广告费</b></div></div>
+        <div class="ar"><span>开投</span></div>
+        <div class="nd act"><div class="nt">搜索推广为主 · 每款日限额 30~50 元</div>
+          <div class="nd-s">拼多多：搜索推广 + 场景推广　淘宝：直通车 / 万相台　抖音：千川随心推</div></div>
+        <div class="ar"><span>跑满观察周期</span></div>
+        <div class="nd dec"><div class="nt">观察周期够了吗？</div>
+          <div class="nd-s">每款<b>至少 7 天</b>且<b>累计曝光 5000+</b> 才下结论 —— 别 3 天就砍，数据量不够会误判</div></div>
+        <div class="ar"><span>够了 → 看 CTR</span></div>
+        <div class="nd dec"><div class="nt">点击率 CTR ≥ 3%？</div></div>
+        <div class="split s2" style="margin-top:11px">
+          <div>
+            <div class="nd stop"><div class="nt">CTR &lt; 2% → 主图问题</div><div class="nd-s">换主图重测（同款上 2~3 张不同主图轮流测点击率）；反复不行则放弃</div></div>
+          </div>
+          <div>
+            <div class="nd dec"><div class="nt">CTR 合格 → 看转化率 ≥ 2%？</div><div class="nd-s">看支付转化，低客单类目参考 2~5%</div></div>
+          </div>
+        </div>
+        <div class="ar"><span>CTR 高 + 转化低</span></div>
+        <div class="nd" style="border-color:var(--warn)"><div class="nt" style="color:#fcd34d">优化详情 / 价格 / 评价</div>
+          <div class="nd-s">转化 &lt;1% 时重点查：价格是否偏高、详情页说服力、有没有基础评价</div></div>
+        <div class="ar"><span>CTR 高 + 转化合格</span></div>
+        <div class="nd good"><div class="nt">✓ 潜力款 → 加码</div>
+          <div class="nd-s">加预算 · 报活动（秒杀/百亿补贴/限时抢）· <b>快速补货</b> —— 起量款别断货，断货 = 权重掉</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:13px">
+      <div class="card" style="border-left:3px solid var(--bad)">
+        <h4>止损规则（必须机械执行）</h4>
+        <div class="flow" style="margin-top:6px">
+          <div class="nd stop"><div class="nt">单品广告费烧满 500 元且 0 成交</div><div class="nd-s">→ <b>立即停投</b></div></div>
+          <div class="ar" style="height:18px"></div>
+          <div class="nd stop"><div class="nt">ROI &lt; 1.5 的款</div><div class="nd-s">→ <b>一律砍</b>（广告红线）</div></div>
+          <div class="ar" style="height:18px"></div>
+          <div class="nd stop"><div class="nt">连续 2 周无潜力款</div><div class="nd-s">→ <b>回头复盘选品</b>，不是加预算</div></div>
+          <div class="ar" style="height:18px"></div>
+          <div class="nd stop"><div class="nt">2 个月日单仍 &lt; 10</div><div class="nd-s">→ 先复盘选品/视觉/价格，再决定<b>继续还是转型</b>（换品类/换平台）</div></div>
+        </div>
+      </div>
+      <div class="card" style="border-left:3px solid var(--p4)">
+        <h4>自然流量配合（免费的那一半）</h4>
+        <ul class="tk">
+          <li>新店有<b>流量扶持期</b>（一般 1~2 个月），窗口期要用足</li>
+          <li>每天上新 1~2 款或优化标题，<b>蹭新品流量</b>、保持店铺活跃</li>
+          <li>爆款判定要看<b>自然流量占比 &gt; 50%</b> —— 全靠广告撑的不叫爆款</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:3px solid var(--warn)">
+        <h4>测款期四个常见坑</h4>
+        <ul class="tk">
+          <li>① 一上来就大预算（一天 500+）</li>
+          <li>② 同时测太多款 → 预算分散，每款都拿不到有效数据</li>
+          <li>③ 看数据太早 → 数据量不够就下结论</li>
+          <li>④ 只会投不会复盘 → <b>每款广告花费单独记录，算单款 ROI</b>，用表格或 ERP，月底汇总，别糊涂账</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 指标 ============ -->
+<section id="metrics">
+  <div class="sec-h"><span class="sec-n">12</span><h2>九项<em>指标红线</em>与对应动作</h2></div>
+  <p class="sub">每个指标都配了「不达标怎么办」—— 这是这份规划最实用的部分：<b>看到数字就知道该做什么，不需要临时想。</b></p>
+  <div class="grid g3" id="mtrs">
+    <div class="mtr" style="--c:var(--p2)"><div class="mtr-h"><b>曝光量</b><span class="mtr-v">3 天</span></div>
+      <div class="bar"><i data-w="70"></i></div><div class="thr"><span>后台看商品/店铺曝光</span></div>
+      <p><b style="color:var(--tx)">新品 3 天无曝光</b> → 查标题/类目/是否被降权 → 优化标题、重新上架</p></div>
+    <div class="mtr" style="--c:var(--p1)"><div class="mtr-h"><b>点击率 CTR</b><span class="mtr-v">≥ 3%</span></div>
+      <div class="bar"><i data-w="60"></i></div><div class="thr"><span>0%</span><span style="color:var(--bad)">&lt;2% 危险</span><span>5%</span></div>
+      <p>曝光→点击。<b style="color:var(--tx)">&lt;2% 是主图问题</b> → 换主图重测，同款轮换 2~3 张</p></div>
+    <div class="mtr" style="--c:var(--p3)"><div class="mtr-h"><b>转化率</b><span class="mtr-v">≥ 2%</span></div>
+      <div class="bar"><i data-w="40"></i></div><div class="thr"><span>0%</span><span style="color:var(--bad)">&lt;1% 危险</span><span>5%</span></div>
+      <p>点击→支付。<b style="color:var(--tx)">&lt;1% 查价格/详情/评价</b> → 调价、优化详情、做基础评价</p></div>
+    <div class="mtr" style="--c:var(--p4)"><div class="mtr-h"><b>客单价</b><span class="mtr-v">20~60 元</span></div>
+      <div class="bar"><i data-w="55"></i></div><div class="thr"><span>销售额 ÷ 订单数</span></div>
+      <p>低于区间 → <b style="color:var(--tx)">关联销售、组合装</b>把客单拉起来</p></div>
+    <div class="mtr" style="--c:var(--bad)"><div class="mtr-h"><b>ROI</b><span class="mtr-v">≥ 1.5</span></div>
+      <div class="bar"><i data-w="75"></i></div><div class="thr"><span>0</span><span style="color:var(--bad)">1.5 = 生死线</span><span>3</span></div>
+      <p>广告产出 ÷ 广告花费。<b style="color:var(--tx)">&lt;1.5 砍</b> → 降预算或停投。这是全表唯一被称为「红线」的指标</p></div>
+    <div class="mtr" style="--c:var(--p5)"><div class="mtr-h"><b>退款率</b><span class="mtr-v">&lt; 10%</span></div>
+      <div class="bar"><i data-w="30"></i></div><div class="thr"><span>0%</span><span style="color:var(--bad)">10% 上限</span><span>20%</span></div>
+      <p>退款订单 ÷ 总订单。超了 → <b style="color:var(--tx)">查差评原因，改进品控/描述</b></p></div>
+    <div class="mtr" style="--c:var(--ok)"><div class="mtr-h"><b>发货及时率</b><span class="mtr-v">100% / 48h</span></div>
+      <div class="bar"><i data-w="100"></i></div><div class="thr"><span>无弹性 —— 必须 100%</span></div>
+      <p>靠<b style="color:var(--tx)">截单时间管理</b>兜住（如 17:00 截单，超时次日发）</p></div>
+    <div class="mtr" style="--c:var(--info)"><div class="mtr-h"><b>客服响应率</b><span class="mtr-v">3~5 分钟</span></div>
+      <div class="bar"><i data-w="85"></i></div><div class="thr"><span>拼多多 3min</span><span>淘宝 5min</span></div>
+      <p>平台<b style="color:var(--tx)">权重指标</b>。嫂子盯住 + 设置自动回复兜底</p></div>
+    <div class="mtr" style="--c:var(--warn)"><div class="mtr-h"><b>单款毛利</b><span class="mtr-v">&gt; 0</span></div>
+      <div class="bar"><i data-w="50"></i></div><div class="thr"><span>售价 − 成本 − 广告 − 快递</span></div>
+      <p>为负 → <b style="color:var(--tx)">压进价、谈快递、提价测试</b>；每款单独算，别只看总账</p></div>
+  </div>
+
+  <div class="card" style="margin-top:14px;border-left:3px solid var(--p2)">
+    <h4>每周五复盘流程（雷打不动）</h4>
+    <div class="steps" style="margin-top:6px">
+      <div class="step" style="--c:var(--p2)"><em>R1</em><b>本周数据汇总</b><p>订单 / 销售额 / 广告花费 / 毛利</p></div>
+      <div class="step" style="--c:var(--p2)"><em>R2</em><b>爆款与潜力款盘点</b><p>决定加码还是砍掉</p></div>
+      <div class="step" style="--c:var(--p2)"><em>R3</em><b>下周计划</b><p>上新安排 + 广告预算调整</p></div>
+      <div class="step" style="--c:var(--p2)"><em>R4</em><b>周报发 3 位股东</b><p>让不干活的股东安心 —— 财务透明是唯一的安抚方式</p></div>
+    </div>
+    <p style="font-size:12.2px;color:var(--tx3);margin-top:11px">记数据工具：平台后台 + 一个共享表格（腾讯文档 / 飞书表格）。</p>
+  </div>
+</section>
+
+<!-- ============ 13 砍款分级 ============ -->
+<section id="grade">
+  <div class="sec-h"><span class="sec-n">13</span><h2>商品<em>SABC 分级</em>与砍款机制</h2></div>
+  <p class="sub">按近 30 天数据把款分四级，<b>每周末更新一次分级表</b>。核心心态：砍款不是失败，是止损 —— 把资源让给能赚钱的款。</p>
+
+  <div class="grid g4">
+    <div class="card" style="border-top:3px solid var(--ok)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:22px;font-weight:850;color:#86efac" class="mono">S</b><span class="tag ok">日单 10+</span></div>
+      <b style="display:block;margin:7px 0 5px;font-size:13.5px">主推款</b>
+      <p style="font-size:12.2px;color:var(--tx2)">保证<b style="color:var(--tx)">库存不断</b>、广告预算倾斜、重点补货 + 报活动</p></div>
+    <div class="card" style="border-top:3px solid var(--p2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:22px;font-weight:850;color:#67e8f9" class="mono">A</b><span class="tag in">日单 3~10</span></div>
+      <b style="display:block;margin:7px 0 5px;font-size:13.5px">观察款</b>
+      <p style="font-size:12.2px;color:var(--tx2)">有机会升 S，同样重点补货 + 报活动</p></div>
+    <div class="card" style="border-top:3px solid var(--warn)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:22px;font-weight:850;color:#fcd34d" class="mono">B</b><span class="tag mid">有单但 &lt;3</span></div>
+      <b style="display:block;margin:7px 0 5px;font-size:13.5px">给 1~2 周机会</b>
+      <p style="font-size:12.2px;color:var(--tx2)">优化主图/标题/价格后再看数据，<b style="color:var(--tx)">没起色就降级</b></p></div>
+    <div class="card" style="border-top:3px solid var(--bad)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:22px;font-weight:850;color:#fca5a5" class="mono">C</b><span class="tag hi">0 单或亏损</span></div>
+      <b style="display:block;margin:7px 0 5px;font-size:13.5px">下架或清仓</b>
+      <p style="font-size:12.2px;color:var(--tx2)">不再补货。<b style="color:var(--tx)">别舍不得</b> —— 滞销款占库存占资金</p></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h4>砍款判定（每 2 周一次复盘）</h4>
+      <div class="flow" style="margin-top:6px">
+        <div class="nd dec"><div class="nt">连续 14 天 0 单？</div></div>
+        <div class="ar" style="height:20px"><span>是</span></div>
+        <div class="nd stop"><div class="nt">砍</div></div>
+        <div class="ar" style="height:22px"><span>否 → 继续判断</span></div>
+        <div class="nd dec"><div class="nt">ROI &lt; 1.5 且无上升趋势？</div></div>
+        <div class="ar" style="height:20px"><span>是</span></div>
+        <div class="nd stop"><div class="nt">砍</div><div class="nd-s">清仓方式：降价促销 / 拼团 / 直播清仓 / 搭售 —— <b>清仓回笼资金，比压着强</b></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h4>爆款确认（三条同时满足才算）</h4>
+      <div class="flow" style="margin-top:6px">
+        <div class="nd dec"><div class="nt">日单稳定 10+</div><div class="nd-s">看趋势，不是某天冲高</div></div>
+        <div class="ar" style="height:20px"><span>AND</span></div>
+        <div class="nd dec"><div class="nt">毛利为正</div><div class="nd-s">扣完广告和快递之后</div></div>
+        <div class="ar" style="height:20px"><span>AND</span></div>
+        <div class="nd dec"><div class="nt">自然流量占比 &gt; 50%</div><div class="nd-s">全靠广告撑的不算</div></div>
+        <div class="ar" style="height:20px"><span>三条全过</span></div>
+        <div class="nd good"><div class="nt">✓ 才叫爆款，才值得备货</div></div>
+      </div>
+      <ul class="tk" style="margin-top:12px">
+        <li><b>潜力款挖掘</b>：从「咨询量高但转化低」的款里找原因（价格/评价/详情）—— 有时改个价格就活了</li>
+        <li><b>上新节奏</b>：每周保持上新 1~2 款，维持店铺活跃度和新品流量</li>
+        <li><b>分级表单独一页 Excel</b>：款号/名称/成本/售价/近7天单量/30天单量/ROI/分级/动作</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 14 备货 ============ -->
+<section id="stock">
+  <div class="sec-h"><span class="sec-n">14</span><h2>备货公式与<em>库存循环</em></h2></div>
+  <p class="sub">铁律一句话：<b>爆款备货、非爆款不备</b>。只给 S/A 级备货，其他款一件代发或小批量。</p>
+
+  <div class="card">
+    <div class="eq">备货量 = <b>日均单量</b> × <b>补货周期天数</b> × <i>1.5 安全系数</i> − （在途库存 + 在手库存）</div>
+    <div class="eq" style="margin-top:9px">备货决策约束： 预估销量 × 进价 <b>≤</b> 该款可承受的资金占用　<i>// 超了就分批备</i></div>
+    <div class="eq" style="margin-top:9px">现金流上限： 货款占用 <b>≤</b> 总资金 <b>30%</b>　（60万 → <i>18 万以内滚动</i>）</div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card" style="border-top:3px solid var(--p1)"><h4>补货周期怎么定</h4>
+      <ul class="tk"><li>补货周期 = <b>下单到到货的天数</b></li>
+      <li><b>本地厂（上虞）</b>补货快 → 小批量高频补</li>
+      <li><b>外地厂</b>提前 1~2 周下单</li>
+      <li>跟供应商<b>约定补货响应时间</b></li></ul></div>
+    <div class="card" style="border-top:3px solid var(--warn)"><h4>安全库存 & 周转</h4>
+      <ul class="tk"><li>至少留 <b>3~5 天</b>的量兜底 —— <b>断货 = 权重掉 + 差评</b>，得不偿失</li>
+      <li>整体库存周转目标：<b>30 天内卖完</b>（月周转 1 次）</li>
+      <li>周转慢的款就是<b>资金黑洞</b></li></ul></div>
+    <div class="card" style="border-top:3px solid var(--p3)"><h4>旺季备货</h4>
+      <ul class="tk"><li>雨季前 <b>1~2 个月</b>集中备货</li>
+      <li>按<b>去年同季行情 × 1.5</b> 预估</li>
+      <li><b>旺季断货比压货更亏</b> —— 这是唯一允许放大备货的窗口</li></ul></div>
+  </div>
+
+  <h3>库存运转循环</h3>
+  <div class="lane" style="--c:var(--p4)">
+    <div class="lane-l"><b>周循环</b><small>库存管理</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p4)"><em>K1</em><b>每周盘点</b><p>库存数 / 在途数 / 销量 / 库存金额，用 ERP 或表格</p></div>
+      <div class="step" style="--c:var(--p4)"><em>K2</em><b>货架分区</b><p>爆款区 / 常规区 / 待清仓区，<b>先进先出</b></p></div>
+      <div class="step" style="--c:var(--p4)"><em>K3</em><b>算备货量</b><p>套用上方公式，S/A 级优先</p></div>
+      <div class="step" style="--c:var(--p4)"><em>K4</em><b>下单补货</b><p>本地高频小批，外地提前 1~2 周</p></div>
+      <div class="step" style="--c:var(--p4)"><em>K5</em><b>滞销处理</b><p>连续 <b>30 天不动销</b> → 降价清仓或退回供应商</p></div>
+    </div>
+  </div>
+  <p style="font-size:12.3px;color:var(--tx3);margin-top:4px">※ 打包效率靠仓库整齐 —— 货架分区不是形式，直接影响每天的发货速度和出错率。</p>
+</section>
+
+<!-- ============ 15 毛利 ============ -->
+<section id="profit">
+  <div class="sec-h"><span class="sec-n">15</span><h2>毛利拆解与<em>成本优化顺序</em></h2></div>
+  <p class="sub">优化顺序有讲究：<b>先压最大头（进货价 / 快递），再抠小项（包装 / 耗材）</b>。但有一条不许碰 —— 别为了省成本牺牲品质，雨伞退货率高是致命的。</p>
+
+  <div class="card">
+    <div class="eq">单款毛利 = <b>售价</b> − 进货价 − 快递费 − 广告费 − 包装 − <b>平台扣点</b>　<i>// 六项都要减，每款单独算</i></div>
+    <div class="eq" style="margin-top:9px">保本单量 = <b>月固定成本</b>（房租 + 工资 + 杂费）÷ <b>单均毛利</b>　<i>// 低于它就是在亏</i></div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card" style="border-top:3px solid var(--bad)"><span class="tag hi">大头 · 优先</span>
+      <b style="display:block;margin:8px 0 5px;font-size:14px">① 压进货价</b>
+      <p style="font-size:12.2px;color:var(--tx2)">销量稳定后谈<b style="color:var(--tx)">阶梯价：月采 3000 把降 5%~10%</b>。有量才有议价权，多供应商比价。</p></div>
+    <div class="card" style="border-top:3px solid var(--bad)"><span class="tag hi">大头 · 优先</span>
+      <b style="display:block;margin:8px 0 5px;font-size:14px">② 压快递价</b>
+      <p style="font-size:12.2px;color:var(--tx2)">月发量上来后<b style="color:var(--tx)">再谈一次</b>，或启用第 2 家压价。快递费是低客单最大成本之一。</p></div>
+    <div class="card" style="border-top:3px solid var(--warn)"><span class="tag mid">中项</span>
+      <b style="display:block;margin:8px 0 5px;font-size:14px">③ 广告优化</b>
+      <p style="font-size:12.2px;color:var(--tx2)">保留 ROI 高的词/人群，<b style="color:var(--tx)">砍掉烧钱词</b>，降低 CPC。测款期学会怎么投，现在学怎么省。</p></div>
+    <div class="card" style="border-top:3px solid var(--p2)"><span class="tag in">小项</span>
+      <b style="display:block;margin:8px 0 5px;font-size:14px">④ 包装优化</b>
+      <p style="font-size:12.2px;color:var(--tx2)">找更便宜但达标的包装，批量采购。<b style="color:var(--tx)">单把省 0.2 元，月销 3000 就省 600。</b></p></div>
+    <div class="card" style="border-top:3px solid var(--p4)"><span class="tag ok">增收</span>
+      <b style="display:block;margin:8px 0 5px;font-size:14px">⑤ 定价测试</b>
+      <p style="font-size:12.2px;color:var(--tx2)">爆款小幅涨价 <b style="color:var(--tx)">+1~2 元</b>测转化是否掉，掉就回调。客单价低，1 元差价就是利润。</p></div>
+    <div class="card" style="border-top:3px solid var(--p5)"><span class="tag">别漏算</span>
+      <b style="display:block;margin:8px 0 5px;font-size:14px">⑥ 平台扣点</b>
+      <p style="font-size:12.2px;color:var(--tx2)">确认各平台扣点 / 技术服务费并<b style="color:var(--tx)">算进成本</b>。拼多多和淘宝不同。</p></div>
+  </div>
+
+  <div class="card" style="margin-top:13px;border-left:3px solid var(--info)">
+    <h4>月度毛利报表</h4>
+    <p style="font-size:12.5px;color:var(--tx2)">每月出一张：<b style="color:var(--tx)">各款毛利 / 总毛利 / 广告占比</b>。配合每周股东周报，构成完整的财务透明机制。</p>
+  </div>
+</section>
+
+<!-- ============ 16 验收 ============ -->
+<section id="gate">
+  <div class="sec-h"><span class="sec-n">16</span><h2>跑通验收：<em>四条全过</em>才允许花钱放大</h2></div>
+  <p class="sub">这是全表的核心闸门。四条<b>同时</b>满足，才进入起量期招人；不满足则回到前面复盘，2 个月日单仍 &lt;30 就要认真考虑转型。</p>
+
+  <div class="grid g4">
+    <div class="card" style="border-top:3px solid var(--p1)"><span class="mono" style="font-size:11px;color:var(--p1);letter-spacing:1px">验收 ①  单量</span>
+      <b style="display:block;margin:8px 0 5px;font-size:15px">日单稳定 80~100+</b>
+      <p style="font-size:12.2px;color:var(--tx2)">连续 <b style="color:var(--tx)">1 个月以上</b> —— <b style="color:var(--tx)">不是某天冲高，看趋势</b></p></div>
+    <div class="card" style="border-top:3px solid var(--p2)"><span class="mono" style="font-size:11px;color:var(--p2);letter-spacing:1px">验收 ②  盈利</span>
+      <b style="display:block;margin:8px 0 5px;font-size:15px">连续 2 个月毛利为正</b>
+      <p style="font-size:12.2px;color:var(--tx2)"><b style="color:var(--tx)">扣除广告费后</b>计算，且 ROI ≥ 1.5</p></div>
+    <div class="card" style="border-top:3px solid var(--p3)"><span class="mono" style="font-size:11px;color:var(--p3);letter-spacing:1px">验收 ③  服务</span>
+      <b style="display:block;margin:8px 0 5px;font-size:15px">退款 &lt;10% · 48h 发货 100%</b>
+      <p style="font-size:12.2px;color:var(--tx2)">纠纷率 <b style="color:var(--tx)">&lt; 1%</b></p></div>
+    <div class="card" style="border-top:3px solid var(--p4)"><span class="mono" style="font-size:11px;color:var(--p4);letter-spacing:1px">验收 ④  可复制</span>
+      <b style="display:block;margin:8px 0 5px;font-size:15px">5 份 SOP 文档齐全</b>
+      <p style="font-size:12.2px;color:var(--tx2)">上架 / 客服 / 发货 / 售后 / 数据日报</p></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h4>五份 SOP 与验收方法</h4>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:8px;margin-top:4px">
+        <div class="nd" style="padding:9px 11px"><div class="nt" style="font-size:12.5px">① 上架 SOP</div><div class="nd-s" style="font-size:11px">选款→标题→主图→详情→定价→库存→上架→观察 3 天</div></div>
+        <div class="nd" style="padding:9px 11px"><div class="nt" style="font-size:12.5px">② 客服 SOP</div><div class="nd-s" style="font-size:11px">话术库→48h 内处理→退款率&lt;10%→差评 24h 内沟通</div></div>
+        <div class="nd" style="padding:9px 11px"><div class="nt" style="font-size:12.5px">③ 发货 SOP</div><div class="nd-s" style="font-size:11px">打单→拣货→称重复核→打包→贴单→17:00 前交件</div></div>
+        <div class="nd" style="padding:9px 11px"><div class="nt" style="font-size:12.5px">④ 售后 SOP</div><div class="nd-s" style="font-size:11px">退换处理流程 + 升级标准</div></div>
+        <div class="nd" style="padding:9px 11px"><div class="nt" style="font-size:12.5px">⑤ 数据日报 SOP</div><div class="nd-s" style="font-size:11px">每天记什么、填哪张表、谁看</div></div>
+      </div>
+      <div class="card" style="margin-top:12px;background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.3)">
+        <b style="font-size:13px;color:#86efac">SOP 验收方法（很聪明的一招）</b>
+        <p style="font-size:12.3px;color:var(--tx2);margin-top:5px">找<b style="color:var(--tx)">没参与过的人（姐姐/堂弟）</b>照着 SOP 走一遍流程 —— <b style="color:var(--tx)">卡住的地方就是 SOP 缺细节的地方</b>。标准是「新人照做不用问」。</p>
+      </div>
+    </div>
+    <div class="card">
+      <h4>验收之后的三个分叉</h4>
+      <div class="flow" style="margin-top:6px">
+        <div class="nd dec"><div class="nt">四条验收全过？</div></div>
+        <div class="split s2" style="margin-top:11px">
+          <div class="nd stop"><div class="nt">未过</div><div class="nd-s">复盘选品/视觉/价格/平台 → 调整或转型。<b>2 个月日单仍 &lt;30 就别死磕，及时止损</b></div></div>
+          <div class="nd good"><div class="nt">通过 → 进入起量期</div><div class="nd-s">同时评估三件事 ↓</div></div>
+        </div>
+        <div class="ar"><span>三个独立触发器</span></div>
+        <div class="split s3">
+          <div class="nd act"><div class="nt" style="font-size:12.5px">招人</div><div class="nd-s">出现 ≥2 个招人信号</div></div>
+          <div class="nd act"><div class="nt" style="font-size:12.5px">嫂子全职</div><div class="nd-s">满足 ≥2 个条件</div></div>
+          <div class="nd act"><div class="nt" style="font-size:12.5px">云仓</div><div class="nd-s">日单 200+ 且自营吃力</div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;background:rgba(99,102,241,.07);border-color:rgba(99,102,241,.3)">
+        <b style="font-size:13px;color:#a5b4fc">跑通确认期结束时，应该能回答四个问题</b>
+        <p style="font-size:12.3px;color:var(--tx2);margin-top:5px">卖什么赚钱 · 怎么卖 · 成本多少 · 谁负责什么 —— <b style="color:var(--tx)">全部有答案</b>。答不上来就是没跑通。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 17 招人 ============ -->
+<section id="hire">
+  <div class="sec-h"><span class="sec-n">17</span><h2>招人：<em>信号驱动</em>而非计划驱动</h2></div>
+  <p class="sub">招人铁律：<b>每个岗位必须有 SOP 才能招</b>；招来先按 SOP 培训一周再上岗。不提前配齐，按单量驱动逐步加人。</p>
+
+  <div class="grid g2">
+    <div class="card" style="border-left:3px solid var(--warn)">
+      <h4>四个招人信号（出现 ≥2 个就动手）</h4>
+      <ul class="tk" style="margin-top:4px">
+        <li>① <b>嫂子忙不过来</b></li>
+        <li>② <b>上新手速拖累店铺</b></li>
+        <li>③ <b>你没时间做深运营</b></li>
+        <li>④ <b>差评 / 回复率下滑</b></li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--p4)">
+      <h4>嫂子全职切换条件（满足 ≥2 条）</h4>
+      <ul class="tk" style="margin-top:4px">
+        <li>① <b>日单 100+ 且连续 2 个月盈利</b></li>
+        <li>② <b>云仓成本高于自营</b></li>
+        <li>③ <b>客服量下班后处理不完</b></li>
+      </ul>
+      <p style="font-size:12.2px;color:var(--tx3);margin-top:9px">操作细节：<b style="color:var(--tx2)">辞职前先请 1 周年假</b>来熟悉货源、认识供应商 → 来了当天就能上手。全职后按店长市场价 <b style="color:var(--tx2)">6000~8000/月 + 提成</b>，协议里写死避免伤感情。</p>
+    </div>
+  </div>
+
+  <h3>招人顺序与薪资结构</h3>
+  <div class="lane" style="--c:var(--p4)">
+    <div class="lane-l"><b>招人流水线</b><small>严格按序</small></div>
+    <div class="steps">
+      <div class="step" style="--c:var(--p4)"><em>H1</em><b>客服</b><p><b>3000~4000 + 提成</b>（销售额 0.5~1%）<br>优先<b>外包试 3 个月</b>，稳定了再自招。目的：把嫂子从最机械的活里解放出来</p></div>
+      <div class="step" style="--c:var(--p4)"><em>H2</em><b>美工 / 剪辑</b><p><b>4000~6000 + 绩效</b><br>兼职转全职，要求会主图/详情/短视频。<b>视觉是类目命脉，值得全职</b></p></div>
+      <div class="step" style="--c:var(--p4)"><em>H3</em><b>打包员</b><p><b>3000~4000</b>，按件计提成<br><b>日单 200+ 才需要</b>，之前先让兼职/临时工顶</p></div>
+      <div class="step" style="--c:var(--p4)"><em>H4</em><b>运营助理</b><p><b>3500~5000</b><br>负责上架/报活动/数据整理，有电商经验优先，能接你的 SOP</p></div>
+      <div class="step" style="--c:var(--p4)"><em>H5</em><b>投手 / 采购</b><p>成长期再招，<b>底薪 + 提成，按 ROI 考核</b>，投得好给高提成</p></div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card"><h4>面试三看</h4><ul class="tk">
+      <li>① 能不能<b>看懂 SOP 照做</b></li>
+      <li>② 是否<b>细心</b>（发货/客服最怕粗心）</li>
+      <li>③ <b>稳定性</b>（本地人优先）</li>
+      <li>小团队<b>招人品</b>，能力可以培养；亲戚介绍也要面试把关</li>
+      <li>渠道：BOSS直聘 / 58同城 / 本地招聘群 / 亲戚朋友介绍 —— 本地电商园周边招人快</li></ul></div>
+    <div class="card"><h4>试用与带教</h4><ul class="tk">
+      <li>试用期 <b>1~2 个月，工资 80%</b></li>
+      <li>考核：<b>按 SOP 操作零差错、响应速度达标</b></li>
+      <li>第一周照 SOP 走流程 + 老人带；第二周独立操作 + <b>你抽查</b></li>
+      <li>培训完<b>让新人复述 SOP</b>，确认真懂</li>
+      <li>试用期不合格<b>果断换，别将就</b></li></ul></div>
+    <div class="card"><h4>团队红线与你的位置</h4><ul class="tk">
+      <li><b>人员成本红线：月人力 ≤ 月毛利 40%</b> —— 超了说明人招多了或毛利不够</li>
+      <li>薪资结构：底薪 + 绩效/提成。客服按销售额提 0.5~1%、打包按件、美工按图量。<b>提成给动力，但底薪别压太低</b></li>
+      <li>管理节奏：<b>周一早会</b>（本周目标）+ <b>周五复盘</b>，表格记考勤/绩效 —— 小团队靠流程和记录，不靠人情</li>
+      <li><b>你的位置</b>：嫂子全职后店长 = 嫂子，你退到「<b>策略 + 供应链 + 财务</b>」，别陷进日常操作</li>
+      <li>岗位配置：起步 <b>3~4 人</b>（店长嫂子 + 运营你 + 客服 + 打包），成长期 <b>6~8 人</b></li></ul></div>
+  </div>
+</section>
+
+<!-- ============ 18 云仓 ============ -->
+<section id="wms">
+  <div class="sec-h"><span class="sec-n">18</span><h2>云仓切换：<em>算账题</em>，不是升级题</h2></div>
+  <p class="sub">一句话定性：<b>云仓是「放大杠杆」不是「省钱神器」</b> —— 它的价值是让你从打包里解放出来去干运营。切换点一般出现在日单 200~500 之间。</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4>切换决策流程</h4>
+      <div class="flow" style="margin-top:6px">
+        <div class="nd dec"><div class="nt">日单 200+ 了吗？</div><div class="nd-s">且自营打包的<b>时间成本 / 出错率上升</b> —— 至少满足一个再考虑，别提前切</div></div>
+        <div class="ar"><span>是</span></div>
+        <div class="nd act"><div class="nt">做成本对比表</div>
+          <div class="nd-s">自营 = 打包人工 + 耗材 + 店面分摊 + 快递价　　vs　　云仓 = 仓储 + 操作 + 快递</div></div>
+        <div class="ar"><span>算出切换点</span></div>
+        <div class="nd dec"><div class="nt">云仓总成本 &lt; 自营总成本？</div><div class="nd-s">单量越高云仓越划算</div></div>
+        <div class="ar"><span>是 → 选时机</span></div>
+        <div class="nd" style="border-color:var(--warn)"><div class="nt" style="color:#fcd34d">时机：旺季前 1~2 个月切</div>
+          <div class="nd-s"><b>避开旺季高峰切换</b>（容易乱），切换期预留 2~3 周磨合</div></div>
+        <div class="ar"><span>四步切换</span></div>
+        <div class="nd good"><div class="nt">分步切换，边切边看数据</div>
+          <div class="nd-s">① 小批量货入云仓试运行 → ② 电子面单绑定云仓 → ③ 同步平台订单测试 → ④ 全量切换</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:13px">
+      <div class="card">
+        <h4>选云仓 4 指标</h4>
+        <ul class="tk"><li>① <b>离货源近</b></li><li>② <b>系统能对接平台同步订单</b></li><li>③ <b>报价单无隐藏费用</b></li><li>④ <b>有同品类案例</b></li></ul>
+        <p style="font-size:12.2px;color:var(--tx3);margin-top:9px">先小批量<b style="color:var(--tx2)">试发 20~30 件</b>，月结 1~2 个月再定长约 —— <b style="color:var(--tx2)">别一上来签长约</b>。</p>
+      </div>
+      <div class="card">
+        <h4>收费参考与对比</h4>
+        <div class="eq" style="white-space:normal">云仓 = 仓储 <b>0.3~1 元/件/月</b> + 操作 <b>2~4 元/单</b> + 快递 <b>3~6 元/单</b><br><i>小件单票 3~4 元，比散寄便宜 1~2 元/单</i></div>
+      </div>
+      <div class="card" style="border-left:3px solid var(--bad)">
+        <h4>切换风险与兜底</h4>
+        <ul class="tk">
+          <li>风险：<b>打包质量下降 / 发货时效不稳 / 损耗增加</b></li>
+          <li>合同写明<b>货损赔付 + 时效承诺 + 盘点周期 + 退换货处理</b>；首月每周看数据</li>
+          <li>库存分配：切换期<b>店面留安全库存</b>，云仓放周转库存，防断货</li>
+          <li>备份方案：<b>保留 1 家快递 + 店面打包能力</b>作为 backup —— 云仓出问题能立刻切回自营</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 19 成长期 ============ -->
+<section id="grow">
+  <div class="sec-h"><span class="sec-n">19</span><h2>成长期：<em>两条扩张轴</em></h2></div>
+  <p class="sub">横向是平台，纵向是品类与供应链。两条轴都有明确的边界条件 —— <b>多平台的代价是管理复杂度翻倍，品类扩展的边界是不能离开「小件百货」</b>。</p>
+
+  <div class="grid g2">
+    <div class="card" style="border-top:3px solid var(--p2)">
+      <h4>轴 A · 多平台扩展（横向）</h4>
+      <div class="flow" style="margin-top:6px">
+        <div class="nd dec"><div class="nt">开新平台的条件</div><div class="nd-s">主平台<b>日单 200+ 且稳定</b> · 团队有人能<b>独立管店</b> —— 没跑通主平台别开新平台</div></div>
+        <div class="ar"><span>满足</span></div>
+        <div class="steps" style="margin-bottom:11px">
+          <div class="step" style="--c:var(--p2)"><em>P1</em><b>拼多多</b><p>低客单走量</p></div>
+          <div class="step" style="--c:var(--p2)"><em>P2</em><b>淘宝</b><p>搜索流量稳</p></div>
+          <div class="step" style="--c:var(--p2)"><em>P3</em><b>抖音</b><p>内容流量，需做视频</p></div>
+        </div>
+        <div class="nd" style="border-color:var(--warn)"><div class="nt" style="color:#fcd34d">节奏约束：一次只开 1 个，稳定 3 个月再开下一个</div>
+          <div class="nd-s">新平台前 3 个月都是学习期</div></div>
+      </div>
+      <ul class="tk" style="margin-top:12px">
+        <li><b>商品同步</b>：多平台用同一套商品库（ERP 同步），库存统一管理 —— <b>库存不同步是最大的坑（超卖）</b></li>
+        <li><b>定价差异</b>：拼多多走量价低、淘宝稍高；差异化定价前先查平台价格规则</li>
+        <li><b>视觉复用</b>：主图/详情一套资产，按平台规范微调尺寸，别每个平台重做一遍</li>
+        <li><b>团队分工</b>：每平台 1 个「店长」（运营助理升级），<b>嫂子 = 总店长</b>管协调，你管策略 + 供应链</li>
+        <li><b>预算分配</b>：按平台 ROI 分配 —— <b>谁赚钱给谁多</b>，每周复盘动态调整</li>
+        <li>三个坑：① 别同时上新平台（人力跟不上）② 别用同一批货超卖 ③ 各平台规则不同（发货时效/客服响应）</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--p5)">
+      <h4>轴 B · 品类与供应链（纵向）</h4>
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:9px">
+        <div class="nd act"><div class="nt">品类扩展：围绕「雨具 + 居家小百货」</div>
+          <div class="nd-s">拖鞋 / 雨衣 / 雨鞋 / 收纳 / 防晒用品 —— <b>优先能复用供应链和客户群的品类</b>。边界：别离开「小件百货」太远，物流、打包、客群都要复用</div></div>
+        <div class="nd act"><div class="nt">淡季补位：秋冬主推拖鞋/雨衣/百货</div>
+          <div class="nd-s">平滑现金流。<b>公司注册时经营范围已写全，直接上品不用改执照</b> —— 这就是准备期埋的伏笔</div></div>
+        <div class="nd" style="border-color:var(--warn)"><div class="nt" style="color:#fcd34d">品类测试：新品沿用测款打法</div>
+          <div class="nd-s">小预算测、数据说话。<b>别盲目铺品，铺得多死得快</b></div></div>
+      </div>
+      <h4 style="margin-top:16px">供应链三级升级</h4>
+      <div class="steps">
+        <div class="step" style="--c:var(--p5)"><em>SC1</em><b>直连工厂</b><p>月采量稳定后<b>绕开中间商</b>谈直供价，上虞本地厂直采砍掉中间环节</p></div>
+        <div class="step" style="--c:var(--p5)"><em>SC2</em><b>独家/定制款</b><p>和工厂合作开发专属款式 —— <b>独家款 = 差异化 = 利润空间</b></p></div>
+        <div class="step" style="--c:var(--p5)"><em>SC3</em><b>框架协议</b><p>按季度签采购框架，<b>锁价锁量</b> —— 旺季有货、淡季不压</p></div>
+      </div>
+      <div class="card" style="margin-top:13px;background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.3)">
+        <b style="font-size:13px;color:#d8b4fe">你的护城河</b>
+        <p style="font-size:12.3px;color:var(--tx2);margin-top:5px">你懂面料成本 —— <b style="color:var(--tx)">直连工厂后你的进货价就是同行羡慕的</b>。这条护城河是准备期成本核算表的复利收益。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card"><h4>专职投手</h4><p style="font-size:12.3px;color:var(--tx2)">广告投放量大了就招（底薪 + 提成），<b style="color:var(--tx)">按 ROI 考核，投得好给高提成</b>。</p></div>
+    <div class="card"><h4>品牌化动作</h4><p style="font-size:12.3px;color:var(--tx2)">注册商标后做<b style="color:var(--tx)">包装升级 / 吊牌 / 卡片</b>，积累品牌认知。品牌是长期资产，低客单类目靠复购。</p></div>
+    <div class="card"><h4>私域与复购</h4><p style="font-size:12.3px;color:var(--tx2)">包裹放卡片引导关注/进群 —— <b style="color:var(--tx)">拖鞋/雨衣复购率高</b>。私域是低成本复购渠道，成长期开始做。</p></div>
+  </div>
+</section>
+
+<!-- ============ 20 风险 ============ -->
+<section id="risk">
+  <div class="sec-h"><span class="sec-n">20</span><h2>风险矩阵：<em>23 项</em>已识别风险</h2></div>
+  <p class="sub">按原表标注的等级分为高危 5 项、中危 18 项。每一项都已配对缓解措施 —— <b>高危项的共同点是「一旦发生就伤及根基」</b>，必须前置防范而非事后处理。</p>
+
+  <div class="mx">
+    <div></div>
+    <div class="mx-h">经营 / 资金 / 团队</div>
+    <div class="mx-h">平台 / 供应链 / 执行</div>
+
+    <div class="mx-l" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.4);color:#fca5a5">高 危　5 项</div>
+    <div class="cell" style="background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.25)">
+      <div class="risk" style="--c:var(--bad)"><b>亲戚股权纠纷</b><p>协议先行 + 财务透明 + 预期管理（提前告知前期不分红）</p></div>
+      <div class="risk" style="--c:var(--bad)"><b>压货 / 现金流断裂</b><p>小批量进货 · 备用金不动 · 旺季前才备货</p></div>
+      <div class="risk" style="--c:var(--bad)"><b>广告烧钱无回报</b><p>小预算测款 · ROI≥1.5 红线 · 每周复盘砍掉不赚钱的计划</p></div>
+    </div>
+    <div class="cell" style="background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.25)">
+      <div class="risk" style="--c:var(--bad)"><b>无货源 / 虚假发货打击</b><p>只用电子面单、真实物流；前期店面自营，不用非电子面单代发</p></div>
+      <div class="risk" style="--c:var(--bad)"><b>多平台库存超卖</b><p>ERP 库存同步 · 一次只开一个平台 · 稳定 3 个月再开下一个</p></div>
+    </div>
+
+    <div class="mx-l" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#fcd34d">中 危　18 项</div>
+    <div class="cell" style="background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.22)">
+      <div class="risk" style="--c:var(--warn)"><b>布料客户发现你在卖伞</b><p>你本人不出面跑货源；嫂子/堂弟出面无需避讳；公司品牌独立注册</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>毛利被成本吃掉</b><p>单款毛利核算 · 月度毛利报表 · 保本单量监控</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>店面租金吞噬现金流</b><p>月租 ≤6000 · 签短约 · 跑通前不升级装修</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>招人失败 / 人员流动</b><p>SOP 培训 + 试用期考核 + 薪资有竞争力 + 先外包试</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>嫂子两头忙不过来</b><p>测试期就定 SOP · 高峰你支援 · 起量即外包客服</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>季节性波动</b><p>雨具+拖鞋+雨衣组合平滑；旺季用临时工/云仓弹性发货</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>商标被抢注</b><p>开店前先查商标 · 尽早注册（第 20 类必注）</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>品类扩展失败 / 摊子铺太大</b><p>新品沿用测款打法 · 围绕核心品类 · 别离开小件百货太远</p></div>
+    </div>
+    <div class="cell" style="background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.22)">
+      <div class="risk" style="--c:var(--warn)"><b>测款失败 / 选品全灭</b><p>多款分散测试 · 广告止损线 · 2 个月无起色就复盘转型</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>起量款断货</b><p>安全库存 3~5 天 · 补货周期预留 · 跟供应商约定响应时间</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>滞销库存积压</b><p>每周盘点 · 30 天不动销就清仓 · 备货量公式控制</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>供应商翻车 / 品质不稳</b><p>样品验证 · 小额试单 · 每家多备 1~2 家供应商</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>快递涨价 / 爆仓 / 停运</b><p>签 2~3 家备选 · 旺季前锁价 · 合同写明旺季涨价上限</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>自营发货出错率高</b><p>发货 SOP + 电子秤称重复核 + 固定截单时间</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>云仓切换混乱 / 断货</b><p>分步切换 · 切换期留安全库存 · 保留自营 backup</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>云仓踩坑（后置）</b><p>小批量试发 · 月结 1~2 个月 · 合同写明货损赔付和盘点周期</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>主图差转化低</b><p>兼职美工 · 测图 CTR&gt;3% · 详情页对标竞品</p></div>
+      <div class="risk" style="--c:var(--warn)"><b>客服差评上升</b><p>话术库 · 48h 发货 · 退款率每周监控</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 21 节奏 ============ -->
+<section id="rhythm">
+  <div class="sec-h"><span class="sec-n">21</span><h2>运营节奏：<em>日 / 周 / 月</em>三层循环</h2></div>
+  <p class="sub">SOP 落地靠的是节奏而不是意志力。这三层循环是整套系统的心跳。</p>
+
+  <h3>每日节奏</h3>
+  <div class="clock">
+    <div class="slot" style="--c:var(--p2)"><em>MORNING · 30 分钟</em><b>早上看昨日</b><ul>
+      <li>昨日订单</li><li>发货异常</li><li>退款纠纷</li></ul></div>
+    <div class="slot" style="--c:var(--p3)"><em>DAYTIME</em><b>白天执行</b><ul>
+      <li>客服（拼多多 3min / 淘宝 5min 响应）</li><li>上架 + 报活动</li><li>广告按预算投放、记录花费</li><li>17:00 前打包交快递</li></ul></div>
+    <div class="slot" style="--c:var(--p1)"><em>EVENING · 30 分钟</em><b>晚上对会</b><ul>
+      <li>今日数据</li><li>明日计划</li><li>嫂子 + 你，微信/钉钉/飞书</li></ul></div>
+    <div class="slot" style="--c:var(--p4)"><em>EVERY DAY</em><b>日报表</b><ul>
+      <li>订单 / 曝光 / 广告花费</li><li>嫂子填，你看</li><li>共享表格固定格式</li></ul></div>
+  </div>
+
+  <h3>每周节奏</h3>
+  <div class="clock">
+    <div class="slot" style="--c:var(--p5)"><em>周一</em><b>早会定目标</b><ul><li>本周目标（有团队后）</li><li>表格记考勤/绩效</li></ul></div>
+    <div class="slot" style="--c:var(--p2)"><em>每周</em><b>上新 1~2 款</b><ul><li>维持店铺活跃度</li><li>蹭新品流量</li></ul></div>
+    <div class="slot" style="--c:var(--p3)"><em>每周</em><b>盘点 + 分级</b><ul><li>库存数/在途/销量/金额</li><li>周末更新 SABC 分级表</li></ul></div>
+    <div class="slot" style="--c:var(--bad)"><em>周五 · 雷打不动</em><b>复盘四步 + 周报</b><ul>
+      <li>数据汇总 → 爆款盘点 → 下周计划</li><li><b>周报发 3 位股东</b></li></ul></div>
+  </div>
+
+  <h3>每月 / 每两周节奏</h3>
+  <div class="clock">
+    <div class="slot" style="--c:var(--p1)"><em>每 2 周</em><b>砍款复盘</b><ul><li>连续 14 天 0 单 → 砍</li><li>ROI&lt;1.5 无上升趋势 → 砍</li></ul></div>
+    <div class="slot" style="--c:var(--p2)"><em>每月</em><b>毛利报表</b><ul><li>各款毛利 / 总毛利 / 广告占比</li><li>重算保本单量</li></ul></div>
+    <div class="slot" style="--c:var(--p3)"><em>每月</em><b>财务与代账</b><ul><li>整理单据交代账公司</li><li>你审账、控现金流</li><li>给 3 位股东发财务报表</li></ul></div>
+    <div class="slot" style="--c:var(--p4)"><em>每 30 天</em><b>滞销清理</b><ul><li>不动销款 → 降价清仓或退供应商</li><li>库存周转目标：30 天卖完</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ 22 RACI ============ -->
+<section id="raci">
+  <div class="sec-h"><span class="sec-n">22</span><h2>四人<em>分工矩阵</em></h2></div>
+  <p class="sub">一条贯穿全表的分工逻辑：<b>你出脑子，他们出脸</b>。你做定标准、审核、算账；嫂子做执行和对外；堂弟负责需要露面的场合；姐姐只出资看报表。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>事项</th><th>你（50%）</th><th>嫂子（法人/店长）</th><th>堂弟</th><th>姐姐</th></tr></thead>
+      <tbody>
+        <tr><td><b>货源对接</b></td><td>出白名单工厂清单 + 谈价思路 · <b>不出面</b></td><td>以自己名义对接供应商</td><td>出面跑工厂、询价</td><td>—</td></tr>
+        <tr><td><b>客服</b></td><td>高峰期支援</td><td>售前售后、退换、话术模板 · 每天</td><td>—</td><td>—</td></tr>
+        <tr><td><b>上架 / 活动</b></td><td><b>审核定价</b></td><td>上架、报活动、标题优化 · 每天</td><td>—</td><td>—</td></tr>
+        <tr><td><b>广告投放</b></td><td><b>定预算、定 ROI 红线、每周定策略</b></td><td>按预算执行、记录花费 · 每天</td><td>—</td><td>—</td></tr>
+        <tr><td><b>数据盯盘</b></td><td>每周复盘定策略</td><td>记录曝光/点击/转化，整理日报 · 每天</td><td>—</td><td>—</td></tr>
+        <tr><td><b>选品</b></td><td><b>定选品方向</b> · 每周</td><td>反馈买家咨询 / 差评信息</td><td>—</td><td>—</td></tr>
+        <tr><td><b>店面发货</b></td><td>监督发货时效</td><td>全职后负责</td><td><b>全职前按 SOP 执行打包交件</b></td><td>—</td></tr>
+        <tr><td><b>财务</b></td><td><b>审账、控现金流</b> · 每月</td><td>记流水、配合代账整理单据</td><td>—</td><td>—</td></tr>
+        <tr><td><b>股东汇报</b></td><td><b>审核后发出</b></td><td>整理周报（订单/销售额/毛利/库存/广告）· 每周</td><td>接收</td><td><b>接收 + 看报表</b></td></tr>
+        <tr><td><b>SOP 验收</b></td><td>出题</td><td>—</td><td><b>照 SOP 走一遍找漏洞</b></td><td><b>照 SOP 走一遍找漏洞</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:14px;border-left:3px solid var(--p1)">
+    <h4>你的角色演进</h4>
+    <div class="steps" style="margin-top:6px">
+      <div class="step" style="--c:var(--p1)"><em>准备期</em><b>算账的人</b><p>成本核算表 + 白名单工厂清单 + 协议设计</p></div>
+      <div class="step" style="--c:var(--p1)"><em>测试期</em><b>定策略 + 审核</b><p>定预算/ROI 红线/选品方向，审核定价，每周复盘</p></div>
+      <div class="step" style="--c:var(--p1)"><em>跑通期</em><b>写 SOP 的人</b><p>5 份 SOP + 验收 + 成本优化</p></div>
+      <div class="step" style="--c:var(--p1)"><em>起量期</em><b>交出日常</b><p>店长 = 嫂子，你退出日常操作</p></div>
+      <div class="step" style="--c:var(--p1)"><em>成长期</em><b>策略 + 供应链 + 财务</b><p>直连工厂、谈独家款、框架协议 —— <b>回到你最强的地方</b></p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>数据来源：<b style="color:var(--tx2)">流程规划-总表(3).xlsx</b> · 全流程总表 · 230 条事项 / 24 个模块，全部内容已重绘为流程图，无删减。</div>
+  <div>数值（保证金、响应时长、快递价、平台扣点等）以平台官方公告为准。</div>
+</footer>
+</div>
+
+<script>
+/* 滚动进度 */
+const prog=document.getElementById('prog');
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  prog.style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+
+/* 入场动画（不支持 IO 或动画没触发时兜底全部显示，绝不让内容卡在隐藏状态） */
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+if(!reduce && 'IntersectionObserver' in window){
+  const rvs=[...document.querySelectorAll('section > *, header > *')];
+  rvs.forEach(el=>el.classList.add('rv'));
+  const io=new IntersectionObserver(es=>es.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}
+  }),{rootMargin:'-40px 0px -60px',threshold:.02});
+  rvs.forEach(el=>io.observe(el));
+  setTimeout(()=>rvs.forEach(el=>el.classList.add('in')),4000);
+}
+
+/* 条形/仪表填充（同样带兜底，避免条形永远是 0 宽） */
+const setW=el=>el.querySelectorAll('[data-w]').forEach((b,i)=>
+  setTimeout(()=>b.style.width=b.dataset.w+'%',i*70));
+if('IntersectionObserver' in window){
+  const fill=new IntersectionObserver(es=>es.forEach(e=>{
+    if(e.isIntersecting){setW(e.target);fill.unobserve(e.target)}
+  }),{threshold:.15});
+  document.querySelectorAll('#fund,#mtrs').forEach(el=>fill.observe(el));
+  setTimeout(()=>document.querySelectorAll('#fund,#mtrs').forEach(setW),4000);
+}else{
+  document.querySelectorAll('#fund,#mtrs').forEach(setW);
+}
+
+/* 导航高亮 —— 只移动导航条自身的 scrollLeft，绝不用 scrollIntoView
+   （scrollIntoView 会连带滚动祖先滚动容器 = 整个页面，导致页面被横向拖走且滚动被抢占） */
+const nl=document.getElementById('nl');
+const links=[...nl.querySelectorAll('a')];
+const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function centerInNav(a){
+  const want=a.offsetLeft-(nl.clientWidth-a.offsetWidth)/2;
+  const max=nl.scrollWidth-nl.clientWidth;
+  if(max>0) nl.scrollLeft=Math.max(0,Math.min(want,max));
+}
+const spy=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting) return;
+  const id='#'+e.target.id;
+  links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')===id));
+  const on=links.find(a=>a.classList.contains('on'));
+  if(on) centerInNav(on);
+}),{rootMargin:'-72px 0px -70% 0px'});
+secs.forEach(s=>spy.observe(s));
+
+/* 展开/收起全部 */
+const tog=document.getElementById('tog');let open=false;
+tog.onclick=()=>{open=!open;
+  document.querySelectorAll('details').forEach(d=>d.open=open);
+  tog.textContent=open?'收起全部':'展开全部';};
+</script>
+</body>
+</html>
