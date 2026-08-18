@@ -214,6 +214,26 @@ icons/ public/icons/   # SVG 图标
 - **数据层** 从 SWR 切到 TanStack Query 5（共存策略）
 - **至今（2026）** 423 个 commit、54+ PR、持续随网络规模迭代
 
+## 九、近期更新（2026）
+
+### 性能优化
+- **首屏加载优化**：仅在首页获取 grand total，减少不必要的数据请求
+- **资源优化**：首页背景视频改用远程 CDN 服务，移除打包资源
+
+### 功能增强
+- **v1 迁移**：完成 v1 迁移，包括 reader signer、pager 和部署流程
+- **Owner 页面修复**：修复 owner 页面的 agent 列表与分页器（曾被破坏）
+- **真实分页器**：实现由后端 grand total 驱动的真实数字分页
+- **数据驱动分页**：Agent 详情的 Memory/File 标签页实现数据驱动分页
+
+### 部署优化
+- **一键构建部署**：为 testnet 提供一键构建+部署脚本
+- **独立输出**：为 Node 服务器部署准备独立输出和未优化图片
+
+### 文档与维护
+- **README 重写**：为开源协作重写 README，包含项目概览和架构说明
+- **UI 改进**：将 memory content 部分的标题重命名为"Data"
+
 ## 总结：链上浏览器的"克制"
 
 营销站 [unibase-website](/projects/unibase-website) 的工程化诱惑是动效，

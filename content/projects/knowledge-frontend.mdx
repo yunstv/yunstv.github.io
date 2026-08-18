@@ -199,6 +199,28 @@ next.config.ts          # rewrites / 安全头
 
 > 一个真实的产品周期不可能 *永远高强度*——*该慢的时候慢下来* 也是工程纪律的一部分。
 
+## 十、近期更新（2026）
+
+### 性能优化
+- **组件记忆化**：对首页 Agents 跑马灯行进行 Memo 优化
+- **共享组件提取**：提取 KeywordTags、BaseDataTable 等共享组件
+- **Hooks 提取**：从 chat 组件中提取 useTypewriter hook
+- **路由模板**：提取跨路由组共享的 RouteWithChatHistory 模板
+
+### 认证与安全
+- **Privy JWT 认证**：为聊天 API 添加 Privy JWT 认证支持
+- **流式聊天认证**：使用 Privy token 进行 stream_chat 认证
+
+### 移动端适配
+- **完整移动适配**：完成 profile、chat、terminal 等各模块的移动端适配
+
+### 文档更新
+- **README 重写**：重写 README，包含项目概览和架构说明
+
+### 版本升级
+- **Next.js 16.2.6**：升级到 Next.js 16.2.6 和 React 19.2.6
+- **依赖清理**：移除未使用的 upgrade-modal 和应用外壳中的死代码
+
 ## 总结：UGC 知识平台的"反复出现的取舍"
 
 回头看 TwinX 在工程上的几个关键判断：
