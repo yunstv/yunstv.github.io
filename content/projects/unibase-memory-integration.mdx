@@ -1,0 +1,269 @@
+---
+name: Unibase Memory
+description: 跨 AI 平台的记忆层 Chrome 扩展——自动捕获 ChatGPT/Claude/Grok/DeepSeek 对话、本地全文搜索、标签建议、可选择性加密同步到 Membase。端到端加密，私钥从钱包签名派生，服务端无法读取。
+date: 2024-08-15
+status: active
+stack: [Chrome Extension MV3, TypeScript, esbuild, IndexedDB, WebCrypto, Transformers.js, Privy, x.com GraphQL, OpenAI API]
+github: https://github.com/unibaseio/unibase-memory-integration
+demo: https://github.com/unibaseio/unibase-memory-integration/releases
+featured: true
+screenshots:
+  - src: /projects/unibase-memory-integration/side-panel-1.jpg
+    title: 侧边栏 · 搜索与浏览
+    description: 对话列表 + 全文搜索 + 标签筛选
+    route: side-panel
+  - src: /projects/unibase-memory-integration/side-panel-2.jpg
+    title: 侧边栏 · 对话详情
+    description: 单个对话的完整消息历史
+    route: side-panel
+  - src: /projects/unibase-memory-integration/composer-insert.jpg
+    title: 回写记忆 · 插入对话到 Composer
+    description: 将历史对话或片段插入到实时聊天输入框
+    route: composer-insert
+  - src: /projects/unibase-memory-integration/tag-suggestions.jpg
+    title: AI 标签建议 · 本地推理
+    description: 基于对话内容的本地化多语言标签建议
+    route: tag-suggestions
+---
+
+## 一、业务背景：跨平台的 AI 记忆层
+
+[Unibase Memory](https://github.com/unibaseio/unibase-memory-integration) 解决的是 AI 时代的一个基础问题：
+
+**你的 AI 对话散落在不同平台，无法统一搜索、无法跨平台引用、无法真正拥有。**
+
+这个 Chrome 扩展的使命是：
+
+```text
+捕获你在 ChatGPT / Claude / Grok / DeepSeek 的所有对话
+   ↓
+在侧边栏统一浏览、搜索、加标签、加星标
+   ↓
+可选择性地端到端加密同步到 Membase（只有你能解密）
+```
+
+核心价值主张：
+- **一个地方看所有对话**：不再需要在不同平台之间切换查找历史记录
+- **全文搜索 + 标签**：快速找到任何对话，支持本地 AI 标签建议
+- **回写记忆**：将历史对话插入到实时聊天中，让 AI 记住上下文
+- **真正的数据所有权**：加密密钥从你的钱包签名派生，服务端无法解密
+
+## 二、架构：Chrome MV3 扩展的教科书式设计
+
+### 三层世界模型
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Content Script (ISOLATED world)                              │
+│ ───────────────────────────────────────────────────────────  │
+│ · chatgpt.com / claude.ai / x.com / deepseek.com           │
+│ · 平台适配器：DOM 捕获 · Composer 插入 · 导入药丸           │
+│ · 与页面 DOM 同源，但不共享页面的 JS context                 │
+└─────────────────────────────────────────────────────────────┘
+                           │ chrome.runtime
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Background Service Worker (MV3)                             │
+│ ───────────────────────────────────────────────────────────  │
+│ · 路由：panel ↔ content ↔ offscreen                         │
+│ · 捕获写入（所有权 + 合并规则）                               │
+│ · 定期加密同步（sync-alarm.js）                              │
+│ · 打开 Privy 认证窗口                                        │
+└─────────────────────────────────────────────────────────────┘
+                           │ chrome.runtime
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Side Panel / Options / Offscreen Documents                    │
+│ ───────────────────────────────────────────────────────────  │
+│ · 侧边栏 UI：对话浏览 + 搜索 + 详情                          │
+│ · Options 页面：设置 + 认证                                  │
+│ · Offscreen Tagger：本地 AI 标签建议（Transformers.js）      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 关键技术决策
+
+| 层级 | 技术 | 选择理由 |
+| - | - | - |
+| **构建** | esbuild | 速度碾压 Webpack，对扩展这种频繁构建的项目关键 |
+| **存储** | IndexedDB | 扩展本地存储的唯一合理选择，支持大量对话数据 |
+| **加密** | WebCrypto API | 浏览器原生 AES-GCM，从钱包签名派生密钥 |
+| **标签建议** | Transformers.js | 完全本地推理，无需将对话内容发送到远程 API |
+| **认证** | Privy + OAuth | 统一社交登录，钱包签名作为密钥种子 |
+
+## 三、平台适配器：一个适配器，一个平台
+
+捕获层的核心设计是**平台无关 + 插件化适配器**：
+
+```text
+lib/sites/
+├── chatgpt.ts    # ChatGPT 适配器
+├── claude.ts     # Claude 适配器
+├── grok.ts       # Grok (x.com) 适配器
+├── deepseek.ts   # DeepSeek 适配器
+└── types.ts      # 适配器统一接口
+```
+
+每个适配器实现相同的接口：
+- `detect()`：检测当前页面是否是目标平台
+- `capture()`：从 DOM 捕获对话数据
+- `insertIntoComposer()`：将内容插入到输入框
+- `getConversationId()`：获取对话唯一标识
+
+新增一个平台只需：
+1. 添加新的适配器文件
+2. 在 `SITES` 注册表里登记
+3. 写对应的 E2E 测试
+
+这就是为什么这个扩展能在几个月内支持 **ChatGPT、Claude、Grok、DeepSeek** 四个平台。
+
+## 四、本地 AI 标签建议：Transformers.js 的正确用法
+
+标签建议是产品的核心差异化功能——但有一个硬约束：**对话内容不能离开用户设备**。
+
+解决方案：
+
+```text
+offscreen/tagger.html
+   ↓ 加载
+vendor/tagger-bundle.js (transformers.js + multilingual-e5-small)
+   ↓ WebGPU 推理（优先）或 WASM 后备
+嵌入向量 → 与 135 个预定义标签计算相似度 → Top 3 返回
+```
+
+**关键工程决策**：
+
+1. **Offscreen Document**：标签推理在独立的 offscreen document 中运行，不阻塞主线程
+2. **WebGPU 优先**：优先使用 GPU 加速，WASM 作为后备
+3. **一次性下载**：模型权重 (~136MB) 只下载一次，之后缓存在 IndexedDB
+4. **受控词表**：不是开放式生成，而是从 135 个精心设计的标签中推荐，保证质量
+
+## 五、加密同步：密钥从钱包签名派生
+
+端到端加密的核心是一个**巧妙的密钥派生方案**：
+
+```text
+用户通过 Privy 登录（Google / X / Email / Wallet）
+   ↓
+钱包对固定消息进行 personal_sign
+   ↓
+从签名派生 AES-256-GCM 密钥（固定 salt + PBKDF2）
+   ↓
+所有对话用此密钥加密后再发送到 Membase Hub
+```
+
+**关键点**：
+
+- **服务端永远看不到私钥**：只有签名，无法派生密钥
+- **同一身份，同一密钥**：在不同设备上用同一钱包登录，能解密相同数据
+- **密钥永不离开扩展**：所有加密/解密在本地完成
+
+## 六、平台支持：从 ChatGPT 到 DeepSeek
+
+### 近期新增平台
+
+**Grok (x.com)**：
+- 通过 X GraphQL API 捕获对话
+- 支持 Ask-anything textarea 的记忆插入
+- 处理 GrokHistory 的标题解析
+
+**DeepSeek**：
+- 完整的 DOM change-detector 支持
+- Composer 插入支持
+- 消息顺序修正（按 message_id 非递减排序）
+
+### 平台过滤器优化
+
+侧边栏的平台过滤芯片现在是**数据驱动**的：
+- 只显示有数据的平台
+- 搜索提示和弹窗描述中列出所有平台
+
+## 七、Lucky Draw 集成
+
+最近的更新集成了 **Lucky Draw** 功能：
+
+- **扩展入口**：在扩展中添加 Lucky Draw 入口点
+- **登录/保存抽奖**：抽奖页面的登录和保存钩子
+- **USDC 提现**：中奖金额的 USDC 提现流程（现已移至独立网页）
+- **后台握手**：后台服务响应抽奖页面的签名地址握手
+
+## 八、技术栈细节
+
+### 核心依赖
+
+- **esbuild**：极速构建，对扩展开发体验影响巨大
+- **Chrome Extension Manifest V3**：现代扩展标准
+- **IndexedDB**：扩展本地存储，支持大量对话数据
+- **WebCrypto API**：原生加密 API，性能好且安全
+- **Transformers.js**：本地 AI 推理，支持 WebGPU
+- **Privy**：统一社交登录 + 钱包认证
+- **x.com GraphQL**：Grok 对话捕获
+- **OpenAI API**：（可选）用于某些高级功能
+
+### 构建系统
+
+```text
+scripts/
+├── build-bundles.mjs        # 构建三个 vendor bundle
+├── build-tag-catalog.mjs    # 构建标签目录
+└── pack-extension.mjs      # 打包扩展为 zip
+```
+
+三个 vendor bundle：
+1. **wallet-bundle.js**：Privy SDK
+2. **tagger-bundle.js**：Transformers.js + 模型
+3. **main bundle**：扩展核心代码
+
+## 九、测试策略
+
+项目有完整的 E2E 测试覆盖：
+
+```text
+test/
+├── harness.mjs              # E2E 测试框架
+├── unit/*.test.mjs          # 单元测试
+├── membase-roundtrip.mjs    # Membase 加密同步测试
+├── membase-recovery.mjs     # 恢复测试
+├── wallet-ui.mjs            # 钱包 UI 测试
+├── composer-insert.mjs      # Composer 插入测试
+├── panel-sync.mjs           # 面板同步测试
+├── webclip-docview.mjs      # Web 文档查看测试
+└── legacy-webclip-heal.mjs  # 遗留数据修复测试
+```
+
+**CI/CD**：
+- GitHub Actions 自动构建和测试
+- 每个 PR 都运行完整的测试套件
+
+## 十、时间线
+
+- **2024-08-15** 项目初始化，支持 ChatGPT 和 Claude
+- **2024-10** 添加 Grok (x.com) 支持
+- **2024-12** 添加本地 AI 标签建议功能
+- **2025-02** 添加 DeepSeek 支持
+- **2025-04** 集成 Lucky Draw 功能
+- **2025-06** 添加 USDC 提现流程
+- **至今（2026）** 持续维护和优化，最新版本 0.20.88
+
+## 十一、开源与贡献
+
+这是一个 **Apache 2.0 许可的开源项目**，欢迎贡献：
+
+- **PR Welcome**：所有改进建议都欢迎
+- **完善的测试**：每个功能都有对应的测试
+- **清晰的文档**：README 和 CONTRIBUTING.md 详细说明了开发和部署流程
+
+## 总结：扩展工程的"克制与创新"
+
+Unibase Memory 项目展示了几个关键的工程原则：
+
+1. **平台适配器的插件化设计**：让多平台支持变得简单可维护
+2. **本地优先的 AI 功能**：用 Transformers.js 实现完全本地化的标签建议
+3. **端到端加密的正确实现**：密钥从钱包签名派生，服务端永远无法解密
+4. **Chrome MV3 的最佳实践**：合理使用 Service Worker、Offscreen Document、IndexedDB
+5. **渐进式平台扩展**：从 ChatGPT/Claude 开始，逐步支持 Grok、DeepSeek
+
+这个项目的核心价值不是技术炫技，而是**真正解决了 AI 时代的一个基础痛点**：
+让用户真正拥有自己的 AI 对话历史，并能跨平台、跨设备地使用这些记忆。
+
+*"One searchable memory across all AI platforms — encrypted to a wallet you own."*
