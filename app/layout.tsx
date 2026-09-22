@@ -27,10 +27,20 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image' },
 }
 
+const themeInitScript = `(function () {
+  try {
+    var t = localStorage.getItem('theme')
+    var dark = t === 'dark' || ((t === null || t === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    document.documentElement.classList.toggle('dark', dark)
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+  } catch (e) {}
+})()`
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
           <div className="site-shell">
             <SiteHeader />
