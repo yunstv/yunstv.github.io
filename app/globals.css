@@ -69,3 +69,32 @@ pre.shiki, pre:has(> code.refractor) {
   overflow-x: auto;
   margin: 1rem 0;
 }
+
+/* ---- MDX 图表（components/mdx/charts.tsx）----
+   阶段序数色阶：浅色 iris-8→10→12，深色翻转锚点 iris-7→9→11（小值=更暗）。
+   两组均通过 dataviz ordinal 校验（单调 L、相邻 ΔL≥0.06、近表面端 ≥2:1、单色相）。
+   段内标注墨色按各色阶明度选定：浅填配深墨，深填配白墨。 */
+:root {
+  --chart-phase-1: var(--iris-8);
+  --chart-phase-2: var(--iris-10);
+  --chart-phase-3: var(--iris-12);
+  --chart-phase-1-ink: var(--gray-12);
+  --chart-phase-2-ink: #ffffff;
+  --chart-phase-3-ink: #ffffff;
+}
+.dark {
+  --chart-phase-1: var(--iris-7);
+  --chart-phase-2: var(--iris-9);
+  --chart-phase-3: var(--iris-11);
+  --chart-phase-1-ink: #ffffff;
+  --chart-phase-2-ink: #ffffff;
+  --chart-phase-3-ink: #17171f;
+}
+.mdx-chart-mark {
+  transition: opacity 120ms ease;
+  outline: none;
+}
+.mdx-chart-mark:hover,
+.mdx-chart-mark:focus-visible {
+  opacity: 0.8;
+}

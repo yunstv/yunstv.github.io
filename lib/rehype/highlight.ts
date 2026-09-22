@@ -2,11 +2,17 @@ import { visit } from 'unist-util-visit'
 import { refractor } from 'refractor'
 import tsx from 'refractor/tsx'
 import jsx from 'refractor/jsx'
+import bash from 'refractor/bash'
+import json from 'refractor/json'
+import yaml from 'refractor/yaml'
 import { toString } from 'hast-util-to-string'
 import type { Root, Element, ElementContent } from 'hast'
 
 refractor.register(tsx)
 refractor.register(jsx)
+refractor.register(bash)
+refractor.register(json)
+refractor.register(yaml)
 
 const LANG_ALIASES: Record<string, string> = {
   ts: 'typescript',

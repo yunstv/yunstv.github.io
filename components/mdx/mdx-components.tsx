@@ -3,6 +3,7 @@ import NextLink from 'next/link'
 import type { MDXComponents } from 'mdx/types'
 import { CodeBlock } from './code-block'
 import { Callout } from './callout'
+import { BenchBarChart, PhaseStackChart, SpeedupChart } from './charts'
 
 export const mdxComponents: MDXComponents = {
   h1: (props) => <Heading as="h1" size="8" mt="6" mb="4" {...props} />,
@@ -47,4 +48,7 @@ export const mdxComponents: MDXComponents = {
     <img src={src as string} alt={alt ?? ''} style={{ maxWidth: '100%', borderRadius: 'var(--radius-3)' }} />
   ),
   Callout,
+  BenchBarChart,
+  PhaseStackChart,
+  SpeedupChart,
 }

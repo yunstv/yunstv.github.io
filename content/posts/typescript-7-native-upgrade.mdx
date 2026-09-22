@@ -1,0 +1,175 @@
+---
+title: 升级 TypeScript 7.0：Go 原生编译器实测与迁移笔记
+date: 2026-09-22
+description: 本站把 typescript 从 6.0.3 升到 7.0.2——就是那个用 Go 重写的原生编译器。本文记录升级过程，并在本仓库实测冷启动与增量 typecheck、编译阶段分解、内存占用，再和官方五个大型仓库的数据放在一起对比：快了多少，还差什么。
+tags: [typescript, tsgo, performance, benchmark, migration]
+---
+
+<Callout type="info">
+  一句话结论：**本仓库的 `tsc --noEmit` 从约 2.07 秒降到约 0.31 秒（6.7×），内存从 287 MB 降到 209 MB（-27%），`tsconfig.json` 一行没改。**
+  阅读提示：下文所有图表里**灰色是 TypeScript 6.0.3（JS 编译器），紫色是 TypeScript 7.0.2（Go 原生）**，全站统一这个配色；每张图都配了同数据的表格，鼠标悬停在条形上还能看到精确值。
+</Callout>
+
+## 一、TypeScript 7.0 是什么
+
+先把时间线捋清楚：
+
+| 时间 | 事件 |
+|---|---|
+| 2025-03-11 | 微软官宣用 Go 重写编译器（内部代号 Project Corsa），预览版编译器叫 `tsgo` |
+| 2025–2026 | 预览包 `@typescript/native-preview` 持续迭代，周下载量涨到 850 万 |
+| 2026 上半年 | TypeScript 6.0 发布：JS 编译器的「收尾版」，把 7.0 里会变成硬错误的选项提前标成弃用 |
+| 2026-07-08 | TypeScript 7.0 正式发布，官方口径：全量构建通常提速 8–12× |
+
+两者的架构差异一句话就能说完：
+
+```text
+TypeScript 6.x  =  TS 源码编译成 JS → 跑在 Node 上 → 单线程类型检查
+TypeScript 7.0  =  TS 源码移植成 Go → 原生二进制   → shared-memory 多线程
+```
+
+7.0 带来几个新开关：`--checkers`（默认 4 个并行 checker）、`--builders`、`--singleThreaded`；`--watch` 底层换成了 Parcel watcher 的 Go 移植。
+
+关键定位是：**7.0 的目标不是新类型系统，而是同一套语义跑得更快**。官方声明 6.0 在 `stableTypeOrdering` 下能编过的代码，7.0 应当给出一致结果——本站这次升级也确实一次通过。
+
+## 二、本站改了什么
+
+改动小到可以整段贴出来：
+
+```text
+- "typescript": "^6.0.3"
++ "typescript": "^7.0.2"
+```
+
+（同一次还顺手把 `next` 锁到 16.3.5、移除 `next-themes` 换成自研的 30 行 ThemeProvider——与 TS 无关，不展开。）
+
+`tsconfig.json` **零改动**。这不是运气好，而是本站的选项组合本来就不踩雷区：`target: ES2022`、`module: esnext`、`moduleResolution: bundler`、没有 `baseUrl`。官方建议的迁移路径就是**先升 6.0 清弃用警告，再切 7.0**——6.0 会把 7.0 的硬错误提前标成警告。
+
+<Callout type="warning">
+  7.0 改了一批默认值：`strict` 默认开启、`module` 默认 `esnext`、`rootDir` 默认 `./`、`types` 默认 `[]`、`noUncheckedSideEffectImports` 默认开启。
+  老项目直接切 7.0，风险不是编译报错，而是「行为悄悄变了」——比如 `types: []` 之后，以前自动可见的全局类型（`node`、`jest`）突然找不到了。
+</Callout>
+
+## 三、实测：同一仓库，两个编译器
+
+方法先交代清楚，数字才可信：
+
+- 同一个 commit、同一份 tsconfig，只换编译器；
+- 机器：Apple M1 Pro / macOS（Darwin 23.5）；TS 6.0.3 跑在 Node 24.11 上，TS 7.0.2 是原生二进制；
+- 冷启动全量检查：`tsc --noEmit --incremental false`，跑 3 次取中位数，排除缓存影响；
+- 增量热检查：先完整跑一次写入 `tsbuildinfo`，再计时第二次；
+- 墙钟时间走 `/usr/bin/time` 口径；内存取 `--extendedDiagnostics` 里的 Memory used。
+
+仓库规模：1235 个文件、约 20 万行——但其中绝大部分是 node_modules 里的 `.d.ts`，自有 TS 代码约 6.6 千行。所以先说明白：**小仓库绝对值小、波动占比大，下面的数字看方向；大仓库数据在第四节。**
+
+### 3.1 总耗时：冷启动 6.7×，增量 5.1×
+
+<BenchBarChart
+  caption="本仓库 tsc --noEmit 耗时对比（秒，越短越好）"
+  groups={[
+    { label: '冷启动全量检查', v6: 2.07, v7: 0.31 },
+    { label: '增量热检查', v6: 0.97, v7: 0.19 },
+  ]}
+/>
+
+| 场景 | TS 6.0.3 | TS 7.0.2 | 加速比 |
+|---|---|---|---|
+| 冷启动全量（三次中位） | 2.07 s（2.26 / 2.01 / 2.07） | 0.31 s（0.44 / 0.31 / 0.31） | **6.7×** |
+| 增量热检查（有 tsbuildinfo） | 0.97 s | 0.19 s | **5.1×** |
+
+### 3.2 时间花在哪个阶段
+
+<PhaseStackChart
+  caption="tsc --noEmit 编译阶段耗时分解（秒，两版诊断口径略有差异）"
+  rows={[
+    { label: 'TS 6.0.3（JS）', values: [0.63, 0.16, 1.18] },
+    { label: 'TS 7.0.2（Go）', values: [0.08, 0.01, 0.18] },
+  ]}
+  segments={[{ name: '解析' }, { name: '绑定' }, { name: '检查' }]}
+/>
+
+| 阶段 | TS 6.0.3 | TS 7.0.2 | 加速比 |
+|---|---|---|---|
+| 构建程序 + 解析 | 0.63 s | 0.08 s | 7.9× |
+| 绑定 | 0.16 s | 0.01 s | 16× |
+| 类型检查 | 1.18 s | 0.18 s | **6.6×** |
+| 内部合计 | 1.97 s | 0.27 s | 7.3× |
+
+口径说明：两版的诊断输出不完全对齐——TS 6 的 Program time 把读盘、解析、模块解析打包在一起；TS 7 把 config 与 parse 分列，上表把 7.0 的 config（0.004 s）并进了「解析」，数值四舍五入到两位小数。另外内部合计（1.97 s / 0.27 s）略小于墙钟（2.07 s / 0.31 s），差值是进程启动开销——仓库越小，这块占比越显眼。
+
+大头差距在**类型检查阶段**：1.18 s → 0.18 s。这是多线程 checker 的主场，也是 8–12× 官方数字的主要来源。
+
+### 3.3 内存与一个反直觉的细节
+
+| 指标 | TS 6.0.3 | TS 7.0.2 | 变化 |
+|---|---|---|---|
+| 峰值内存（Memory used） | 287 MB | 209 MB | **-27%** |
+| `tsc --version` 启动耗时 | ~40 ms | ~40 ms | 持平 |
+
+内存降了四分之一多，和官方在 Bluesky 上报的 -26% 基本一个水位。
+
+CLI 启动持平有点反直觉：TS 6 那 40 ms 几乎全是 Node 进程启动的开销，而原生二进制的进程冷启动也就在同一量级——**原生化的红利吃在编译本身，不吃在进程启动上**。
+
+还有一个细节值得记录：TS 7 诊断里的类型实例化数是 250,751，TS 6 只有 102,634。两版的计数口径与默认 lib 都不同，**不能直接横比**；但配合 0.18 s 的检查耗时可以看出，多线程把这些额外的实例化开销整个吸收掉了。
+
+## 四、放到大仓库上看
+
+把本站实测和官方发布时的五个大型仓库放在一起（官方数字为全量构建）：
+
+<SpeedupChart
+  caption="全量构建加速倍数：紫色为本站实测，灰色为官方公告数据"
+  items={[
+    { label: '本站（实测）', value: 6.7, highlight: true },
+    { label: 'tldraw', value: 7.7 },
+    { label: 'Playwright', value: 8.7 },
+    { label: 'Bluesky', value: 8.7 },
+    { label: 'Sentry', value: 8.9 },
+    { label: 'VS Code', value: 11.9 },
+  ]}
+/>
+
+| 仓库 | 全量构建（TS 6） | 全量构建（TS 7） | 加速比 |
+|---|---|---|---|
+| **本站（实测）** | 2.07 s | 0.31 s | **6.7×** |
+| tldraw | 11.2 s | 1.46 s | 7.7× |
+| Playwright | 12.8 s | 1.47 s | 8.7× |
+| Bluesky | 24.3 s | 2.8 s | 8.7× |
+| Sentry | 139.8 s | 15.7 s | 8.9× |
+| VS Code | 125.7 s | 10.6 s | **11.9×** |
+
+规律很明显：**仓库越大、类型计算越重，收益越贴近 10×**；小仓库被进程启动和 I/O 的固定开销拖底，6–8× 是正常水位——本站的 6.7× 就是典型的小仓库水位。VS Code 加上 `--checkers 8` 还能压到 7.51 s（16.7×）。内存方面官方报告的降幅在 -15% ～ -26% 之间（VS Code 5.2 GB → 4.2 GB）。
+
+编辑器侧的数字更夸张：VS Code 代码库里**从打开项目到报出第一个类型错误，约 17.5 s 缩到 1.3 s 以内**；语言服务失败率降 80%+、崩溃率降 60%+。
+
+## 五、升级注意清单
+
+**变成硬错误的选项**（6.0 里已是弃用警告）：
+
+| 选项 | 7.0 的处理 |
+|---|---|
+| `target: es5`、`downlevelIteration` | 硬错误 |
+| `moduleResolution: node10 / classic` | 硬错误，换 `bundler` 或 `node16`+ |
+| `module: amd / umd / systemjs / none` | 硬错误 |
+| `baseUrl` | 硬错误，改用相对化的 `paths` |
+| 关闭 `esModuleInterop` / `alwaysStrict` | 硬错误 |
+| `namespace` 里的 `module` 声明 | 硬错误，改用 `namespace` |
+| `import assert` 语法 | 改用 `with` |
+
+**默认值变化**（未显式设置时生效）：`strict`、`module: esnext`、`noUncheckedSideEffectImports`、`rootDir: ./`、`types: []`、`stableTypeOrdering` 强制开启。
+
+生态现状是升级决策里**最重要的约束**：
+
+- **7.0 暂无稳定的公共 API**——新的原生 API 排期在 7.1。这意味着 Volar 系的编辑器插件（Vue / Astro / Svelte / **MDX**）的语言服务暂时还得跑 TS 6；
+- 官方给的并存方案：`@typescript/typescript6` 包提供 `tsc6` 二进制，peer 依赖用 npm alias（`typescript@npm:@typescript/typescript6`）喂给还没跟进的老工具链；
+- 本站的做法：**CLI 链路（`pnpm typecheck`、`next build`）切 7.0，编辑器里的 TS 智能提示暂时靠 6.0**。这个站本身就是 MDX 站，所以这条约束感受非常直接——升级前我以为最麻烦的是编译兼容，升级后才发现真正要等的是编辑器插件生态。
+
+## 六、结论
+
+- **值得升**。CLI 链路收益立竿见影：typecheck 从 2.07 s 到 0.31 s，绝对值不大，但它和 lint 一样是每次提交都跑的高频动作，CI 里的体感是「这个环节基本消失了」。
+- `tsconfig` 零改动的前提是选项组合本来干净。**把 6.0 当跳板**，别从 5.x 直接跳 7.0——先用 6.0 清完弃用警告再切。
+- 编辑器/LSP 的 10× 要等 7.1 的 API 和插件生态跟进；在那之前，「CLI 用 7、编辑器用 6」是最实际的姿势。
+
+参考：
+
+- [Announcing TypeScript 7.0 — Microsoft DevBlog（2026-07-08）](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)
+- 实测方法：`/usr/bin/time` 计时 + `tsc --extendedDiagnostics`，命令在上文第三节
