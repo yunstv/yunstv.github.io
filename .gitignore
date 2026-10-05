@@ -9,3 +9,10 @@ dist/
 next-env.d.ts
 .turbo
 *.tsbuildinfo
+
+# Next.js generated agent rules (regenerated on every next dev)
+AGENTS.md
+CLAUDE.md
+
+# Local Claude Code settings (personal, machine-specific paths)
+.claude/settings.json
