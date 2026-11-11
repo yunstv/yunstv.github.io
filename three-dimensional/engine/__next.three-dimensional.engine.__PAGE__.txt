@@ -1,0 +1,21 @@
+1:"$Sreact.fragment"
+2:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"OutletBoundary"]
+3:"$Sreact.suspense"
+7:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"ViewportBoundary"]
+8:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"MetadataBoundary"]
+9:I[79286,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"IconMark"]
+b:I[82785,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+c:I[96691,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+6:X
+e:X
+e:C
+0:{"buildId":"arb80KYxBUU24vVOqOQ91","data":[{"rsc":["$","$1","c",{"children":[["$","iframe",null,{"className":"site-embed","src":"/three-dimensional/engine.html","title":"十台顶奢燃油发动机 · 3D 声浪展厅","allow":"fullscreen; autoplay","allowFullScreen":true}],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"isPartial":"$@5","staleTime":"$6","varyParams":null},{"rsc":["$","$1","h",{"children":[null,["$","$L7",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L8",null,{"children":["$","$3",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"内燃机 · 3D 声浪展厅 · Yuns"}],["$","meta","1",{"name":"description","content":"十台顶奢燃油发动机 · 3D 声浪展厅"}],["$","meta","2",{"property":"og:title","content":"内燃机 · 3D 声浪展厅 · Yuns"}],["$","meta","3",{"property":"og:description","content":"十台顶奢燃油发动机 · 3D 声浪展厅"}],["$","meta","4",{"property":"og:url","content":"https://yunstv.cn/"}],["$","meta","5",{"property":"og:site_name","content":"Yuns"}],["$","meta","6",{"property":"og:locale","content":"zh_CN"}],["$","meta","7",{"property":"og:type","content":"website"}],["$","meta","8",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","9",{"name":"twitter:title","content":"内燃机 · 3D 声浪展厅 · Yuns"}],["$","meta","10",{"name":"twitter:description","content":"十台顶奢燃油发动机 · 3D 声浪展厅"}],["$","link","11",{"rel":"icon","href":"/icon.svg?icon.34tmb8j3tcgf5.svg","sizes":"any","type":"image/svg+xml"}],["$","$L9","12",{}]]}]}]}],null]}],"isPartial":"$@a","staleTime":"$6","varyParams":null},{"rsc":["$","$1","c",{"children":[null,["$","$Lb",null,{"parallelRouterKey":"children","template":["$","$Lc",null,{}]}]]}],"isPartial":"$@d","staleTime":"$6","varyParams":"$e"},{"rsc":["$","$1","c",{"children":[null,["$","$Lb",null,{"parallelRouterKey":"children","template":["$","$Lc",null,{}]}]]}],"isPartial":"$@f","staleTime":"$6","varyParams":"$e"}],"isUpgradeableISRFallback":false,"a":"$@10","rootVaryParams":null,"needsRuntimeRequest":"$@11"}
+4:null
+11:true
+6:300
+6:C
+10:0
+a:"$undefined"
+d:"$undefined"
+f:"$undefined"
+5:"$undefined"

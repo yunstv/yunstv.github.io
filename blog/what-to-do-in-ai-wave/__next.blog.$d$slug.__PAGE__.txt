@@ -1,0 +1,272 @@
+1:"$Sreact.fragment"
+2:I[54901,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js","/_next/static/chunks/1z5dea6idlh-3.js"],"MDXContent"]
+3:Ta9d5,var Component=(()=>{var g=Object.create;var d=Object.defineProperty;var p=Object.getOwnPropertyDescriptor;var A=Object.getOwnPropertyNames;var I=Object.getPrototypeOf,u=Object.prototype.hasOwnProperty;var m=(r,n)=>()=>(n||r((n={exports:{}}).exports,n),n.exports),f=(r,n)=>{for(var i in n)d(r,i,{get:n[i],enumerable:!0})},c=(r,n,i,h)=>{if(n&&typeof n=="object"||typeof n=="function")for(let l of A(n))!u.call(r,l)&&l!==i&&d(r,l,{get:()=>n[l],enumerable:!(h=p(n,l))||h.enumerable});return r};var b=(r,n,i)=>(i=r!=null?g(I(r)):{},c(n||!r||!r.__esModule?d(i,"default",{value:r,enumerable:!0}):i,r)),w=r=>c(d({},"__esModule",{value:!0}),r);var o=m((T,t)=>{t.exports=_jsx_runtime});var x={};f(x,{default:()=>a,frontmatter:()=>y});var e=b(o()),y={title:"\u5728\u5F53\u4E0B\u7684 AI \u6D6A\u6F6E\u4E2D\uFF0C\u6211\u8BE5\u505A\u4EC0\u4E48",date:"2026-05-18",description:'\u4E0D\u8C08"\u672A\u6765 10 \u5E74\u5B8F\u5927\u53D9\u4E8B"\uFF0C\u8C08"\u63A5\u4E0B\u6765 90 \u5929\u5177\u4F53\u505A\u4EC0\u4E48"\u3002\u4E00\u4EFD\u7ED9\u666E\u901A\u4EBA\u7684\u53EF\u6267\u884C\u6E05\u5355\u2014\u2014AI \u600E\u4E48\u53D8\u6210\u4F60\u7684\u6760\u6746\u800C\u4E0D\u662F\u66FF\u4EE3\u4F60\u3001\u600E\u4E48\u6311\u8D5B\u9053\u3001\u600E\u4E48\u79EF\u7D2F\u4E0D\u88AB\u5403\u6389\u7684\u8D44\u4EA7\u3002',tags:["ai","career","strategy","personal-growth","action"]};function s(r){let n={a:"a",blockquote:"blockquote",code:"code",em:"em",h2:"h2",h3:"h3",li:"li",ol:"ol",p:"p",pre:"pre",strong:"strong",table:"table",tbody:"tbody",td:"td",th:"th",thead:"thead",tr:"tr",ul:"ul",...r.components},{Callout:i}=n;return i||C("Callout",!0),(0,e.jsxs)(e.Fragment,{children:[(0,e.jsx)(i,{type:"info",children:(0,e.jsxs)(n.p,{children:[`\u8FD9\u662F\u8FD9\u4E2A\u7CFB\u5217\u7684\u6700\u540E\u4E00\u7BC7\u3002\u524D\u516B\u7BC7\u62C6\u5B8C\u4E86"\u4E92\u8054\u7F51\u600E\u4E48\u6765\u3001AI \u662F\u4EC0\u4E48\u3001\u98CE\u53E3\u957F\u4EC0\u4E48\u6837"\uFF0C
+\u8FD9\u4E00\u7BC7\u8981\u56DE\u7B54\u552F\u4E00\u4E00\u4E2A\u771F\u6B63\u91CD\u8981\u7684\u95EE\u9898\uFF1A`,(0,e.jsx)(n.strong,{children:"\u6211\uFF0C\u4F5C\u4E3A\u4E00\u4E2A\u666E\u901A\u4EBA\uFF0C\u4E0B\u5468\u8BE5\u505A\u4EC0\u4E48\uFF1F"}),`
+\u4E0D\u8C08\u5B8F\u5927\u53D9\u4E8B\uFF0C\u53EA\u8C08\u53EF\u6267\u884C\u52A8\u4F5C\u3002`]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u5148\u60F3\u6E05\u695A\u4E00\u4E2A\u524D\u63D0",children:"\u5148\u60F3\u6E05\u695A\u4E00\u4E2A\u524D\u63D0"}),`
+`,(0,e.jsxs)(n.p,{children:["\u5728\u52A8\u624B\u4E4B\u524D\uFF0C\u628A\u8FD9\u4EF6\u4E8B\u63A5\u53D7\u4E0B\u6765\uFF1A",(0,e.jsx)(n.strong,{children:'\u4F60\u4E0D\u80FD"\u7B49\u6D6A\u8FC7\u53BB\u518D\u51B3\u5B9A"'}),"\u3002"]}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u5982\u679C\u6D6A\u5C0F\uFF0C\u4F60\u63D0\u524D\u51C6\u5907\u7684\u6210\u672C\u4E0D\u5927"}),`
+`,(0,e.jsxs)(n.li,{children:["\u5982\u679C\u6D6A\u5927\uFF0C\u7B49\u5230\u4E00\u5207\u6E05\u6670\u65F6\uFF0C",(0,e.jsx)(n.strong,{children:"\u7EA2\u5229\u671F\u5DF2\u7ECF\u7ED3\u675F"})]}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:[`\u8FD9\u5C31\u662F\u4E3A\u4EC0\u4E48"\u73B0\u5728\u4E0D\u77E5\u9053\u505A\u4EC0\u4E48\uFF0C\u6240\u4EE5\u518D\u89C2\u671B\u51E0\u5E74" \u662F\u5F53\u4E0B\u6700\u8D35\u7684\u9009\u62E9\u3002
+\u4E0D\u5FC5\u62BC\u5B9D\u67D0\u4E2A\u5177\u4F53\u65B9\u5411\uFF0C`,(0,e.jsx)(n.strong,{children:'\u4F46\u9700\u8981\u6BCF\u5468\u90FD\u5728\u505A"\u5982\u679C\u6D6A\u5F88\u5927\uFF0C\u4F1A\u8BA9\u6211\u53D7\u76CA"\u7684\u5C0F\u4E8B'}),"\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E09\u79CD\u4EBA\u4E09\u79CD\u8D77\u70B9",children:"\u4E09\u79CD\u4EBA\uFF0C\u4E09\u79CD\u8D77\u70B9"}),`
+`,(0,e.jsx)(n.p,{children:'\u4E0D\u540C\u8EAB\u4EFD\u7684"\u505A\u4EC0\u4E48"\u5DEE\u522B\u5F88\u5927\u3002\u5148\u5BF9\u53F7\u5165\u5EA7\uFF1A'}),`
+`,(0,e.jsxs)(n.table,{children:[(0,e.jsx)(n.thead,{children:(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.th,{children:"\u8EAB\u4EFD"}),(0,e.jsx)(n.th,{children:"\u73B0\u5728\u7684\u7D27\u8FEB\u5EA6"}),(0,e.jsx)(n.th,{children:"\u9996\u8981\u4EFB\u52A1"})]})}),(0,e.jsxs)(n.tbody,{children:[(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u5B66\u751F\uFF08\u4E2D\u5B66/\u5927\u5B66\uFF09"}),(0,e.jsx)(n.td,{children:"\u4E2D"}),(0,e.jsx)(n.td,{children:"\u91CD\u5851\u5B66\u4E60\u65B9\u6CD5\uFF0C\u4E0D\u9760\u6B7B\u8BB0"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u666E\u901A\u767D\u9886"}),(0,e.jsx)(n.td,{children:(0,e.jsx)(n.strong,{children:"\u9AD8"})}),(0,e.jsx)(n.td,{children:'\u628A AI \u5F53\u5458\u5DE5\uFF0C\u81EA\u5DF1\u5347\u7EA7\u6210"\u6307\u6325\u8005"'})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7A0B\u5E8F\u5458 / \u8BBE\u8BA1\u5E08 / \u5199\u4F5C\u8005"}),(0,e.jsx)(n.td,{children:(0,e.jsx)(n.strong,{children:"\u6781\u9AD8"})}),(0,e.jsx)(n.td,{children:"\u7528 AI \u628A\u5355\u5175\u4F5C\u6218\u80FD\u529B\u653E\u5927 5\u201310 \u500D"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u521B\u4E1A\u8005 / \u81EA\u7531\u804C\u4E1A"}),(0,e.jsx)(n.td,{children:(0,e.jsx)(n.strong,{children:"\u6781\u9AD8"})}),(0,e.jsx)(n.td,{children:"\u7528 AI \u91CD\u5851\u6210\u672C\u7ED3\u6784\uFF0C\u505A\u4EE5\u524D\u505A\u4E0D\u52A8\u7684\u4E8B"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u5B9E\u4F53\u751F\u610F / \u670D\u52A1\u4E1A"}),(0,e.jsx)(n.td,{children:"\u4E2D"}),(0,e.jsxs)(n.td,{children:["\u7528 AI \u4F18\u5316\u8FD0\u8425\uFF0C",(0,e.jsx)(n.strong,{children:"\u4E0D\u5FC5\u5168\u5458\u8F6C\u578B"})]})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u9000\u4F11 / \u534A\u9000\u4F11"}),(0,e.jsx)(n.td,{children:"\u4F4E"}),(0,e.jsx)(n.td,{children:"\u5B66\u4F1A\u7528\uFF0C\u4FDD\u6301\u4FE1\u606F\u6E90\u7545\u901A\u5373\u53EF"})]})]})]}),`
+`,(0,e.jsxs)(n.p,{children:["\u4E0B\u9762\u6240\u6709\u5EFA\u8BAE\u4E3B\u8981\u9762\u5411",(0,e.jsx)(n.strong,{children:"\u524D\u56DB\u7C7B"}),'\u2014\u2014\u8FD9\u662F AI \u6D6A\u6F6E\u91CC"\u98CE\u9669\u4E0E\u673A\u4F1A\u90FD\u6700\u5927"\u7684\u7FA4\u4F53\u3002']}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u4E00\u6B65\u628A-ai-\u7528\u5230\u65E5\u5E38\u7684\u975E\u5DE5\u4F5C\u73AF\u8282",children:'\u7B2C\u4E00\u6B65\uFF1A\u628A AI \u7528\u5230\u65E5\u5E38\u7684"\u975E\u5DE5\u4F5C"\u73AF\u8282'}),`
+`,(0,e.jsxs)(n.p,{children:[`\u5F88\u591A\u4EBA\u7B2C\u4E00\u6B21\u7528 AI \u9009\u9519\u4E86\u5207\u5165\u70B9\u2014\u2014\u76F4\u63A5\u7528\u5728\u5DE5\u4F5C\u6838\u5FC3\u4EFB\u52A1\u4E0A\uFF0C
+`,(0,e.jsx)(n.strong,{children:"\u5BB9\u6613\u56E0\u4E3A\u4E0D\u719F\u7EC3\u800C\u5931\u671B"}),"\u3002\u66F4\u7A33\u7684\u5165\u95E8\u987A\u5E8F\uFF1A"]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"refractor language-text",children:`1. \u65E5\u5E38\u4E8B\u52A1\uFF08\u90AE\u4EF6\u3001\u6574\u7406\u3001\u7FFB\u8BD1\u3001\u67E5\u8D44\u6599\uFF09       \u2190 \u98CE\u9669\u4F4E\u3001\u53CD\u9988\u5FEB
+2. \u5B66\u4E60\u8F85\u52A9\uFF08\u8BFB\u8BBA\u6587\u3001\u67E5\u6587\u6863\u3001\u603B\u7ED3\u89C6\u9891\uFF09
+3. \u526F\u4E1A/\u5174\u8DA3\u9879\u76EE\uFF08\u5199\u4F5C\u3001\u753B\u56FE\u3001\u505A\u4E2A\u5C0F\u5DE5\u5177\uFF09
+4. \u5DE5\u4F5C\u6838\u5FC3\u4EFB\u52A1\uFF08\u6700\u540E\u624D\u4E0A\uFF09
+`})}),`
+`,(0,e.jsx)(n.p,{children:"90 \u5929\u5185\u7684\u5177\u4F53\u52A8\u4F5C\uFF1A"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:["\u6BCF\u5929",(0,e.jsx)(n.strong,{children:"\u81F3\u5C11 5 \u6B21"}),' AI \u5BF9\u8BDD\uFF0C\u5EFA\u7ACB"\u5148\u95EE AI \u518D\u52A8\u624B"\u7684\u808C\u8089\u8BB0\u5FC6']}),`
+`,(0,e.jsx)(n.li,{children:"\u9009\u4E00\u4E2A\u4E3B\u529B\u6A21\u578B + \u4E00\u4E2A\u5907\u7528\u6A21\u578B\uFF08\u4E0D\u62BC\u6CE8\u5355\u4E00\u5382\u5546\uFF09"}),`
+`,(0,e.jsxs)(n.li,{children:["\u5B66\u4F1A\u5199",(0,e.jsx)(n.strong,{children:"\u957F prompt"}),"\uFF08\u80CC\u666F + \u4EFB\u52A1 + \u7EA6\u675F + \u8F93\u51FA\u683C\u5F0F\uFF09\uFF0C\u4E0D\u518D\u53EA\u95EE\u4E00\u53E5"]}),`
+`,(0,e.jsx)(n.li,{children:"\u628A\u5E38\u7528 prompt \u5B58\u5230\u672C\u5730\u6216\u5DE5\u5177\u91CC\uFF0C\u53EF\u590D\u7528"}),`
+`]}),`
+`,(0,e.jsx)(i,{type:"success",children:(0,e.jsxs)(n.p,{children:['90 \u5929\u7684\u76EE\u6807\u4E0D\u662F"\u6210\u4E3A AI \u4E13\u5BB6"\uFF0C\u662F ',(0,e.jsx)(n.strong,{children:'"\u6210\u4E3A AI \u91CD\u5EA6\u7528\u6237"'}),`\u2014\u2014
+\u548C\u6A21\u578B\u7684\u5BF9\u8BDD\u6B21\u6570 \u2265 \u4F60\u548C\u6700\u5E38\u8054\u7CFB\u7684\u540C\u4E8B\u8BF4\u8BDD\u6B21\u6570\u3002
+\u5230\u8FD9\u4E2A\u91CF\u4EE5\u540E\uFF0C\u4F60\u5BF9 AI \u80FD\u505A\u4EC0\u4E48/\u4E0D\u80FD\u505A\u4EC0\u4E48\u7684\u76F4\u89C9\u4F1A\u81EA\u52A8\u5EFA\u7ACB\u8D77\u6765\u3002`]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u4E8C\u6B65\u628A\u81EA\u5DF1\u91CD\u65B0\u7EC4\u88C5\u6210\u4E00\u4E2A-ai-\u589E\u5F3A\u4F53",children:'\u7B2C\u4E8C\u6B65\uFF1A\u628A"\u81EA\u5DF1"\u91CD\u65B0\u7EC4\u88C5\u6210\u4E00\u4E2A AI \u589E\u5F3A\u4F53'}),`
+`,(0,e.jsxs)(n.p,{children:[`\u666E\u901A\u7528\u6237\u548C\u9AD8\u624B\u7684\u5DEE\u8DDD\uFF0C\u4E0D\u5728"\u4F1A\u4E0D\u4F1A\u7528 AI"\uFF0C
+\u800C\u5728`,(0,e.jsx)(n.strong,{children:"\u6709\u6CA1\u6709\u628A AI \u5D4C\u8FDB\u81EA\u5DF1\u7684\u5DE5\u4F5C\u6D41"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"\u4E00\u4E2A\u6700\u7B80\u5355\u7684\u5DE5\u4F5C\u6D41\u6539\u9020\u6A21\u677F",children:"\u4E00\u4E2A\u6700\u7B80\u5355\u7684\u5DE5\u4F5C\u6D41\u6539\u9020\u6A21\u677F"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"refractor language-text",children:`\u539F\u6765:        \u6211 \u2192 \u4EFB\u52A1 \u2192 \u6211\u505A\u5B8C \u2192 \u4EA4\u4ED8
+\u73B0\u5728:        \u6211 \u2192 \u62C6\u4EFB\u52A1 \u2192 AI \u505A\u5927\u90E8\u5206 \u2192 \u6211\u628A\u5173 \u2192 \u4EA4\u4ED8
+\u9AD8\u7EA7\u7248:      \u6211 \u2192 \u591A\u4E2A AI Agent \u5E76\u884C \u2192 \u6211\u5BA1\u6838\u5408\u6210 \u2192 \u4EA4\u4ED8
+`})}),`
+`,(0,e.jsx)(n.p,{children:"\u5177\u4F53\u573A\u666F\u793A\u4F8B\uFF1A"}),`
+`,(0,e.jsxs)(n.table,{children:[(0,e.jsx)(n.thead,{children:(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.th,{children:"\u573A\u666F"}),(0,e.jsx)(n.th,{children:"\u65E7\u6D41\u7A0B"}),(0,e.jsx)(n.th,{children:"AI \u589E\u5F3A\u540E"})]})}),(0,e.jsxs)(n.tbody,{children:[(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u5199\u4E00\u7BC7\u6587\u7AE0"}),(0,e.jsx)(n.td,{children:"\u81EA\u5DF1\u5199\u5B8C"}),(0,e.jsx)(n.td,{children:"AI \u751F\u6210\u5927\u7EB2 + \u8349\u7A3F \u2192 \u6211\u6DA6\u8272 + \u4E2A\u4EBA\u89C2\u70B9"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u505A\u4E00\u4EFD\u6C47\u62A5"}),(0,e.jsx)(n.td,{children:"\u81EA\u5DF1\u6574\u7406\u6570\u636E + \u5199 PPT"}),(0,e.jsx)(n.td,{children:"AI \u6574\u7406\u6570\u636E + \u51FA\u521D\u7A3F PPT \u2192 \u6211\u8C03\u7ED3\u6784"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u5B66\u4E00\u4E2A\u65B0\u6280\u80FD"}),(0,e.jsx)(n.td,{children:"\u770B\u5B8C\u6574\u672C\u4E66"}),(0,e.jsx)(n.td,{children:"AI \u51FA\u5927\u7EB2\u3001\u7B54\u7591\u3001\u51FA\u9898\u8003\u6211"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u770B\u4E00\u7BC7\u82F1\u6587\u6587\u732E"}),(0,e.jsx)(n.td,{children:"\u9010\u5B57\u7FFB"}),(0,e.jsx)(n.td,{children:"AI \u6458\u8981 \u2192 \u6211\u8BFB\u5173\u952E\u6BB5\u843D \u2192 AI \u89E3\u91CA\u96BE\u70B9"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u5199\u4EE3\u7801"}),(0,e.jsx)(n.td,{children:"\u5168\u90E8\u81EA\u5DF1\u5199"}),(0,e.jsx)(n.td,{children:"Claude Code/Cursor \u5199\u4E3B\u4F53 \u2192 \u6211\u8BBE\u8BA1\u67B6\u6784 + \u5BA1\u6838"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u505A\u4E00\u6B21\u51FA\u5DEE\u9884\u8BA2"}),(0,e.jsx)(n.td,{children:"\u4E00\u4E2A\u4E00\u4E2A\u7F51\u7AD9\u67E5"}),(0,e.jsx)(n.td,{children:"AI \u7ED9\u51FA\u51E0\u4E2A\u65B9\u6848\u5BF9\u6BD4\uFF0C\u6211\u9009"})]})]})]}),`
+`,(0,e.jsxs)(n.p,{children:['\u6BCF\u4E00\u9879\u90FD\u4E0D\u9700\u8981"\u7B49 AGI"\u3002',(0,e.jsx)(n.strong,{children:"\u4E24\u5E74\u524D\u7684\u5DE5\u5177\u5C31\u591F\u7528"}),`\u2014\u2014
+\u5173\u952E\u662F\u6709\u6CA1\u6709\u771F\u7684\u628A\u5B83\u4EEC\u878D\u8FDB\u53BB\u3002`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u5EFA\u4E00\u4EFD\u4E2A\u4EBA-ai-\u5DE5\u5177\u6808",children:'\u5EFA\u4E00\u4EFD"\u4E2A\u4EBA AI \u5DE5\u5177\u6808"'}),`
+`,(0,e.jsxs)(n.p,{children:["\u4E0D\u9700\u8981\u82B1\u94B1\uFF0C",(0,e.jsx)(n.strong,{children:"\u5148\u628A\u514D\u8D39\u7684\u4E1C\u897F\u7528\u719F"}),"\uFF1A"]}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u5BF9\u8BDD\uFF1AClaude / ChatGPT / Gemini \u81F3\u5C11\u5404\u8BD5\u4E00\u6B21"}),`
+`,(0,e.jsx)(n.li,{children:"\u7F16\u7801\uFF1ACursor / Claude Code / Codex"}),`
+`,(0,e.jsx)(n.li,{children:"\u641C\u7D22\uFF1APerplexity / Phind"}),`
+`,(0,e.jsx)(n.li,{children:"\u56FE\u50CF\uFF1AMidjourney / Flux / Recraft"}),`
+`,(0,e.jsx)(n.li,{children:"\u89C6\u9891/\u8BED\u97F3\uFF1ASora / Veo / ElevenLabs"}),`
+`,(0,e.jsx)(n.li,{children:"\u5DE5\u4F5C\u6D41\uFF1An8n / Dify / Make"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["\u6311\u4E00\u4E24\u4E2A\u771F\u6B63\u5E38\u7528\u7684\uFF0C\u5220\u6389\u5176\u4ED6\u2014\u2014",(0,e.jsx)(n.strong,{children:"\u5DE5\u5177\u8D8A\u5C11\u8D8A\u80FD\u7528\u719F"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u4E09\u6B65\u627E\u5230\u4F60\u4E0D\u4F1A\u88AB\u5403\u6389\u7684\u62A4\u57CE\u6CB3",children:'\u7B2C\u4E09\u6B65\uFF1A\u627E\u5230\u4F60\u4E0D\u4F1A\u88AB\u5403\u6389\u7684"\u62A4\u57CE\u6CB3"'}),`
+`,(0,e.jsxs)(n.p,{children:['AI \u65F6\u4EE3\u6700\u5371\u9669\u7684\u4E0D\u662F"\u88AB AI \u66FF\u4EE3"\uFF0C\u662F ',(0,e.jsx)(n.strong,{children:"\u4F60\u505A\u7684\u4E8B\u60C5\u91CC 100% \u53EF\u4EE5\u88AB AI \u66FF\u4EE3"}),`\u3002
+\u68C0\u67E5\u4F60\u7684\u5DE5\u4F5C\u5185\u5BB9\uFF0C`,(0,e.jsx)(n.strong,{children:"\u4FDD\u7559\u4E09\u7C7B\u4E0D\u5BB9\u6613\u88AB\u5403\u7684\u90E8\u5206"}),"\uFF1A"]}),`
+`,(0,e.jsx)(n.h3,{id:"\u4E00\u9700\u8981\u73B0\u5B9E\u4E16\u754C\u5173\u7CFB\u7684\u5DE5\u4F5C",children:'\u4E00\u3001\u9700\u8981"\u73B0\u5B9E\u4E16\u754C\u5173\u7CFB"\u7684\u5DE5\u4F5C'}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u8C08\u5224\u3001\u9500\u552E\u3001\u5173\u952E\u5BA2\u6237\u5173\u7CFB"}),`
+`,(0,e.jsx)(n.li,{children:"\u56E2\u961F\u7BA1\u7406\u4E0E\u5171\u8BC6\u6784\u5EFA"}),`
+`,(0,e.jsx)(n.li,{children:"\u8DE8\u90E8\u95E8\u7684\u653F\u6CBB\u534F\u8C03"}),`
+`,(0,e.jsx)(n.li,{children:"\u672C\u5730\u5316\u670D\u52A1\uFF08\u7406\u53D1\u3001\u4E0A\u95E8\u5B89\u88C5\u3001\u533B\u7597\u966A\u8BCA\uFF09"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["AI \u53EF\u4EE5\u8F85\u52A9\uFF0C\u4F46 ",(0,e.jsx)(n.strong,{children:"\u5B83\u65E0\u6CD5\u66FF\u4F60\u51FA\u73B0\u5728\u5BA2\u6237\u7684\u9152\u684C\u4E0A"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"\u4E8C\u9700\u8981\u957F\u671F\u5224\u65AD\u7684\u5DE5\u4F5C",children:'\u4E8C\u3001\u9700\u8981"\u957F\u671F\u5224\u65AD"\u7684\u5DE5\u4F5C'}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u6218\u7565\u9009\u62E9"}),`
+`,(0,e.jsx)(n.li,{children:"\u6295\u8D44\u51B3\u7B56"}),`
+`,(0,e.jsx)(n.li,{children:"\u4EA7\u54C1\u65B9\u5411\u5224\u65AD"}),`
+`,(0,e.jsx)(n.li,{children:"\u7528\u4EBA\u51B3\u7B56"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["AI \u53EF\u4EE5\u63D0\u4F9B\u9009\u9879\u4E0E\u5206\u6790\uFF0C",(0,e.jsx)(n.strong,{children:"\u4F46\u62CD\u677F\u548C\u627F\u62C5\u540E\u679C\u7684\u4F9D\u7136\u662F\u4EBA"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"\u4E09\u9700\u8981\u72EC\u7279\u54C1\u5473\u7684\u5DE5\u4F5C",children:'\u4E09\u3001\u9700\u8981"\u72EC\u7279\u54C1\u5473"\u7684\u5DE5\u4F5C'}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u5199\u4F5C\u98CE\u683C\u3001\u8BBE\u8BA1\u5BA1\u7F8E"}),`
+`,(0,e.jsx)(n.li,{children:"\u5185\u5BB9\u521B\u4F5C\u3001\u827A\u672F"}),`
+`,(0,e.jsx)(n.li,{children:"\u4EA7\u54C1\u4F53\u9A8C\u53D6\u820D"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["AI \u8F93\u51FA\u8D8B\u4E8E\u5747\u503C\u2014\u2014",(0,e.jsx)(n.strong,{children:'\u4F60\u7684"\u975E\u5E73\u5747"\u5224\u65AD\u672C\u8EAB\u5C31\u662F\u7A00\u7F3A\u54C1'}),"\u3002"]}),`
+`,(0,e.jsx)(i,{type:"warning",children:(0,e.jsxs)(n.p,{children:["\u6700\u5BB9\u6613\u88AB\u5403\u7684\u5DE5\u4F5C\u7C7B\u578B\uFF1A",(0,e.jsx)(n.strong,{children:"\u7EAF\u6D41\u7A0B\u6027\u3001\u53EF\u6807\u51C6\u5316\u3001\u4E0D\u9700\u8981\u9762\u5BF9\u9762\u3001\u4EA7\u7269\u53EF\u6570\u5B57\u5316"}),`\u2014\u2014
+\u4F8B\u5982\u521D\u7EA7\u6570\u636E\u5F55\u5165\u3001\u521D\u7EA7\u7FFB\u8BD1\u3001\u6A21\u677F\u5316\u8BBE\u8BA1\u3001\u57FA\u7840\u5BA2\u670D\u3001\u6279\u91CF\u5185\u5BB9\u751F\u4EA7\u3002
+\u5982\u679C\u4F60\u5927\u90E8\u5206\u65F6\u95F4\u5728\u505A\u8FD9\u4E9B\u4E8B\uFF0C`,(0,e.jsx)(n.strong,{children:"\u5FC5\u987B\u4E3B\u52A8\u7ED9\u81EA\u5DF1\u52A0\u4E0A\u9762\u4E09\u7C7B\u80FD\u529B\u4E4B\u4E00"}),"\u3002"]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u56DB\u6B65\u7528-ai-\u505A\u4E00\u4EF6\u4EE5\u524D\u505A\u4E0D\u52A8\u7684\u4E8B",children:'\u7B2C\u56DB\u6B65\uFF1A\u7528 AI \u505A\u4E00\u4EF6"\u4EE5\u524D\u505A\u4E0D\u52A8\u7684\u4E8B"'}),`
+`,(0,e.jsxs)(n.p,{children:["90 \u5929\u91CC\uFF0C",(0,e.jsx)(n.strong,{children:"\u5F3A\u8FEB\u81EA\u5DF1\u7528 AI \u5B8C\u6210\u4E00\u4EF6\u4EE5\u524D\u81EA\u5DF1\u5355\u4EBA\u5B8C\u6210\u4E0D\u4E86\u7684\u4E8B"}),`\u3002
+\u4E0D\u4E3A\u6536\u5165\uFF0C\u4E3A\u4E86`,(0,e.jsx)(n.strong,{children:"\u771F\u5207\u611F\u53D7 AI \u6760\u6746\u7684\u5B58\u5728"}),"\uFF1A"]}),`
+`,(0,e.jsx)(n.p,{children:"\u53EF\u9009\u9879\uFF1A"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u5199\u4E00\u4E2A\u4F60\u5DE5\u4F5C\u9886\u57DF\u7684\u5C0F\u5DE5\u5177\uFF08\u4E0D\u4F1A\u4EE3\u7801\u4E5F\u80FD\u505A\uFF0C\u8DDF AI \u4E00\u8D77\u5199\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u51FA\u4E00\u672C\u4F60\u4E13\u4E1A\u7684\u7535\u5B50\u4E66\uFF08AI \u534F\u52A9\u5927\u7EB2\u4E0E\u521D\u7A3F\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u505A\u4E00\u4E2A YouTube/B \u7AD9\u9891\u9053\uFF08AI \u534F\u52A9\u9009\u9898\u3001\u526A\u8F91\u3001\u5B57\u5E55\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u7ED9\u4E00\u4E2A\u4EB2\u621A\u505A\u4E00\u4E2A\u5C0F\u7A0B\u5E8F\u89E3\u51B3\u4ED6\u7684\u75DB\u70B9"}),`
+`,(0,e.jsx)(n.li,{children:"\u628A\u5BB6\u91CC\u5341\u5E74\u7684\u7167\u7247\u6574\u7406\u6210\u4E00\u4EFD\u5BB6\u5EAD\u5E74\u9274"}),`
+`,(0,e.jsx)(n.li,{children:"\u5B66\u4E00\u95E8\u65B0\u8BED\u8A00\u5230\u80FD\u65E5\u5E38\u5BF9\u8BDD\uFF08AI \u5F53\u966A\u7EC3\uFF09"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["\u505A\u6210\u4E00\u4EF6\u4E4B\u540E\uFF0C\u4F60\u4F1A",(0,e.jsx)(n.strong,{children:"\u6C38\u4E45\u6539\u53D8\u5BF9\u81EA\u5DF1\u80FD\u529B\u8FB9\u754C\u7684\u8BA4\u77E5"}),`\u2014\u2014
+\u8FD9\u662F AI \u65F6\u4EE3\u6700\u503C\u94B1\u7684\u8D44\u4EA7\uFF0C\u6BD4\u4EFB\u4F55\u6280\u80FD\u90FD\u91CD\u8981\u3002`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u4E94\u6B65\u5728\u5E8F\u53F7-8-\u7684\u4E09\u4E2A\u4E2A\u4F53\u6700\u4F73\u8C61\u9650\u91CC\u4E0B\u6CE8",children:'\u7B2C\u4E94\u6B65\uFF1A\u5728\u5E8F\u53F7 8 \u7684\u4E09\u4E2A"\u4E2A\u4F53\u6700\u4F73\u8C61\u9650"\u91CC\u4E0B\u6CE8'}),`
+`,(0,e.jsxs)(n.p,{children:["\u5E8F\u53F7 8 ",(0,e.jsx)(n.a,{href:"/blog/next-five-years",children:"\u672A\u6765\u4E94\u5E74\u7684\u98CE\u53E3"}),` \u7ED9\u4E2A\u4F53\u7B5B\u51FA\u4E86\u4E09\u4E2A\u6700\u503C\u7684\u65B9\u5411\uFF1A
+`,(0,e.jsx)(n.strong,{children:"AI \u5E94\u7528 / \u51FA\u6D77 / \u94F6\u53D1\u7ECF\u6D4E"}),"\u3002\u5177\u4F53\u600E\u4E48\u4E0B\u6CE8\uFF1A"]}),`
+`,(0,e.jsx)(n.h3,{id:"\u8DEF\u5F84-a\u505A\u4E00\u4E2A-ai-\u5E94\u7528\u526F\u4E1A",children:"\u8DEF\u5F84 A\uFF1A\u505A\u4E00\u4E2A AI \u5E94\u7528\u526F\u4E1A"}),`
+`,(0,e.jsx)(n.p,{children:"\u9002\u5408\uFF1A\u7A0B\u5E8F\u5458\u3001\u4EA7\u54C1\u7ECF\u7406\u3001\u8BBE\u8BA1\u5E08\u3001\u6709\u7279\u5B9A\u884C\u4E1A\u7ECF\u9A8C\u7684\u4EBA"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:["\u9009\u4E00\u4E2A\u4F60",(0,e.jsx)(n.strong,{children:"\u61C2\u884C\u4E1A + \u75DB\u70B9\u771F\u5B9E"})," \u7684\u7EC6\u5206\u573A\u666F"]}),`
+`,(0,e.jsx)(n.li,{children:"\u7528 LLM API + \u7B80\u5355\u524D\u7AEF\u505A\u6700\u5C0F\u53EF\u7528\u7248\u672C"}),`
+`,(0,e.jsx)(n.li,{children:'\u5356\u7ED9\u4F60\u6700\u719F\u6089\u7684\u4EBA\u7FA4\uFF08\u4E0D\u8981\u8FFD\u6C42"\u901A\u7528"\uFF09'}),`
+`,(0,e.jsx)(n.li,{children:"\u5DE5\u5177\uFF1AVercel / Cloudflare / Supabase / Stripe\uFF0C\u7EC4\u5408\u8D39\u7528\u6BCF\u6708\u51E0\u5341\u7F8E\u5143\u8D77"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["\u7ECF\u5178\u53CD\u4F8B\uFF1A",(0,e.jsx)(n.strong,{children:'\u4E0D\u8981\u505A"\u901A\u7528 ChatGPT \u5957\u58F3"'}),`\u2014\u2014
+\u6CA1\u6709\u58C1\u5792\uFF0C\u4F1A\u88AB\u57FA\u7840\u6A21\u578B\u5347\u7EA7\u5403\u6389\u3002`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u8DEF\u5F84-b\u505A\u4E00\u4E2A\u51FA\u6D77\u9879\u76EE",children:"\u8DEF\u5F84 B\uFF1A\u505A\u4E00\u4E2A\u51FA\u6D77\u9879\u76EE"}),`
+`,(0,e.jsx)(n.p,{children:"\u9002\u5408\uFF1A\u64C5\u957F\u5185\u5BB9\u3001\u6709\u8DE8\u6587\u5316\u80FD\u529B\u3001\u72EC\u7ACB\u5F00\u53D1\u8005\u3001\u8DE8\u5883\u4ECE\u4E1A\u8005"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u8DE8\u5883\u7535\u5546\uFF08\u72EC\u7ACB\u7AD9\u3001Amazon\u3001Temu\u3001Shein\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u51FA\u6D77 SaaS / AI \u5DE5\u5177\uFF08\u9762\u5411\u6D77\u5916\u4E2D\u5C0F\u4F01\u4E1A\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u6D77\u5916\u5185\u5BB9\uFF08YouTube\u3001TikTok\u3001Substack\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u6D77\u5916\u670D\u52A1\uFF08\u8FDC\u7A0B\u5916\u5305\u3001AI \u534F\u52A9\u7684\u54A8\u8BE2\uFF09"}),`
+`]}),`
+`,(0,e.jsx)(n.p,{children:"\u4E2D\u56FD + AI \u5DE5\u5177 + \u5168\u7403\u5E02\u573A\u662F\u5F53\u4E0B\u6700\u5F3A\u7EC4\u5408\u4E4B\u4E00\u3002"}),`
+`,(0,e.jsx)(n.h3,{id:"\u8DEF\u5F84-c\u505A\u4E00\u4E2A\u94F6\u53D1\u670D\u52A1",children:"\u8DEF\u5F84 C\uFF1A\u505A\u4E00\u4E2A\u94F6\u53D1\u670D\u52A1"}),`
+`,(0,e.jsx)(n.p,{children:"\u9002\u5408\uFF1A\u672C\u5730\u4ECE\u4E1A\u8005\u3001\u6709\u533B\u7597 / \u670D\u52A1\u4E1A / \u5BB6\u653F\u80CC\u666F\u3001\u9000\u4F11\u6216\u534A\u9000\u4F11\u7FA4\u4F53"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"AI \u8F85\u52A9\u7684\u5C45\u5BB6\u517B\u8001\uFF08\u5065\u5EB7\u76D1\u6D4B\u3001\u63D0\u9192\u3001\u7D27\u6025\u8054\u7EDC\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u8001\u5E74\u5B66\u4E60\u5185\u5BB9\uFF08\u77ED\u89C6\u9891\u3001\u5C0F\u7A0B\u5E8F\u3001\u6559\u5B66\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u9002\u8001\u5316\u4EA7\u54C1\u7684\u6E20\u9053\u5206\u9500"}),`
+`,(0,e.jsx)(n.li,{children:"\u672C\u5730\u5316\u517B\u8001\u670D\u52A1\uFF08\u6700\u96BE\u88AB\u8FDC\u7A0B\u66FF\u4EE3\uFF09"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["\u8FD9\u6761\u8D5B\u9053",(0,e.jsx)(n.strong,{children:"\u6027\u611F\u5EA6\u6700\u4F4E\uFF0C\u786E\u5B9A\u6027\u6700\u9AD8"}),"\u3002"]}),`
+`,(0,e.jsx)(i,{type:"info",children:(0,e.jsxs)(n.p,{children:["\u4E09\u6761\u8DEF\u5F84\u4E0D\u5FC5\u540C\u65F6\u8D70\u2014\u2014\u9009",(0,e.jsx)(n.strong,{children:"\u4E00\u6761 + \u4E00\u4E2A\u5177\u4F53\u52A8\u4F5C + \u4E00\u4E2A 90 \u5929\u76EE\u6807"}),`\u3002
+\u6BD4\u5982\uFF1A"\u6211\u8981\u505A\u4E00\u4E2A\u9762\u5411\u8DE8\u5883\u72EC\u7ACB\u7AD9\u7684 AI \u5BA2\u670D\u5DE5\u5177\uFF0C90 \u5929\u91CC\u4E0A\u7EBF V0.1\uFF0C\u627E\u5230 3 \u4E2A\u4ED8\u8D39\u7528\u6237\u3002"
+\u76EE\u6807\u53EF\u4EE5\u5C0F\uFF0C\u4F46\u5FC5\u987B\u5177\u4F53\u3001\u53EF\u9A8C\u8BC1\u3002`]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u516D\u6B65\u628A\u79EF\u7D2F\u7684\u529B\u5B66\u641E\u6E05\u695A",children:'\u7B2C\u516D\u6B65\uFF1A\u628A"\u79EF\u7D2F"\u7684\u529B\u5B66\u641E\u6E05\u695A'}),`
+`,(0,e.jsxs)(n.p,{children:["AI \u65F6\u4EE3\u7684\u6210\u957F\u901F\u5EA6\u53D8\u5FEB\u4E86\uFF0C\u4F46",(0,e.jsx)(n.strong,{children:"\u79EF\u7D2F\u7684\u672C\u8D28\u6CA1\u53D8"}),"\uFF1A"]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"refractor language-text",children:`\u5F71\u54CD\u529B = \u516C\u5F00\u4F5C\u54C1\u6570\u91CF \xD7 \u5355\u4F5C\u54C1\u8D28\u91CF \xD7 \u6301\u7EED\u5E74\u6570
+\u80FD\u529B   = \u5B8C\u6210\u9879\u76EE\u6570\u91CF \xD7 \u9879\u76EE\u590D\u6742\u5EA6 \xD7 \u53CD\u601D\u6DF1\u5EA6
+\u5173\u7CFB\u7F51 = \u771F\u5B9E\u5408\u4F5C\u6B21\u6570 \xD7 \u5173\u952E\u65F6\u523B\u53EF\u9760\u5EA6
+`})}),`
+`,(0,e.jsxs)(n.p,{children:["\u8FD9\u4E09\u7C7B\u8D44\u4EA7\u7684\u5171\u6027\uFF1A",(0,e.jsx)(n.strong,{children:"\u590D\u5229\u3001\u4E0D\u88AB AI \u62A2\u8D70\u3001\u4E0D\u4F1A\u88AB\u57FA\u7840\u6A21\u578B\u5347\u7EA7\u6E05\u96F6"}),`\u3002
+\u548C\u8FD9\u4E09\u7C7B\u76F8\u53CD\u7684"\u4F2A\u79EF\u7D2F"\uFF1A`]}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"\u6536\u85CF\u5939\u91CC\u6CA1\u770B\u8FC7\u7684\u8BFE\u7A0B"}),`
+`,(0,e.jsx)(n.li,{children:'\u5173\u6CE8\u4F46\u4ECE\u4E0D\u4E92\u52A8\u7684"\u884C\u4E1A\u5927\u4F6C"'}),`
+`,(0,e.jsx)(n.li,{children:"\u8F6C\u53D1\u8FC7\u7684\u6587\u7AE0\u3001\u70B9\u8D5E\u8FC7\u7684\u5DE5\u5177"}),`
+`,(0,e.jsx)(n.li,{children:'"\u518D\u51C6\u5907\u4E00\u5E74\u5C31\u5F00\u59CB"\u7684\u526F\u4E1A\u8BA1\u5212'}),`
+`]}),`
+`,(0,e.jsx)(i,{type:"warning",children:(0,e.jsxs)(n.p,{children:[`AI \u65F6\u4EE3\u6700\u5927\u7684\u8BA4\u77E5\u9677\u9631\u662F**"\u4FE1\u606F\u83B7\u53D6 = \u80FD\u529B"**\u3002
+\u4F60\u5237\u518D\u591A AI \u65B0\u95FB\uFF0C\u80FD\u529B\u90FD\u4E0D\u589E\u957F\uFF1B
+\u4F60\u548C AI \u4E00\u8D77\u505A\u4E00\u4E2A\u5C0F\u9879\u76EE\uFF0C\u80FD\u529B\u5B9E\u8D28\u589E\u52A0\u3002
+`,(0,e.jsx)(n.strong,{children:"\u505A > \u770B > \u60F3"}),"\uFF0C\u8FD9\u4E2A\u987A\u5E8F\u5728\u6D6A\u6F6E\u91CC\u66F4\u7A81\u51FA\u3002"]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u4E03\u6B65\u5B88\u4F4F\u4E00\u4E9B\u53CD-ai-\u7684\u80FD\u529B",children:'\u7B2C\u4E03\u6B65\uFF1A\u5B88\u4F4F\u4E00\u4E9B"\u53CD AI \u7684\u80FD\u529B"'}),`
+`,(0,e.jsxs)(n.p,{children:["\u4E0D\u662F\u62B5\u5236 AI\uFF0C\u800C\u662F",(0,e.jsx)(n.strong,{children:"\u4FDD\u7559\u4E00\u4E9B AI \u62A2\u4E0D\u8D70\u7684\u4EBA\u7C7B\u57FA\u7840"}),"\uFF1A"]}),`
+`,(0,e.jsxs)(n.ol,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u80FD\u4E0D\u4F9D\u8D56 AI \u5B8C\u6210\u57FA\u672C\u5199\u4F5C\u548C\u9605\u8BFB"}),"\u2014\u2014\u8FD9\u662F\u5224\u65AD AI \u8F93\u51FA\u771F\u4F2A\u7684\u80FD\u529B\u5E95\u7EBF"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u57FA\u672C\u6570\u5B66\u76F4\u89C9"}),"\u2014\u2014\u4F30\u7B97\u3001\u6982\u7387\u3001\u589E\u957F\u7387\uFF0C\u4E0D\u5FC5\u7CBE\u786E\u4F46\u8981\u4F1A\u5224\u65AD"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u4E13\u6CE8\u529B"}),"\u2014\u2014\u80FD\u8FDE\u7EED 90 \u5206\u949F\u505A\u6DF1\u5EA6\u5DE5\u4F5C\u800C\u4E0D\u5237\u624B\u673A"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u79BB\u7EBF\u793E\u4EA4"}),"\u2014\u2014\u80FD\u548C\u4E0D\u719F\u7684\u4EBA\u89C1\u9762\u804A\u51FA\u771F\u4E1C\u897F"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u8EAB\u4F53\u8BAD\u7EC3"}),"\u2014\u2014AI \u8BA9\u8111\u529B\u5DE5\u4F5C\u8D8A\u6765\u8D8A\u5EC9\u4EF7\uFF0C",(0,e.jsx)(n.strong,{children:"\u8EAB\u4F53\u53CD\u800C\u6210\u7A00\u7F3A\u8D44\u4EA7"})]}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["\u8FD9\u4E9B\u4E0D\u4F1A\u4E0A\u5934\u6761\u65B0\u95FB\uFF0C\u4F46",(0,e.jsx)(n.strong,{children:"\u4E94\u5E74\u540E\u4F1A\u5F62\u6210\u4EE3\u9645\u5DEE"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u7B2C\u516B\u6B65\u7406\u6027\u5E94\u5BF9ai-\u7126\u8651",children:'\u7B2C\u516B\u6B65\uFF1A\u7406\u6027\u5E94\u5BF9"AI \u7126\u8651"'}),`
+`,(0,e.jsx)(n.p,{children:"\u6700\u540E\u4E00\u6761\uFF0C\u5173\u4E8E\u5FC3\u6001\u3002"}),`
+`,(0,e.jsx)(n.p,{children:"AI \u7126\u8651\u7684\u4E24\u79CD\u8868\u73B0\u90FD\u4E0D\u5065\u5EB7\uFF1A"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u8FC7\u5EA6\u4E50\u89C2"}),'\uFF1A"AI \u6765\u4E86\u6211\u4EC0\u4E48\u90FD\u4E0D\u7528\u5B66\u4E86"']}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u8FC7\u5EA6\u60B2\u89C2"}),'\uFF1A"\u53CD\u6B63\u4F1A\u88AB\u66FF\u4EE3\uFF0C\u505A\u4EC0\u4E48\u90FD\u6CA1\u7528"']}),`
+`]}),`
+`,(0,e.jsx)(n.p,{children:"\u66F4\u597D\u7684\u59FF\u52BF\uFF1A"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"refractor language-text",children:`\u4E0D\u62BC\u6CE8\u4EFB\u4F55\u4E00\u4E2A\u5177\u4F53\u7684"AI \u98A0\u8986"\u53D9\u4E8B
+\u4E5F\u4E0D\u628A\u81EA\u5DF1\u951A\u5B9A\u5728\u8FC7\u53BB\u5341\u5E74\u7684\u804C\u4E1A\u8DEF\u5F84
+\u4FDD\u6301\u6BCF\u5468\u505A\u4E00\u4E9B"\u5982\u679C\u6D6A\u5F88\u5927\u4F1A\u8BA9\u6211\u53D7\u76CA"\u7684\u5C0F\u4E8B
+\u628A\u8FD9\u4EF6\u4E8B\u62C9\u957F\u5230 5\u201310 \u5E74\u7684\u89C6\u89D2\u770B
+`})}),`
+`,(0,e.jsxs)(n.p,{children:[`\u5386\u53F2\u4E0A\u6BCF\u4E00\u6B21\u6280\u672F\u9769\u547D\u90FD\u8BA9\u4E00\u4E9B\u4EBA\u53D8\u7A77\u3001\u4E00\u4E9B\u4EBA\u53D8\u5BCC\u2014\u2014
+`,(0,e.jsx)(n.strong,{children:"\u771F\u6B63\u51B3\u5B9A\u7ED3\u679C\u7684\u4E0D\u662F\u6D6A\u672C\u8EAB\uFF0C\u662F\u6D6A\u6765\u65F6\u4F60\u7AD9\u5728\u54EA\u91CC"}),"\u3002"]}),`
+`,(0,e.jsx)(i,{type:"success",children:(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"\u4E0D\u88AB\u7126\u8651\u9A71\u52A8\uFF0C\u4F46\u88AB\u597D\u5947\u5FC3\u9A71\u52A8"}),`\u2014\u2014
+\u8FD9\u516B\u7BC7\u6587\u7AE0\u5982\u679C\u53EA\u80FD\u7559\u4E0B\u4E00\u53E5\u8BDD\uFF0C\u5C31\u662F\u8FD9\u53E5\u3002
+\u7126\u8651\u8BA9\u4EBA\u62BC\u6CE8\u3001\u8DDF\u98CE\u3001\u4E70\u8BFE\u3001\u6536\u85CF\uFF1B
+\u597D\u5947\u5FC3\u8BA9\u4EBA\u52A8\u624B\u3001\u8BD5\u9519\u3001\u8C03\u6574\u3001\u590D\u5229\u3002
+\u8FD9\u4E24\u79CD\u72B6\u6001\u4EA7\u751F\u7684\u4E94\u5E74\u7ED3\u679C\uFF0C\u4F1A\u5B8C\u5168\u4E0D\u540C\u3002`]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E00\u4EFD-90-\u5929\u884C\u52A8\u6E05\u5355\u62FF\u8D70\u5C31\u7528",children:"\u4E00\u4EFD 90 \u5929\u884C\u52A8\u6E05\u5355\uFF08\u62FF\u8D70\u5C31\u7528\uFF09"}),`
+`,(0,e.jsxs)(n.table,{children:[(0,e.jsx)(n.thead,{children:(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.th,{children:"\u5468\u6B21"}),(0,e.jsx)(n.th,{children:"\u52A8\u4F5C"})]})}),(0,e.jsxs)(n.tbody,{children:[(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7B2C 1 \u5468"}),(0,e.jsx)(n.td,{children:"\u6CE8\u518C Claude / ChatGPT / Cursor\uFF0C\u6BCF\u5929\u5BF9\u8BDD\u81F3\u5C11 5 \u6B21"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7B2C 2 \u5468"}),(0,e.jsx)(n.td,{children:"\u628A\u65E5\u5E38 3 \u4EF6\u4E8B\uFF08\u90AE\u4EF6\u3001\u6574\u7406\u3001\u67E5\u8D44\u6599\uFF09\u6539\u7528 AI \u505A"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7B2C 3\u20134 \u5468"}),(0,e.jsx)(n.td,{children:"\u9009\u5B9A\u4E00\u4E2A\u526F\u4E1A/\u5C0F\u9879\u76EE\u65B9\u5411\uFF0C\u753B\u51FA 1 \u9875\u7684\u76EE\u6807"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7B2C 5\u20136 \u5468"}),(0,e.jsx)(n.td,{children:"\u505A\u51FA\u6700\u5C0F\u53EF\u89C1\u7248\u672C\uFF08V0.1\uFF09\uFF0C\u54EA\u6015\u53EA\u662F\u4E00\u4E2A Landing Page"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7B2C 7\u20138 \u5468"}),(0,e.jsx)(n.td,{children:"\u7ED9\u81F3\u5C11 3 \u4E2A\u771F\u5B9E\u7528\u6237\u7528\uFF0C\u6536\u53CD\u9988"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7B2C 9\u201310 \u5468"}),(0,e.jsx)(n.td,{children:"\u6539\u7248 V0.2\uFF0C\u5F00\u59CB\u5C0F\u89C4\u6A21\u5206\u4EAB\uFF08\u670B\u53CB\u5708/\u540C\u4E8B\u7FA4/\u5C0F\u7EA2\u4E66\uFF09"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:"\u7B2C 11\u201312 \u5468"}),(0,e.jsx)(n.td,{children:"\u590D\u76D8\uFF1A\u54EA\u4E9B\u5047\u8BBE\u9519\u4E86\uFF1F\u8981\u4E0D\u8981\u6362\u65B9\u5411\uFF1F\u8FD8\u662F\u52A0\u901F\uFF1F"})]})]})]}),`
+`,(0,e.jsxs)(n.p,{children:["90 \u5929\u7ED3\u675F\u4E4B\u540E\uFF1A",(0,e.jsx)(n.strong,{children:'\u4F60\u5DF2\u7ECF\u4E0D\u662F 90 \u5929\u524D\u90A3\u4E2A"\u88AB AI \u6D6A\u6F6E\u88F9\u631F"\u7684\u4EBA\u4E86'}),`\u2014\u2014
+\u4F60\u5DF2\u7ECF\u662F\u4E00\u4E2A`,(0,e.jsx)(n.strong,{children:"\u4E3B\u52A8\u4F7F\u7528\u6D6A\u672C\u8EAB\u7684\u4EBA"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u7CFB\u5217\u7684\u6700\u540E\u4E00\u53E5\u8BDD",children:"\u7CFB\u5217\u7684\u6700\u540E\u4E00\u53E5\u8BDD"}),`
+`,(0,e.jsxs)(n.blockquote,{children:[`
+`,(0,e.jsxs)(n.p,{children:[`\u8FD9\u4E00\u6CE2\u6D6A\u4F60\u65E2\u4E0D\u5FC5\u62D2\u7EDD\uFF0C\u4E5F\u4E0D\u5FC5\u5D07\u62DC\u3002
+\u628A\u5B83\u5F53\u6210\u4E00\u79CD`,(0,e.jsx)(n.strong,{children:"\u65B0\u901A\u7535\u7684\u57FA\u7840\u8BBE\u65BD"}),`\u2014\u2014
+\u7136\u540E\u95EE\u81EA\u5DF1\u4E00\u4E2A\u7B80\u5355\u95EE\u9898\uFF1A`,(0,e.jsx)(n.strong,{children:'"\u901A\u7535\u4E4B\u540E\uFF0C\u6211\u6253\u7B97\u7528\u5B83\u70B9\u4EAE\u4EC0\u4E48\uFF1F"'}),`
+\u7B54\u6848\u4E0D\u5FC5\u5B8F\u5927\u3002\u4E00\u4E2A\u5C0F\u5DE5\u5177\u3001\u4E00\u4EFD\u7ED9\u5988\u5988\u7684\u793C\u7269\u3001\u4E00\u4E2A\u80FD\u8D5A\u94B1\u7684\u5C0F\u9879\u76EE\u3001
+\u751A\u81F3\u53EA\u662F\u5C11\u505A\u4E00\u4EF6\u65E0\u804A\u7684\u91CD\u590D\u52B3\u52A8\u2014\u2014\u90FD\u5DF2\u7ECF\u5728\u7AD9\u5728\u65F6\u4EE3\u7684\u53F3\u4FA7\u3002`]}),`
+`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u7CFB\u5217\u56DE\u987E",children:"\u7CFB\u5217\u56DE\u987E"}),`
+`,(0,e.jsx)(n.p,{children:'\u4E5D\u7BC7\u4E00\u8D77\u8BFB\uFF0C\u662F\u4E00\u4EFD\u5B8C\u6574\u7684"\u4E92\u8054\u7F51 + AI \u65F6\u4EE3\u57FA\u7840\u8BA4\u77E5"\u5730\u56FE\uFF1A'}),`
+`,(0,e.jsxs)(n.ol,{children:[`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/internet-evolution-history",children:"\u4E92\u8054\u7F51\u8FDB\u5316\u53F2"})}),`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/why-web2-went-global",children:"Web 2.0 \u4E3A\u4EC0\u4E48\u80FD\u666E\u53CA\u5168\u7403"})}),`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/web3-vs-web2",children:"Web3 \u662F\u4EC0\u4E48\uFF0C\u80FD\u66FF\u4EE3 Web2 \u5417"})}),`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/internet-hardware-and-software",children:"\u4E92\u8054\u7F51\u786C\u4EF6\u8F6F\u4EF6\u5168\u666F"})}),`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/fiber-optics-internet",children:"\u5149\u7EA4\u5BF9\u4E8E\u4E92\u8054\u7F51\u7684\u4F5C\u7528"})}),`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/chips-and-internet",children:"\u82AF\u7247\u5BF9\u4E92\u8054\u7F51\u7684\u4F5C\u7528"})}),`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/what-is-ai",children:"\u4F55\u4E3A\u4EBA\u5DE5\u667A\u80FD\uFF1F\u5BF9\u4EBA\u7C7B\u7684\u5229\u4E0E\u5F0A"})}),`
+`,(0,e.jsx)(n.li,{children:(0,e.jsx)(n.a,{href:"/blog/next-five-years",children:"\u672A\u6765\u4E94\u5E74\u7684\u98CE\u53E3"})}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u5F53\u4E0B\u6211\u8BE5\u505A\u4EC0\u4E48"}),"\uFF08\u672C\u7BC7\uFF09"]}),`
+`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u5EF6\u4F38\u9605\u8BFB",children:"\u5EF6\u4F38\u9605\u8BFB"}),`
+`,(0,e.jsxs)(n.p,{children:['\u6309"\u770B\u5B8C\u80FD\u4E0D\u80FD\u6539\u4F60\u4E0B\u5468\u7684\u884C\u52A8"\u6765\u6311\u2014\u2014\u8BFB\u8FD9\u4E9B\u4E0D\u662F\u4E3A\u4E86\u663E\u5F97\u535A\u5B66\uFF0C\u662F\u4E3A\u4E86',(0,e.jsx)(n.strong,{children:"\u76F4\u63A5\u843D\u5230\u672C\u6587\u91CC\u67D0\u4E00\u6B65"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"\u5173\u4E8E\u79EF\u7D2F\u4E0E\u7CBE\u8FDB\u5BF9\u5E94\u7B2C\u4E8C\u516D\u6B65",children:"\u5173\u4E8E\u79EF\u7D2F\u4E0E\u7CBE\u8FDB\uFF08\u5BF9\u5E94\u7B2C\u4E8C\u3001\u516D\u6B65\uFF09"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Deep Work"}),", Cal Newport \u2014\u2014 \u6CE8\u610F\u529B\u662F AI \u65F6\u4EE3\u6700\u7A00\u7F3A\u7684\u8D44\u6E90\uFF1B\u5B83\u544A\u8BC9\u4F60",(0,e.jsx)(n.strong,{children:'\u4E3A\u4EC0\u4E48"\u4E13\u6CE8 90 \u5206\u949F"\u6BD4"\u8BFB\u4E86 90 \u7BC7\u6587\u7AE0"\u66F4\u503C\u94B1'})]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"So Good They Can't Ignore You"}),', Cal Newport \u2014\u2014 \u53CD\u5BF9"\u8FFD\u968F\u70ED\u60C5"\uFF0C\u4E3B\u5F20"\u5148\u628A\u4E00\u4EF6\u4E8B\u505A\u5230\u5F88\u597D"\uFF1B\u5BF9\u5E94\u7B2C\u4E09\u6B65"\u627E\u62A4\u57CE\u6CB3"']}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Peak"}),'\uFF08\u300A\u523B\u610F\u7EC3\u4E60\u300B\uFF09\uFF0CAnders Ericsson \u2014\u2014 \u628A"\u7EC3\u4E60"\u4ECE\u91CD\u590D\u53D8\u6210"\u523B\u610F"\uFF0C\u5426\u5219\u7528\u5341\u5E74\u4E5F\u4E0D\u4F1A\u8FDB\u6B65\uFF1B\u9002\u5408\u914D\u5408 AI \u5DE5\u5177\u505A\u6280\u80FD\u8DC3\u8FC1']}),`
+`,(0,e.jsx)(n.li,{children:'\u300A\u7CBE\u8FDB\u300B\uFF0C\u91C7\u94DC \u2014\u2014 \u4E2D\u6587\u4E16\u754C\u5C11\u89C1\u7684\u4E0D\u7A7A\u6CDB\u7684\u6210\u957F\u65B9\u6CD5\u8BBA\uFF1B\u5C24\u5176"\u5982\u4F55\u5207\u5165\u4E00\u4E2A\u65B0\u9886\u57DF"\u90A3\u51E0\u7AE0'}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u5173\u4E8E\u6760\u6746\u4E0E\u505A\u4E8B\u5BF9\u5E94\u7B2C\u4E8C\u56DB\u4E94\u6B65",children:"\u5173\u4E8E\u6760\u6746\u4E0E\u505A\u4E8B\uFF08\u5BF9\u5E94\u7B2C\u4E8C\u3001\u56DB\u3001\u4E94\u6B65\uFF09"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"The Almanack of Naval Ravikant"})," \u2014\u2014 \u6760\u6746\u4E0E\u79EF\u7D2F\u7684\u6700\u6D53\u7F29\u601D\u8003\uFF1B\u53EF\u4EE5\u53CD\u590D\u91CD\u8BFB"]}),`
+`,(0,e.jsxs)(n.li,{children:["Paul Graham Essays\uFF08",(0,e.jsx)(n.a,{href:"https://paulgraham.com",children:"paulgraham.com"}),'\uFF09\u2014\u2014 \u514D\u8D39\u300120 \u5E74\u6C89\u6DC0\uFF0C\u5173\u4E8E"\u5C0F\u56E2\u961F / \u4E2A\u4EBA / \u54C1\u5473 / \u521B\u4E1A"\u6700\u597D\u7684\u82F1\u6587\u5199\u4F5C\uFF0C\u6CA1\u6709\u4E4B\u4E00']}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Show Your Work!"}),', Austin Kleon \u2014\u2014 \u600E\u4E48"\u8FB9\u505A\u8FB9\u6652"\uFF1B\u7B2C\u56DB\u6B65\u90A3\u4EF6"\u4EE5\u524D\u505A\u4E0D\u52A8\u7684\u4E8B"\u505A\u51FA\u6765\u540E\u8BE5\u600E\u4E48\u5206\u4EAB']}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Atomic Habits"}),'\uFF08\u300A\u638C\u63A7\u4E60\u60EF\u300B\uFF09\uFF0CJames Clear \u2014\u2014 \u628A\u7B2C\u4E00\u6B65\u7684"\u6BCF\u5929 5 \u6B21\u5BF9\u8BDD"\u505A\u6210\u7CFB\u7EDF\uFF0C\u800C\u4E0D\u662F\u9760\u610F\u5FD7']}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u5173\u4E8E\u4E0D\u786E\u5B9A\u6027\u4E0E\u5FC3\u6001\u5BF9\u5E94\u7B2C\u4E03\u516B\u6B65",children:"\u5173\u4E8E\u4E0D\u786E\u5B9A\u6027\u4E0E\u5FC3\u6001\uFF08\u5BF9\u5E94\u7B2C\u4E03\u3001\u516B\u6B65\uFF09"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Mindset"}),"\uFF08\u300A\u7EC8\u8EAB\u6210\u957F\u300B\uFF09\uFF0CCarol Dweck \u2014\u2014 \u5728\u5FEB\u901F\u53D8\u5316\u7684\u65F6\u4EE3\u91CC\u4FDD\u6301\u6210\u957F\u5FC3\u6001"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Antifragile"}),"\uFF08\u300A\u53CD\u8106\u5F31\u300B\uFF09\uFF0CNassim Taleb \u2014\u2014 \u600E\u4E48\u8BA9\u81EA\u5DF1",(0,e.jsx)(n.strong,{children:"\u4ECE\u6D6A\u6F6E\u91CC\u53D7\u76CA"}),'\u800C\u4E0D\u662F\u88AB\u538B\uFF1B\u7406\u89E3\u4E3A\u4EC0\u4E48"\u5C0F\u8D4C\u6CE8 + \u957F\u5C3E"\u6BD4"\u62BC\u6CE8\u7A33\u5B9A\u8DEF\u5F84"\u5728 AI \u65F6\u4EE3\u66F4\u7A33']}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Range"}),"\uFF08\u300A\u6210\u957F\u7684\u8FB9\u754C\u300B\uFF09\uFF0CDavid Epstein \u2014\u2014 ",(0,e.jsx)(n.strong,{children:"\u590D\u5408\u578B\u9009\u624B\u5728\u4E0D\u53EF\u9884\u6D4B\u9886\u57DF\u6BD4\u4E13\u624D\u66F4\u7A33"}),"\uFF0C\u8FD9\u662F AI \u65F6\u4EE3\u5F88\u53CD\u76F4\u89C9\u4F46\u5173\u952E\u7684\u6D1E\u5BDF"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Four Thousand Weeks"}),'\uFF08\u300A\u4EBA\u751F\u56DB\u5343\u5468\u300B\uFF09\uFF0COliver Burkeman \u2014\u2014 \u4E00\u8F88\u5B50\u5F88\u77ED\uFF0C\u7126\u8651\u5F88\u8D35\uFF1B\u6CBB\u7B2C\u516B\u6B65\u90A3\u6BB5"AI \u7126\u8651"\u7279\u522B\u7BA1\u7528']}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"Essentialism"}),'\uFF08\u300A\u7CBE\u8981\u4E3B\u4E49\u300B\uFF09\uFF0CGreg McKeown \u2014\u2014 \u4FE1\u606F\u8FC7\u8F7D\u65F6\u4EE3\u7684"\u5C11\u800C\u7CBE"\u64CD\u4F5C\u624B\u518C']}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u6301\u7EED\u4FE1\u606F\u6E90\u4E66\u662F\u6162\u7684ai-\u65F6\u4EE3\u8981\u6DF7\u5408",children:"\u6301\u7EED\u4FE1\u606F\u6E90\uFF08\u4E66\u662F\u6162\u7684\uFF0CAI \u65F6\u4EE3\u8981\u6DF7\u5408\uFF09"}),`
+`,(0,e.jsxs)(n.p,{children:["\u8BFB\u4E66\u662F\u6162\u8282\u594F\u79EF\u7D2F\uFF0C\u4F46 AI \u8FD9\u4E00\u6CE2",(0,e.jsx)(n.strong,{children:"\u8282\u594F\u5FEB\u5230\u9700\u8981\u6BCF\u5468\u90FD\u6709\u53CD\u9988"}),"\u3002\u4E0B\u9762\u662F\u6027\u4EF7\u6BD4\u9AD8\u7684\u51E0\u7C7B\uFF1A"]}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u957F\u6587\u4E0E\u601D\u8003"}),"\uFF1A",(0,e.jsx)(n.a,{href:"https://paulgraham.com",children:"Paul Graham Essays"}),"\u3001Stratechery\uFF08@benthompson\uFF09\u3001",(0,e.jsx)(n.a,{href:"https://www.lennysnewsletter.com",children:"Lenny's Newsletter"}),"\uFF08\u4EA7\u54C1 / \u804C\u4E1A\u6700\u5B9E\u7528\u7684\u82F1\u6587 newsletter\uFF09"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u72EC\u7ACB\u5F00\u53D1\u8005\u793E\u7FA4"}),"\uFF1A",(0,e.jsx)(n.a,{href:"https://www.indiehackers.com",children:"Indie Hackers"}),"\u3001X \u4E0A\u5173\u6CE8 5\u201310 \u4E2A\u771F\u6B63\u5728 ship \u4EA7\u54C1\u7684\u4EBA\uFF08\u4E0D\u662F\u505A\u5A92\u4F53\u7684\uFF09"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u770B\u8D8B\u52BF"}),"\uFF1A",(0,e.jsx)(n.a,{href:"https://news.ycombinator.com",children:"Hacker News"}),"\u3001",(0,e.jsx)(n.a,{href:"https://www.producthunt.com",children:"Product Hunt"}),"\u3001",(0,e.jsx)(n.a,{href:"https://github.com/trending",children:"GitHub Trending"}),"\uFF08\u6BCF\u5468\u626B\u4E00\u6B21\uFF0C\u6BD4\u770B\u65B0\u95FB\u6548\u7387\u9AD8 10 \u500D\uFF09"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u957F\u8BBF\u8C08\u5B66\u601D\u8DEF"}),"\uFF1ALex Fridman / The Knowledge Project / \u5F20\u5C0F\u73FA\u5546\u4E1A\u8BBF\u8C08 / \u5546\u4E1A\u5C31\u662F\u8FD9\u6837"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u4E2D\u6587\u786C\u6838"}),"\uFF1A\u4E07\u7EF4\u94A2\u300A\u7CBE\u82F1\u65E5\u8BFE\u300B\uFF08\u628A\u82F1\u6587\u597D\u4E66\u6838\u5FC3\u65E5\u66F4\u6210\u4E2D\u6587\uFF09\u3001\u5353\u514B\u300A\u79D1\u6280\u53C2\u8003\u300B\uFF08\u786C\u79D1\u6280\u65E5\u66F4\uFF09"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u5B98\u65B9\u6587\u6863\u4E0E changelog"}),"\uFF1A",(0,e.jsx)(n.a,{href:"https://docs.anthropic.com",children:"Anthropic"})," / ",(0,e.jsx)(n.a,{href:"https://platform.openai.com/docs",children:"OpenAI"})," / ",(0,e.jsx)(n.a,{href:"https://cursor.com/changelog",children:"Cursor changelog"}),' \u2014\u2014 \u6BD4\u4EFB\u4F55"AI \u65B0\u95FB"\u90FD\u51C6']}),`
+`]}),`
+`,(0,e.jsx)(i,{type:"info",children:(0,e.jsxs)(n.p,{children:["\u6700\u540E\u4E00\u6761\u63D0\u9192\uFF1A",(0,e.jsx)(n.strong,{children:"\u4FE1\u606F\u6E90\u5B81\u5C11\u52FF\u591A"}),`\u3002
+\u6311 3\u20135 \u4E2A\u7A33\u5B9A\u6765\u6E90 + 1 \u4E2A\u5199\u4F5C/\u505A\u9879\u76EE\u7684\u51FA\u53E3\uFF08\u516C\u4F17\u53F7\u3001Twitter\u3001\u535A\u5BA2\uFF09\uFF0C
+\u6BD4\u8BA2\u9605 50 \u4E2A newsletter \u5F3A 10 \u500D\u3002
+AI \u65F6\u4EE3\u4FE1\u606F\u514D\u8D39\u4E14\u8FC7\u5269\uFF0C`,(0,e.jsx)(n.strong,{children:"\u771F\u6B63\u7A00\u7F3A\u7684\u662F\u4F60\u7684\u8F93\u51FA\u4E0E\u51B3\u7B56"}),`\u2014\u2014
+\u8FD9\u4EF6\u4E8B\uFF0C\u672C\u6587\u4E5D\u7BC7\u5168\u90E8\u4E32\u8D77\u6765\u5C31\u662F\u60F3\u8BF4\u8FD9\u4E00\u53E5\u3002`]})})]})}function a(r={}){let{wrapper:n}=r.components||{};return n?(0,e.jsx)(n,{...r,children:(0,e.jsx)(s,{...r})}):s(r)}function C(r,n){throw new Error("Expected "+(n?"component":"object")+" `"+r+"` to be defined: you likely forgot to import, pass, or provide it.")}return w(x);})();
+;return Component;7:X
+c:X
+c:C
+0:{"buildId":"arb80KYxBUU24vVOqOQ91","data":[{"rsc":["$","$1","c",{"children":[["$","article",null,{"children":[["$","div",null,{"children":[["$","h1",null,{"children":"在当下的 AI 浪潮中，我该做什么","ref":null,"className":"rt-Heading rt-r-size-8"}],["$","span",null,{"children":"不谈\"未来 10 年宏大叙事\"，谈\"接下来 90 天具体做什么\"。一份给普通人的可执行清单——AI 怎么变成你的杠杆而不是替代你、怎么挑赛道、怎么积累不被吃掉的资产。","data-accent-color":"gray","ref":null,"className":"rt-Text rt-r-size-3"}],["$","div",null,{"children":[["$","span",null,{"children":["$","time",null,{"dateTime":"2026-05-18T00:00:00.000Z","children":"2026-05-18"}],"data-accent-color":"gray","ref":null,"className":"rt-Text rt-r-size-2"}],"$undefined",["$","span",null,{"children":["· 阅读 ",["$","span",null,{"id":"busuanzi_value_page_pv","children":"--"}]," 次"],"data-accent-color":"gray","id":"busuanzi_container_page_pv","style":{"display":"none"},"ref":null,"className":"rt-Text rt-r-size-2"}],[["$","span","ai",{"data-accent-color":"gray","data-radius":"full","children":"ai","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","career",{"data-accent-color":"gray","data-radius":"full","children":"career","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","strategy",{"data-accent-color":"gray","data-radius":"full","children":"strategy","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","personal-growth",{"data-accent-color":"gray","data-radius":"full","children":"personal-growth","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","action",{"data-accent-color":"gray","data-radius":"full","children":"action","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}]]],"className":"rt-Flex rt-r-ai-center rt-r-fw-wrap rt-r-gap-3"}]],"className":"rt-Flex rt-r-fd-column rt-r-gap-3 rt-r-py-4 rt-r-mb-4"}],["$","$L2",null,{"code":"$3"}]]}],["$L4"],"$L5"]}],"isPartial":"$@6","staleTime":"$7","varyParams":null},{"rsc":"$L8","isPartial":"$@9","staleTime":"$7","varyParams":null},{"rsc":"$La","isPartial":"$@b","staleTime":"$7","varyParams":"$c"},{"rsc":"$Ld","isPartial":"$@e","staleTime":"$7","varyParams":"$c"}],"isUpgradeableISRFallback":false,"a":"$@f","rootVaryParams":null,"needsRuntimeRequest":"$@10"}
+11:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"OutletBoundary"]
+12:"$Sreact.suspense"
+14:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"ViewportBoundary"]
+15:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"MetadataBoundary"]
+16:I[79286,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"IconMark"]
+17:I[82785,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+18:I[96691,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+4:["$","script","script-0",{"src":"/_next/static/chunks/1z5dea6idlh-3.js","async":true}]
+5:["$","$L11",null,{"children":["$","$12",null,{"name":"Next.MetadataOutlet","children":"$@13"}]}]
+8:["$","$1","h",{"children":[null,["$","$L14",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L15",null,{"children":["$","$12",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"在当下的 AI 浪潮中，我该做什么 · Yuns"}],["$","meta","1",{"name":"description","content":"不谈\"未来 10 年宏大叙事\"，谈\"接下来 90 天具体做什么\"。一份给普通人的可执行清单——AI 怎么变成你的杠杆而不是替代你、怎么挑赛道、怎么积累不被吃掉的资产。"}],["$","meta","2",{"property":"og:title","content":"在当下的 AI 浪潮中，我该做什么 · Yuns"}],["$","meta","3",{"property":"og:description","content":"不谈\"未来 10 年宏大叙事\"，谈\"接下来 90 天具体做什么\"。一份给普通人的可执行清单——AI 怎么变成你的杠杆而不是替代你、怎么挑赛道、怎么积累不被吃掉的资产。"}],["$","meta","4",{"property":"og:url","content":"https://yunstv.cn/"}],["$","meta","5",{"property":"og:site_name","content":"Yuns"}],["$","meta","6",{"property":"og:locale","content":"zh_CN"}],["$","meta","7",{"property":"og:type","content":"website"}],["$","meta","8",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","9",{"name":"twitter:title","content":"在当下的 AI 浪潮中，我该做什么 · Yuns"}],["$","meta","10",{"name":"twitter:description","content":"不谈\"未来 10 年宏大叙事\"，谈\"接下来 90 天具体做什么\"。一份给普通人的可执行清单——AI 怎么变成你的杠杆而不是替代你、怎么挑赛道、怎么积累不被吃掉的资产。"}],["$","link","11",{"rel":"icon","href":"/icon.svg?icon.34tmb8j3tcgf5.svg","sizes":"any","type":"image/svg+xml"}],["$","$L16","12",{}]]}]}]}],null]}]
+a:["$","$1","c",{"children":[null,["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}]}]]}]
+d:["$","$1","c",{"children":[null,["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}]}]]}]
+10:true
+13:null
+7:300
+7:C
+f:0
+9:"$undefined"
+b:"$undefined"
+e:"$undefined"
+6:"$undefined"

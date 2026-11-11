@@ -1,0 +1,41 @@
+1:"$Sreact.fragment"
+2:I[88077,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js","/_next/static/chunks/2vnbia4b4d693.js"],"Avatar"]
+3:I[54901,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js","/_next/static/chunks/2vnbia4b4d693.js"],"MDXContent"]
+4:Tb7a,var Component=(()=>{var a=Object.create;var l=Object.defineProperty;var m=Object.getOwnPropertyDescriptor;var g=Object.getOwnPropertyNames;var p=Object.getPrototypeOf,f=Object.prototype.hasOwnProperty;var x=(t,n)=>()=>(n||t((n={exports:{}}).exports,n),n.exports),j=(t,n)=>{for(var i in n)l(t,i,{get:n[i],enumerable:!0})},c=(t,n,i,h)=>{if(n&&typeof n=="object"||typeof n=="function")for(let r of g(n))!f.call(t,r)&&r!==i&&l(t,r,{get:()=>n[r],enumerable:!(h=m(n,r))||h.enumerable});return t};var _=(t,n,i)=>(i=t!=null?a(p(t)):{},c(n||!t||!t.__esModule?l(i,"default",{value:t,enumerable:!0}):i,t)),b=t=>c(l({},"__esModule",{value:!0}),t);var s=x((G,o)=>{o.exports=_jsx_runtime});var y={};j(y,{default:()=>u,frontmatter:()=>v});var e=_(s()),v={title:"\u5173\u4E8E\u6211",description:"\u4E00\u4E9B\u4E2A\u4EBA\u4ECB\u7ECD\u548C\u8054\u7CFB\u65B9\u5F0F",updated:"2026-05-11"};function d(t){let n={a:"a",h2:"h2",li:"li",p:"p",strong:"strong",ul:"ul",...t.components};return(0,e.jsxs)(e.Fragment,{children:[(0,e.jsx)(n.h2,{id:"\u4F60\u597D",children:"\u4F60\u597D"}),`
+`,(0,e.jsx)(n.p,{children:"\u6211\u662F Yuns\u3002\u8FD9\u91CC\u662F\u6211\u7684\u4E2A\u4EBA\u7A7A\u95F4\uFF0C\u7528\u6765\u8BB0\u5F55\u60F3\u6CD5\u3001\u4EE3\u7801\u548C\u6298\u817E\u8FC7\u7684\u9879\u76EE\u3002"}),`
+`,(0,e.jsxs)(n.p,{children:["\u4E00\u53E5\u8BDD\u81EA\u6211\u4ECB\u7ECD\uFF1A",(0,e.jsx)(n.strong,{children:"A speck of dust in the universe."})]}),`
+`,(0,e.jsx)(n.h2,{id:"\u6280\u672F\u6808\u5386\u7A0B",children:"\u6280\u672F\u6808\u5386\u7A0B"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u540E\u7AEF"}),"\uFF1ANode.js / Go\uFF0C\u505A\u8FC7\u82E5\u5E72\u670D\u52A1\u548C CLI \u5DE5\u5177"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u524D\u7AEF"}),"\uFF1AReact / Next.js\uFF0C\u6700\u8FD1\u5728 App Router \u4E0A\u82B1\u4E86\u70B9\u65F6\u95F4"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u6B63\u5728\u5B66"}),"\uFF1ARust\uFF08\u5199\u5DE5\u5177\uFF09\u3001Postgres \u7684\u6267\u884C\u8BA1\u5212"]}),`
+`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u5728\u54EA\u80FD\u627E\u5230\u6211",children:"\u5728\u54EA\u80FD\u627E\u5230\u6211"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:["GitHub: ",(0,e.jsx)(n.a,{href:"https://github.com/yunstv",children:"github.com/yunstv"}),"\uFF08\u80CC\u540E\u7684\u6545\u4E8B\u89C1 ",(0,e.jsx)(n.a,{href:"/blog/github-profile",children:"\u300A\u5173\u4E8E\u6211\u7684 GitHub \u4E3B\u9875\u300B"}),"\uFF09"]}),`
+`,(0,e.jsxs)(n.li,{children:["Twitter / X: ",(0,e.jsx)(n.a,{href:"https://x.com/mengzhoushi",children:"@mengzhoushi"})]}),`
+`,(0,e.jsxs)(n.li,{children:["Email: ",(0,e.jsx)(n.a,{href:"mailto:yunstv1050599209@gmail.com",children:"yunstv1050599209@gmail.com"})]}),`
+`]})]})}function u(t={}){let{wrapper:n}=t.components||{};return n?(0,e.jsx)(n,{...t,children:(0,e.jsx)(d,{...t})}):d(t)}return b(y);})();
+;return Component;8:X
+d:X
+d:C
+0:{"buildId":"arb80KYxBUU24vVOqOQ91","data":[{"rsc":["$","$1","c",{"children":[["$","article",null,{"children":[["$","div",null,{"children":[["$","$L2",null,{"src":"https://github.com/yunstv.png","fallback":"Y","alt":"Yuns 的 GitHub 头像","size":"6","radius":"full"}],["$","h1",null,{"children":"关于我","ref":null,"className":"rt-Heading rt-r-size-8"}]],"className":"rt-Flex rt-r-ai-center rt-r-fw-wrap rt-r-gap-4 rt-r-py-4 rt-r-mb-4"}],["$","$L3",null,{"code":"$4"}]]}],["$L5"],"$L6"]}],"isPartial":"$@7","staleTime":"$8","varyParams":null},{"rsc":"$L9","isPartial":"$@a","staleTime":"$8","varyParams":null},{"rsc":"$Lb","isPartial":"$@c","staleTime":"$8","varyParams":"$d"}],"isUpgradeableISRFallback":false,"a":"$@e","rootVaryParams":null,"needsRuntimeRequest":"$@f"}
+10:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"OutletBoundary"]
+11:"$Sreact.suspense"
+13:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"ViewportBoundary"]
+14:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"MetadataBoundary"]
+15:I[79286,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"IconMark"]
+16:I[82785,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+17:I[96691,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+5:["$","script","script-0",{"src":"/_next/static/chunks/2vnbia4b4d693.js","async":true}]
+6:["$","$L10",null,{"children":["$","$11",null,{"name":"Next.MetadataOutlet","children":"$@12"}]}]
+9:["$","$1","h",{"children":[null,["$","$L13",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L14",null,{"children":["$","$11",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"关于我 · Yuns"}],["$","meta","1",{"name":"description","content":"一些个人介绍和联系方式"}],["$","meta","2",{"property":"og:title","content":"关于我 · Yuns"}],["$","meta","3",{"property":"og:description","content":"一些个人介绍和联系方式"}],["$","meta","4",{"property":"og:url","content":"https://yunstv.cn/"}],["$","meta","5",{"property":"og:site_name","content":"Yuns"}],["$","meta","6",{"property":"og:locale","content":"zh_CN"}],["$","meta","7",{"property":"og:type","content":"website"}],["$","meta","8",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","9",{"name":"twitter:title","content":"关于我 · Yuns"}],["$","meta","10",{"name":"twitter:description","content":"一些个人介绍和联系方式"}],["$","link","11",{"rel":"icon","href":"/icon.svg?icon.34tmb8j3tcgf5.svg","sizes":"any","type":"image/svg+xml"}],["$","$L15","12",{}]]}]}]}],null]}]
+b:["$","$1","c",{"children":[null,["$","$L16",null,{"parallelRouterKey":"children","template":["$","$L17",null,{}]}]]}]
+f:true
+12:null
+8:300
+8:C
+e:0
+a:"$undefined"
+c:"$undefined"
+7:"$undefined"

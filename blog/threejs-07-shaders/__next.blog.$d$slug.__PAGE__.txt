@@ -1,0 +1,463 @@
+1:"$Sreact.fragment"
+2:I[54901,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js","/_next/static/chunks/1z5dea6idlh-3.js"],"MDXContent"]
+3:T100e2,var Component=(()=>{var p=Object.create;var s=Object.defineProperty;var m=Object.getOwnPropertyDescriptor;var u=Object.getOwnPropertyNames;var k=Object.getPrototypeOf,N=Object.prototype.hasOwnProperty;var g=(a,n)=>()=>(n||a((n={exports:{}}).exports,n),n.exports),v=(a,n)=>{for(var r in n)s(a,r,{get:n[r],enumerable:!0})},l=(a,n,r,t)=>{if(n&&typeof n=="object"||typeof n=="function")for(let c of u(n))!N.call(a,c)&&c!==r&&s(a,c,{get:()=>n[c],enumerable:!(t=m(n,c))||t.enumerable});return a};var f=(a,n,r)=>(r=a!=null?p(k(a)):{},l(n||!a||!a.__esModule?s(r,"default",{value:a,enumerable:!0}):r,a)),y=a=>l(s({},"__esModule",{value:!0}),a);var o=g((T,i)=>{i.exports=_jsx_runtime});var S={};v(S,{default:()=>h,frontmatter:()=>b});var e=f(o()),b={title:"Three.js \u5B66\u4E60\u7CFB\u5217\uFF08\u4E03\uFF09\u7740\u8272\u5668\u5165\u95E8\uFF1AShaderMaterial\u3001GLSL \u4E0E onBeforeCompile",date:"2026-06-03",description:'\u5B66\u5230\u8FD9\u91CC\u4F60\u5DF2\u7ECF\u80FD\u642D\u51FA PBR \u573A\u666F\u3002\u4F46\u6240\u6709"\u770B\u4E0A\u53BB\u5F88\u9177"\u7684\u6548\u679C\uFF08\u6D41\u5149\u3001\u6EB6\u89E3\u3001\u5C4F\u5E55\u626D\u66F2\u3001\u5361\u901A\u63CF\u8FB9\uFF09\u51E0\u4E4E\u90FD\u9760 shader\u3002\u8FD9\u4E00\u7BC7\u7528\u6700\u5C11\u7684 GLSL \u628A\u6E32\u67D3\u7BA1\u7EBF\u8BB2\u6E05\u695A\uFF0C\u7136\u540E\u505A\u51FA 5 \u4E2A\u80FD\u843D\u5730\u7684\u5B9E\u6218\u6548\u679C\u3002',tags:["threejs","shader","glsl","webgl","learning-series"]};function d(a){let n={a:"a",blockquote:"blockquote",code:"code",em:"em",h2:"h2",h3:"h3",li:"li",p:"p",pre:"pre",span:"span",strong:"strong",table:"table",tbody:"tbody",td:"td",th:"th",thead:"thead",tr:"tr",ul:"ul",...a.components},{Callout:r}=n;return r||x("Callout",!0),(0,e.jsxs)(e.Fragment,{children:[(0,e.jsx)(r,{type:"info",children:(0,e.jsxs)(n.p,{children:[`Shader \u662F Three.js \u5B66\u4E60\u66F2\u7EBF\u91CC\u6700\u9661\u7684\u4E00\u6BB5\u2014\u2014
+\u4F46\u641E\u6E05\u695A\u4E4B\u540E\uFF0C`,(0,e.jsx)(n.strong,{children:'\u4F60\u770B\u5230\u4EFB\u4F55"\u5F88\u9177"\u7684 Web 3D \u4F5C\u54C1\u90FD\u4E0D\u518D\u662F\u9ED1\u76D2'}),`\u3002
+\u672C\u7BC7\u7528\u6700\u5C11\u7684 GLSL \u628A vertex / fragment shader \u7684\u5DE5\u4F5C\u673A\u5236\u8BB2\u900F\uFF0C
+\u7136\u540E\u505A 5 \u4E2A\u80FD\u76F4\u63A5\u62FF\u8D70\u7684\u6548\u679C\uFF1A\u6D41\u5149\u3001\u6CE2\u6D6A\u3001\u6EB6\u89E3\u3001\u5361\u901A\u3001\u5C4F\u5E55\u626D\u66F2\u3002`]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E00gpu-\u6E32\u67D3\u7BA1\u7EBFvertex-shader-\u4E0E-fragment-shader",children:"\u4E00\u3001GPU \u6E32\u67D3\u7BA1\u7EBF\uFF1Avertex shader \u4E0E fragment shader"}),`
+`,(0,e.jsx)(n.h3,{id:"11-\u4E00\u6B21\u7ED8\u5236\u53D1\u751F\u4E86\u4EC0\u4E48",children:"1.1 \u4E00\u6B21\u7ED8\u5236\u53D1\u751F\u4E86\u4EC0\u4E48"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"refractor language-text",children:`\u4F60\u7684 JS:
+  scene.add(mesh)                        \u2190 \u9876\u70B9\u6570\u636E\u51C6\u5907\u597D
+  renderer.render(scene, camera)         \u2190 \u89E6\u53D1\u7ED8\u5236
+
+GPU \u63A5\u7BA1:
+  \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+  \u2502 Vertex Shader (\u9876\u70B9\u7740\u8272\u5668)     \u2502  \u2190 \u6BCF\u4E2A\u9876\u70B9\u8DD1\u4E00\u6B21
+  \u2502   - \u628A\u9876\u70B9\u4F4D\u7F6E\u53D8\u6210\u5C4F\u5E55\u5750\u6807     \u2502
+  \u2502   - \u8BA1\u7B97/\u4F20\u9012\u63D2\u503C\u6570\u636E          \u2502
+  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+              \u2193
+  \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+  \u2502 \u5149\u6805\u5316 (rasterization)         \u2502  \u2190 \u4E09\u89D2\u5F62 \u2192 \u50CF\u7D20\u5217\u8868
+  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+              \u2193
+  \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+  \u2502 Fragment Shader (\u7247\u5143\u7740\u8272\u5668)   \u2502  \u2190 \u6BCF\u4E2A\u50CF\u7D20\u8DD1\u4E00\u6B21
+  \u2502   - \u51B3\u5B9A\u8FD9\u4E2A\u50CF\u7D20\u662F\u4EC0\u4E48\u989C\u8272     \u2502
+  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+              \u2193
+       \u5C4F\u5E55\u4E0A\u7684\u50CF\u7D20
+`})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"\u4E24\u4E2A shader \u90FD\u5728 GPU \u4E0A\u5E76\u884C\u6267\u884C"}),`\u2014\u2014
+\u767E\u4E07\u7EA7\u9876\u70B9\u3001\u51E0\u767E\u4E07\u50CF\u7D20\uFF0C\u9760\u8FD9\u79CD`,(0,e.jsx)(n.strong,{children:"\u5927\u89C4\u6A21\u5E76\u884C"}),"\u624D\u6709 60fps\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"12-\u6570\u636E\u6D41attributes--uniforms--varyings",children:"1.2 \u6570\u636E\u6D41\uFF1Aattributes / uniforms / varyings"}),`
+`,(0,e.jsxs)(n.table,{children:[(0,e.jsx)(n.thead,{children:(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.th,{children:"\u7C7B\u578B"}),(0,e.jsx)(n.th,{children:"\u6765\u6E90"}),(0,e.jsx)(n.th,{children:"\u8C01\u7528"}),(0,e.jsx)(n.th,{children:"\u4F8B\u5B50"})]})}),(0,e.jsxs)(n.tbody,{children:[(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.strong,{children:"attribute"})}),(0,e.jsx)(n.td,{children:"\u6BCF\u4E2A\u9876\u70B9\u72EC\u7ACB\u7684\u6570\u636E"}),(0,e.jsx)(n.td,{children:"vertex shader"}),(0,e.jsx)(n.td,{children:"position, normal, uv, color"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.strong,{children:"uniform"})}),(0,e.jsx)(n.td,{children:"CPU \u4F20\u5165\uFF0C\u6240\u6709\u9876\u70B9/\u50CF\u7D20\u5171\u4EAB"}),(0,e.jsx)(n.td,{children:"vertex & fragment"}),(0,e.jsx)(n.td,{children:"\u65F6\u95F4\u3001\u77E9\u9635\u3001\u8D34\u56FE\u3001\u53C2\u6570"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.strong,{children:"varying"})}),(0,e.jsx)(n.td,{children:"vertex \u7B97\u597D\uFF0C\u4F20\u7ED9 fragment\uFF08\u5149\u6805\u5316\u65F6\u63D2\u503C\uFF09"}),(0,e.jsx)(n.td,{children:"fragment shader"}),(0,e.jsx)(n.td,{children:"UV\u3001\u4E16\u754C\u5750\u6807\u3001\u6CD5\u7EBF"})]})]})]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"refractor language-text",children:`       attribute (\u6BCF\u9876\u70B9)
+              \u2193
+    \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+    \u2502  Vertex Shader      \u2502  \u2190 uniform (\u5168\u5C40)
+    \u2502                     \u2502
+    \u2502  gl_Position = ...  \u2502
+    \u2502  vUv = uv;          \u2502  \u2190 \u5199\u5165 varying
+    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+              \u2193
+       \u5149\u6805\u5316 (varying \u88AB\u81EA\u52A8\u63D2\u503C)
+              \u2193
+    \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+    \u2502  Fragment Shader    \u2502  \u2190 uniform (\u5168\u5C40)
+    \u2502  reads vUv          \u2502  \u2190 \u8BFB\u53D6 varying
+    \u2502  gl_FragColor = ... \u2502
+    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+`})}),`
+`,(0,e.jsxs)(n.p,{children:["\u8BB0\u4F4F\u8FD9\u5F20\u56FE\u2014\u2014",(0,e.jsx)(n.strong,{children:"\u6240\u6709 shader \u4EE3\u7801\u90FD\u662F\u5728\u586B\u8FD9\u4E09\u7C7B\u53D8\u91CF"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E8Cshadermaterial\u4ECE\u96F6\u5199\u4E00\u4E2A-shader",children:"\u4E8C\u3001ShaderMaterial\uFF1A\u4ECE\u96F6\u5199\u4E00\u4E2A shader"}),`
+`,(0,e.jsx)(n.h3,{id:"21-\u6700\u5C0F\u53EF\u8FD0\u884C\u4F8B\u5B50",children:"2.1 \u6700\u5C0F\u53EF\u8FD0\u884C\u4F8B\u5B50"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-js",children:[(0,e.jsx)(n.span,{className:"token keyword",children:"const"})," material ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"ShaderMaterial"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"uniforms"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+    `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"uTime"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"value"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"0"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+    `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"uColor"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"value"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"Color"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token number",children:"0x44aa88"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"vertexShader"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token comment",children:"/* glsl */"}),(0,e.jsxs)(n.span,{className:"token template-string",children:[(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"}),(0,e.jsx)(n.span,{className:"token string",children:`
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;     // \u628A uv \u4F20\u7ED9 fragment
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `}),(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"})]}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"fragmentShader"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token comment",children:"/* glsl */"}),(0,e.jsxs)(n.span,{className:"token template-string",children:[(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"}),(0,e.jsx)(n.span,{className:"token string",children:`
+    uniform float uTime;
+    uniform vec3 uColor;
+    varying vec2 vUv;
+
+    void main() {
+      float strip = 0.5 + 0.5 * sin(vUv.x * 20.0 + uTime * 2.0);
+      gl_FragColor = vec4(uColor * strip, 1.0);
+    }
+  `}),(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"})]}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+`,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+
+`,(0,e.jsx)(n.span,{className:"token keyword",children:"const"})," mesh ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"Mesh"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"BoxGeometry"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token number",children:"1"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","})," ",(0,e.jsx)(n.span,{className:"token number",children:"1"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","})," ",(0,e.jsx)(n.span,{className:"token number",children:"1"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","})," material",(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+scene`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"add"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),"mesh",(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+
+`,(0,e.jsx)(n.span,{className:"token comment",children:"// \u6BCF\u5E27\u66F4\u65B0 uTime"}),`
+`,(0,e.jsx)(n.span,{className:"token keyword",children:"const"})," clock ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"Clock"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+renderer`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"setAnimationLoop"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"})," ",(0,e.jsx)(n.span,{className:"token operator",children:"=>"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+  material`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uniforms",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uTime",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"value ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," clock",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"getElapsedTime"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+  renderer`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"render"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),"scene",(0,e.jsx)(n.span,{className:"token punctuation",children:","})," camera",(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:["\u8DD1\u8D77\u6765\u2014\u2014",(0,e.jsx)(n.strong,{children:"\u7ACB\u65B9\u4F53\u8868\u9762\u51FA\u73B0\u6D41\u52A8\u7684\u6A2A\u7EB9"}),`\u3002
+\u8FD9\u5C31\u662F shader \u6700\u57FA\u7840\u7684\u73A9\u6CD5\uFF1A`,(0,e.jsx)(n.strong,{children:"\u7528\u6570\u5B66\u51FD\u6570\u751F\u6210\u989C\u8272"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"22-threejs-\u81EA\u52A8\u6CE8\u5165\u7684\u5185\u7F6E\u53D8\u91CF",children:'2.2 Three.js \u81EA\u52A8\u6CE8\u5165\u7684"\u5185\u7F6E\u53D8\u91CF"'}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.code,{children:"ShaderMaterial"}),"\uFF08\u4E0D\u662F RawShaderMaterial\uFF09\u4F1A",(0,e.jsx)(n.strong,{children:"\u81EA\u52A8\u7ED9\u4F60\u58F0\u660E"}),"\u8FD9\u4E9B\u5E38\u7528\u53D8\u91CF\uFF1A"]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// \u8FD9\u4E9B\u4E0D\u9700\u8981\u4F60\u5199, Three.js \u81EA\u52A8\u52A0\u5728 shader \u9876\u90E8:
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
+uniform vec3 cameraPosition;
+
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec2 uv;
+`})}),`
+`,(0,e.jsx)(n.p,{children:"\u6240\u4EE5\u6700\u6734\u7D20\u7684 shader \u6C38\u8FDC\u662F\u8FD9\u4E00\u884C\uFF1A"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+`})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"\u8BB0\u4F4F\u8FD9\u884C"}),`\u2014\u2014\u5B83\u662F\u6240\u6709 vertex shader \u7684\u6700\u7B80\u7248\u3002
+\u505A\u7684\u4E8B\u5C31\u662F\u628A"\u9876\u70B9\u7684\u5C40\u90E8\u5750\u6807"\u7ECF\u8FC7\u6A21\u578B\u53D8\u6362\u3001\u89C6\u56FE\u53D8\u6362\u3001\u6295\u5F71\u53D8\u6362\uFF0C`,(0,e.jsx)(n.strong,{children:"\u53D8\u6210\u5C4F\u5E55\u5750\u6807"}),"\u3002"]}),`
+`,(0,e.jsx)(r,{type:"success",children:(0,e.jsxs)(n.p,{children:[`ShaderMaterial \u6BD4 RawShaderMaterial \u53CB\u597D\u5F97\u591A\u2014\u2014
+`,(0,e.jsx)(n.strong,{children:"\u9664\u975E\u4F60\u505A\u6781\u81F4\u4F18\u5316\u6216\u5199 WebGPU shader\uFF0C\u6C38\u8FDC\u7528 ShaderMaterial"}),"\u3002"]})}),`
+`,(0,e.jsx)(n.h3,{id:"23-glsl-\u901F\u67E5\u591F\u7528\u7684\u90E8\u5206",children:"2.3 GLSL \u901F\u67E5\uFF08\u591F\u7528\u7684\u90E8\u5206\uFF09"}),`
+`,(0,e.jsxs)(n.p,{children:["GLSL \u662F C \u98CE\u683C\u7684 GPU \u7F16\u7A0B\u8BED\u8A00\uFF0C",(0,e.jsx)(n.strong,{children:"\u5B66 30 \u4E2A\u5173\u952E\u5B57\u5C31\u80FD\u5199\u51FA\u5927\u90E8\u5206\u6548\u679C"}),"\u3002"]}),`
+`,(0,e.jsxs)(n.table,{children:[(0,e.jsx)(n.thead,{children:(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.th,{children:"\u5173\u952E\u7C7B\u578B / \u51FD\u6570"}),(0,e.jsx)(n.th,{children:"\u7528\u9014"})]})}),(0,e.jsxs)(n.tbody,{children:[(0,e.jsxs)(n.tr,{children:[(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.code,{children:"float"}),", ",(0,e.jsx)(n.code,{children:"vec2"}),", ",(0,e.jsx)(n.code,{children:"vec3"}),", ",(0,e.jsx)(n.code,{children:"vec4"}),", ",(0,e.jsx)(n.code,{children:"mat3"}),", ",(0,e.jsx)(n.code,{children:"mat4"})]}),(0,e.jsx)(n.td,{children:"\u57FA\u672C\u7C7B\u578B"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.code,{children:"+ - * /"})," \u76F4\u63A5\u4F5C\u7528\u4E8E vec"]}),(0,e.jsx)(n.td,{children:"\u9010\u5143\u7D20\u8FD0\u7B97"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"dot(a, b)"})}),(0,e.jsx)(n.td,{children:"\u70B9\u79EF"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"cross(a, b)"})}),(0,e.jsx)(n.td,{children:"\u53C9\u79EF"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"length(v)"})}),(0,e.jsx)(n.td,{children:"\u5411\u91CF\u957F\u5EA6"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"normalize(v)"})}),(0,e.jsx)(n.td,{children:"\u5355\u4F4D\u5316"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"mix(a, b, t)"})}),(0,e.jsx)(n.td,{children:"\u7EBF\u6027\u63D2\u503C\uFF08t \u4ECE 0 \u2192 1\uFF09"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"step(edge, x)"})}),(0,e.jsx)(n.td,{children:"x > edge \u8FD4\u56DE 1\uFF0C\u5426\u5219 0"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"smoothstep(e0, e1, x)"})}),(0,e.jsx)(n.td,{children:"\u5E73\u6ED1\u8FC7\u6E21"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"clamp(x, min, max)"})}),(0,e.jsx)(n.td,{children:"\u622A\u65AD"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.code,{children:"abs(x)"}),", ",(0,e.jsx)(n.code,{children:"sign(x)"}),", ",(0,e.jsx)(n.code,{children:"floor(x)"}),", ",(0,e.jsx)(n.code,{children:"fract(x)"})]}),(0,e.jsx)(n.td,{children:"\u6570\u5B66"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.code,{children:"sin"}),", ",(0,e.jsx)(n.code,{children:"cos"}),", ",(0,e.jsx)(n.code,{children:"tan"})]}),(0,e.jsx)(n.td,{children:"\u4E09\u89D2\u51FD\u6570"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.code,{children:"pow(x, n)"}),", ",(0,e.jsx)(n.code,{children:"exp(x)"}),", ",(0,e.jsx)(n.code,{children:"log(x)"})]}),(0,e.jsx)(n.td,{children:"\u6307\u6570\u5BF9\u6570"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"texture2D(sampler, uv)"})}),(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.strong,{children:"\u91C7\u6837\u8D34\u56FE"}),"\uFF08WebGL 1\uFF09"]})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"texture(sampler, uv)"})}),(0,e.jsx)(n.td,{children:"\u91C7\u6837\u8D34\u56FE\uFF08WebGL 2 + GLSL ES 3.0\uFF09"})]})]})]}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"vec \u7684\u6210\u5458\u53EF\u4EE5\u7528 .xyzw \u6216 .rgba \u8BBF\u95EE"}),"\uFF08\u53EB swizzle\uFF09\uFF1A"]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`vec3 color = vec3(1.0, 0.5, 0.2);
+float r = color.r;       // 1.0
+vec2 rg = color.rg;      // (1.0, 0.5)
+vec3 bgr = color.bgr;    // (0.2, 0.5, 1.0)
+`})}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E09\u5B9E\u6218-1uv-\u6D41\u5149\u6700\u7ECF\u5178\u7684-shader-\u5165\u95E8",children:"\u4E09\u3001\u5B9E\u6218 1\uFF1AUV \u6D41\u5149\uFF08\u6700\u7ECF\u5178\u7684 shader \u5165\u95E8\uFF09"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// fragmentShader
+uniform float uTime;
+uniform sampler2D uMap;
+varying vec2 vUv;
+
+void main() {
+  // \u8BA9 UV \u968F\u65F6\u95F4\u504F\u79FB \u2192 \u8D34\u56FE\u5C31"\u6D41\u52A8"\u4E86
+  vec2 uv = vUv;
+  uv.y += uTime * 0.1;
+
+  vec4 base = texture2D(uMap, uv);
+
+  // \u53E0\u4E00\u5C42\u6D41\u52A8\u7684\u9AD8\u5149
+  float glow = 0.5 + 0.5 * sin(vUv.y * 10.0 - uTime * 3.0);
+  vec3 col = base.rgb + glow * vec3(0.2, 0.4, 0.6);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`})}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-js",children:[(0,e.jsx)(n.span,{className:"token keyword",children:"const"})," tex ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"TextureLoader"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"load"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token string",children:"'/water.jpg'"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+tex`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"wrapS ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," tex",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"wrapT ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token constant",children:"THREE"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"RepeatWrapping   ",(0,e.jsx)(n.span,{className:"token comment",children:"// \u5FC5\u987B\u5F00 repeat, \u5426\u5219 uv > 1 \u65F6\u8D34\u56FE\u5C31\u5B8C\u4E86"}),`
+
+`,(0,e.jsx)(n.span,{className:"token keyword",children:"const"})," material ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"ShaderMaterial"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"uniforms"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+    `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"uTime"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"value"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"0"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+    `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"uMap"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"value"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," tex ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  vertexShader`,(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  fragmentShader`,(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+`,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:["\u6548\u679C\uFF1A",(0,e.jsx)(n.strong,{children:"\u6C34\u6D41 / \u80FD\u91CF\u6761 / \u4F20\u9001\u95E8 / \u8FDB\u5EA6\u6761"})," \u90FD\u662F\u8FD9\u5957\u601D\u8DEF\u7684\u53D8\u4F53\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u56DB\u5B9E\u6218-2\u6CE2\u6D6A\u5E73\u9762vertex-shader-\u505A\u51E0\u4F55\u53D8\u5F62",children:"\u56DB\u3001\u5B9E\u6218 2\uFF1A\u6CE2\u6D6A\u5E73\u9762\uFF08vertex shader \u505A\u51E0\u4F55\u53D8\u5F62\uFF09"}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.a,{href:"/blog/threejs-03-geometry-material",children:"Part 03 \u7684\u6CE2\u6D6A"}),` \u662F CPU \u7B97\u6BCF\u4E2A\u9876\u70B9\u2014\u2014FPS \u4E00\u6389\u5C31\u6296\u3002
+\u642C\u5230 GPU \u4E0A\uFF1A`]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// vertexShader
+uniform float uTime;
+varying vec2 vUv;
+varying float vHeight;
+
+void main() {
+  vUv = uv;
+
+  // GPU \u7AEF\u7B97\u6CE2\u6D6A\u9AD8\u5EA6
+  float h = sin(position.x * 0.5 + uTime) * 0.5
+          + cos(position.z * 0.3 + uTime * 0.7) * 0.3;
+
+  vec3 pos = position;
+  pos.y += h;
+  vHeight = h;
+
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+}
+`})}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// fragmentShader
+varying vec2 vUv;
+varying float vHeight;
+
+void main() {
+  vec3 deep = vec3(0.0, 0.2, 0.5);
+  vec3 shallow = vec3(0.2, 0.6, 0.9);
+  vec3 color = mix(deep, shallow, smoothstep(-0.5, 0.5, vHeight));
+  gl_FragColor = vec4(color, 1.0);
+}
+`})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"\u51E0\u4E07\u9876\u70B9\u7684\u6CE2\u6D6A\u573A\u666F\uFF0CFPS \u7A33\u5B9A 60"}),`\u2014\u2014
+\u8FD9\u5C31\u662F\u4E3A\u4EC0\u4E48"\u52A8\u753B\u7CFB\u7EDF\u80FD\u4E0D\u80FD\u7528 shader \u5199"\u662F Three.js \u6027\u80FD\u7684\u5206\u6C34\u5CAD\u3002`]}),`
+`,(0,e.jsx)(r,{type:"warning",children:(0,e.jsxs)(n.p,{children:["\u6CE8\u610F\uFF1A\u5728 vertex shader \u91CC\u6539\u4E86\u9876\u70B9\u4F4D\u7F6E\u4E4B\u540E\uFF0C",(0,e.jsx)(n.strong,{children:"\u5149\u7167\u6CD5\u7EBF\u8FD8\u662F\u6309\u539F\u59CB\u4F4D\u7F6E\u7B97\u7684"}),`\u3002
+\u5982\u679C\u4F60\u8981\u8BA9\u6CE2\u6D6A\u6709 PBR \u5149\u7167\uFF0C\u5FC5\u987B\u91CD\u65B0\u8BA1\u7B97\u6CD5\u7EBF\uFF08\u7528 `,(0,e.jsx)(n.code,{children:"normalMatrix"}),` + \u89E3\u6790\u5BFC\u6570\u6216\u51E0\u4F55\u90BB\u5C45\u91C7\u6837\uFF09\u2014\u2014
+\u8FD9\u662F vertex shader \u7684\u9AD8\u7EA7\u8BDD\u9898\uFF0C\u5148\u505A\u65E0\u5149\u7167\u7248\u672C\u8DB3\u4EE5\u5165\u95E8\u3002`]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E94\u5B9E\u6218-3\u6EB6\u89E3\u6548\u679C\u566A\u58F0--smoothstep--alpha",children:"\u4E94\u3001\u5B9E\u6218 3\uFF1A\u6EB6\u89E3\u6548\u679C\uFF08\u566A\u58F0 + smoothstep + alpha\uFF09"}),`
+`,(0,e.jsx)(n.p,{children:'\u6E38\u620F\u91CC"\u89D2\u8272\u88AB\u70E7\u6389"\u90A3\u79CD\u6548\u679C\uFF1A'}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// fragmentShader
+uniform float uDissolve;    // 0 = \u5B8C\u6574, 1 = \u5B8C\u5168\u6D88\u5931
+uniform sampler2D uNoise;
+uniform sampler2D uMap;
+varying vec2 vUv;
+
+void main() {
+  float n = texture2D(uNoise, vUv).r;        // \u566A\u58F0\u503C (0\u20131)
+  if (n < uDissolve) discard;                // \u2605 discard = \u8FD9\u4E2A\u50CF\u7D20\u4E0D\u753B
+
+  // \u71C3\u70E7\u8FB9\u7F18\u9AD8\u5149
+  vec4 base = texture2D(uMap, vUv);
+  float edge = smoothstep(uDissolve, uDissolve + 0.05, n);
+  vec3 fire = mix(vec3(1.0, 0.4, 0.0), vec3(1.0), edge);
+
+  gl_FragColor = vec4(mix(fire, base.rgb, edge), 1.0);
+}
+`})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsxs)(n.strong,{children:[(0,e.jsx)(n.code,{children:"discard"}),' \u76F4\u63A5\u544A\u8BC9 GPU"\u8FD9\u4E2A\u50CF\u7D20\u522B\u753B"']}),`\u2014\u2014
+\u914D\u5408\u4E00\u5F20\u566A\u58F0\u8D34\u56FE\uFF0C\u4ECE 0 \u6162\u6162\u63A8\u5230 1\uFF0C\u7269\u4F53\u8FB9\u7F18"\u71C3\u70E7"\u7740\u6D88\u5931\u3002`]}),`
+`,(0,e.jsx)(n.p,{children:"JS \u7AEF\uFF1A"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-js",children:["material",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uniforms",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uDissolve",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"value ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token number",children:"0"}),`
+`,(0,e.jsx)(n.span,{className:"token comment",children:"// \u7528 GSAP / Tween \u63A8\u5230 1"}),`
+gsap`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"to"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),"material",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uniforms",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uDissolve",(0,e.jsx)(n.span,{className:"token punctuation",children:","})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"value"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"1"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"duration"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"2"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u516D\u5B9E\u6218-4\u5361\u901A\u63CF\u8FB9--\u8272\u9636toon-shading",children:"\u516D\u3001\u5B9E\u6218 4\uFF1A\u5361\u901A\u63CF\u8FB9 + \u8272\u9636\uFF08toon shading\uFF09"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// fragmentShader
+uniform vec3 uLightDir;
+varying vec3 vNormal;
+
+void main() {
+  // \u5149\u7167\u70B9\u79EF
+  float NdotL = max(0.0, dot(normalize(vNormal), normalize(uLightDir)));
+
+  // \u628A\u8FDE\u7EED\u4EAE\u5EA6\u9636\u68AF\u5316 (3 \u6863)
+  float toon = NdotL > 0.66 ? 1.0
+             : NdotL > 0.33 ? 0.6
+             : 0.3;
+
+  // \u8FB9\u7F18\u63CF\u8FB9: \u6CD5\u7EBF vs \u89C6\u7EBF\u63A5\u8FD1\u5782\u76F4\u65F6\u753B\u9ED1
+  // (\u8FD9\u91CC\u7B80\u5316, \u771F\u5B9E\u505A\u6CD5\u7528 stencil \u6216\u540E\u5904\u7406)
+  vec3 color = vec3(1.0, 0.4, 0.2) * toon;
+  gl_FragColor = vec4(color, 1.0);
+}
+`})}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// vertexShader
+varying vec3 vNormal;
+
+void main() {
+  vNormal = normalize(normalMatrix * normal);   // \u628A\u6CD5\u7EBF\u53D8\u6362\u5230\u89C6\u7A7A\u95F4
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"3 \u6863\u8272\u9636"}),`\u662F\u5361\u901A\u6E32\u67D3\u7684\u6700\u6734\u7D20\u5B9E\u73B0\u3002
+Three.js \u81EA\u5E26 `,(0,e.jsx)(n.code,{children:"MeshToonMaterial"}),` \u4E5F\u662F\u8FD9\u6761\u539F\u7406\u2014\u2014
+\u4F46\u4F60\u81EA\u5DF1\u5199\u4E00\u904D\u624D\u77E5\u9053\u5B83\u5185\u90E8\u5728\u505A\u4EC0\u4E48\u3002`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E03\u5B9E\u6218-5\u5C4F\u5E55\u626D\u66F2\u5C4F\u5E55\u7A7A\u95F4\u540E\u5904\u7406",children:"\u4E03\u3001\u5B9E\u6218 5\uFF1A\u5C4F\u5E55\u626D\u66F2\uFF08\u5C4F\u5E55\u7A7A\u95F4\u540E\u5904\u7406\uFF09"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// fragmentShader (\u540E\u5904\u7406 pass)
+uniform sampler2D tDiffuse;     // \u4E0A\u4E00 pass \u6E32\u67D3\u7684\u753B\u9762
+uniform float uTime;
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv;
+  uv.x += sin(vUv.y * 30.0 + uTime * 5.0) * 0.01;    // \u6CE2\u52A8
+  gl_FragColor = texture2D(tDiffuse, uv);
+}
+`})}),`
+`,(0,e.jsxs)(n.p,{children:["\u8FD9\u662F ",(0,e.jsx)(n.a,{href:"/blog/threejs-08-postprocessing",children:"Part 08 \u540E\u5904\u7406"}),` \u7684\u9884\u544A\u2014\u2014
+\u540E\u5904\u7406\u5C31\u662F`,(0,e.jsx)(n.strong,{children:"\u628A\u6574\u4E2A\u5C4F\u5E55\u5F53\u6210\u4E00\u5F20\u8D34\u56FE\uFF0C\u518D\u7528 shader \u5904\u7406\u4E00\u904D"}),`\u3002
+`,(0,e.jsx)(n.strong,{children:"\u6545\u969C\u5C4F / \u96E8\u522E\u5668 / \u6C34\u4E0B\u626D\u66F2 / \u9189\u9152\u89C6\u89C9"}),"\u90FD\u662F\u8FD9\u79CD\u601D\u8DEF\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u516Bonbeforecompile\u628A\u81EA\u5B9A\u4E49-shader-\u5D4C\u8FDB-pbr-\u6750\u8D28",children:"\u516B\u3001onBeforeCompile\uFF1A\u628A\u81EA\u5B9A\u4E49 shader \u5D4C\u8FDB PBR \u6750\u8D28"}),`
+`,(0,e.jsxs)(n.p,{children:[`\u5199 ShaderMaterial \u4ECE\u96F6\u5F00\u59CB = \u5931\u53BB PBR \u5149\u7167\u4E0E\u6240\u6709\u5185\u7F6E\u529F\u80FD\u3002
+`,(0,e.jsx)(n.strong,{children:(0,e.jsx)(n.code,{children:"onBeforeCompile"})})," \u8BA9\u4F60",(0,e.jsx)(n.strong,{children:"\u4FEE\u6539\u73B0\u6709\u6750\u8D28\u7684 shader \u5B57\u7B26\u4E32"}),"\uFF0C\u4FDD\u7559 PBR \u540C\u65F6\u52A0\u81EA\u5DF1\u7684\u903B\u8F91\uFF1A"]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-js",children:[(0,e.jsx)(n.span,{className:"token keyword",children:"const"})," material ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsxs)(n.span,{className:"token class-name",children:["THREE",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"MeshStandardMaterial"]}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"color"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"0xffffff"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+
+material`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function-variable function",children:"onBeforeCompile"})," ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token parameter",children:"shader"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"})," ",(0,e.jsx)(n.span,{className:"token operator",children:"=>"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+  `,(0,e.jsx)(n.span,{className:"token comment",children:"// \u6DFB\u52A0\u81EA\u5B9A\u4E49 uniform"}),`
+  shader`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uniforms",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uTime ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"value"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"0"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),`
+  material`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"userData",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"shader ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," shader   ",(0,e.jsx)(n.span,{className:"token comment",children:"// \u4FDD\u5B58\u5F15\u7528\u4EE5\u4FBF\u6BCF\u5E27\u66F4\u65B0"}),`
+
+  `,(0,e.jsx)(n.span,{className:"token comment",children:"// \u5728 vertex shader \u4E2D\u627E\u5230\u4E00\u4E2A\u6807\u8BB0\u4F4D\u7F6E\u63D2\u5165\u4EE3\u7801"}),`
+  shader`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"vertexShader ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," shader",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"vertexShader",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"replace"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),`
+    `,(0,e.jsx)(n.span,{className:"token string",children:"'#include <begin_vertex>'"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+    `,(0,e.jsx)(n.span,{className:"token comment",children:"/* glsl */"}),(0,e.jsxs)(n.span,{className:"token template-string",children:[(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"}),(0,e.jsx)(n.span,{className:"token string",children:`
+      #include <begin_vertex>
+      transformed.y += sin(transformed.x * 3.0 + uTime) * 0.2;
+    `}),(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"})]}),`
+  `,(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+
+  `,(0,e.jsx)(n.span,{className:"token comment",children:"// \u9876\u90E8\u52A0 uniform \u58F0\u660E"}),`
+  shader`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"vertexShader ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," shader",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"vertexShader",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"replace"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),`
+    `,(0,e.jsx)(n.span,{className:"token string",children:"'void main() {'"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+    `,(0,e.jsx)(n.span,{className:"token comment",children:"/* glsl */"}),(0,e.jsxs)(n.span,{className:"token template-string",children:[(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"}),(0,e.jsx)(n.span,{className:"token string",children:`
+      uniform float uTime;
+      void main() {
+    `}),(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"})]}),`
+  `,(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),`
+
+`,(0,e.jsx)(n.span,{className:"token comment",children:"// \u6BCF\u5E27\u66F4\u65B0 uniform"}),`
+renderer`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"setAnimationLoop"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"})," ",(0,e.jsx)(n.span,{className:"token operator",children:"=>"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+  `,(0,e.jsx)(n.span,{className:"token keyword",children:"if"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),"material",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"userData",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"shader",(0,e.jsx)(n.span,{className:"token punctuation",children:")"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+    material`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"userData",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"shader",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uniforms",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"uTime",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"value ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," clock",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"getElapsedTime"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+  `,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),`
+  renderer`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"render"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),"scene",(0,e.jsx)(n.span,{className:"token punctuation",children:","})," camera",(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"\u8FD9\u662F Three.js \u9AD8\u7EA7\u7279\u6548\u6700\u4F18\u96C5\u7684\u505A\u6CD5"}),`\uFF1A
+\u4FDD\u7559 PBR \u7684\u5168\u90E8\u80FD\u529B\uFF08\u5149\u7167\u3001\u8D34\u56FE\u3001\u9634\u5F71\u3001tone mapping\uFF09\uFF0C\u540C\u65F6`,(0,e.jsx)(n.strong,{children:"\u6CE8\u5165\u81EA\u5DF1\u7684\u53D8\u5F62\u4E0E\u989C\u8272"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"81-\u53EF\u7528\u7684\u6807\u8BB0\u4F4D\u7F6Eshaderchunk",children:'8.1 \u53EF\u7528\u7684"\u6807\u8BB0\u4F4D\u7F6E"\uFF08ShaderChunk\uFF09'}),`
+`,(0,e.jsxs)(n.p,{children:["Three.js \u7684\u5185\u7F6E shader \u7531\u7EA6 100 \u4E2A ",(0,e.jsx)(n.code,{children:"#include <chunk_name>"}),` \u62FC\u63A5\u800C\u6210\u3002
+`,(0,e.jsx)(n.a,{href:"https://github.com/mrdoob/three.js/tree/master/src/renderers/shaders/ShaderChunk",children:(0,e.jsx)(n.code,{children:"src/renderers/shaders/ShaderChunk/"})}),` \u91CC\u6BCF\u4E2A\u6587\u4EF6\u5C31\u662F\u4E00\u4E2A chunk\u3002
+\u5E38\u7528\u6CE8\u5165\u70B9\uFF1A`]}),`
+`,(0,e.jsxs)(n.table,{children:[(0,e.jsx)(n.thead,{children:(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.th,{children:"Chunk \u540D"}),(0,e.jsx)(n.th,{children:"\u542B\u4E49"}),(0,e.jsx)(n.th,{children:"\u53EF\u6CE8\u5165\u4EC0\u4E48"})]})}),(0,e.jsxs)(n.tbody,{children:[(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"#include <begin_vertex>"})}),(0,e.jsx)(n.td,{children:"\u9876\u70B9\u53D8\u6362\u524D"}),(0,e.jsxs)(n.td,{children:["\u4FEE\u6539 ",(0,e.jsx)(n.code,{children:"transformed"})," (vec3)"]})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"#include <beginnormal_vertex>"})}),(0,e.jsx)(n.td,{children:"\u6CD5\u7EBF\u53D8\u6362\u524D"}),(0,e.jsxs)(n.td,{children:["\u4FEE\u6539 ",(0,e.jsx)(n.code,{children:"objectNormal"})]})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"#include <displacementmap_vertex>"})}),(0,e.jsx)(n.td,{children:"displacement \u5E94\u7528\u540E"}),(0,e.jsx)(n.td,{children:"\u8FDB\u4E00\u6B65\u504F\u79FB"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"#include <map_fragment>"})}),(0,e.jsx)(n.td,{children:"\u989C\u8272\u8D34\u56FE\u91C7\u6837\u540E"}),(0,e.jsxs)(n.td,{children:["\u6539\u53D8 ",(0,e.jsx)(n.code,{children:"diffuseColor"})]})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"#include <emissivemap_fragment>"})}),(0,e.jsx)(n.td,{children:"\u81EA\u53D1\u5149\u91C7\u6837\u540E"}),(0,e.jsx)(n.td,{children:"\u52A0\u989D\u5916\u53D1\u5149"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"#include <tonemapping_fragment>"})}),(0,e.jsx)(n.td,{children:"tone mapping \u524D"}),(0,e.jsx)(n.td,{children:"\u6539\u6700\u7EC8\u989C\u8272"})]})]})]}),`
+`,(0,e.jsxs)(n.p,{children:["\u8BFB ",(0,e.jsx)(n.code,{children:"ShaderChunk/"})," \u6E90\u7801 + \u8BD5 ",(0,e.jsx)(n.code,{children:"replace"})," \u662F\u719F\u7EC3 onBeforeCompile \u7684\u6700\u4F73\u8DEF\u5F84\u3002"]}),`
+`,(0,e.jsxs)(r,{type:"success",children:[(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:'\u51E0\u4E4E\u6240\u6709"\u81EA\u5B9A\u4E49 PBR \u6548\u679C"'})," \u90FD\u662F\u8FD9\u4E00\u62DB\uFF1A"]}),(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:["\u8BA9 GLTF \u52A0\u8F7D\u8FDB\u6765\u7684\u4EBA\u7269",(0,e.jsx)(n.strong,{children:"\u8EAB\u4E0A\u6709\u6D41\u5149"})]}),`
+`,(0,e.jsxs)(n.li,{children:["\u8BA9\u4EA7\u54C1\u5C55\u793A\u6A21\u578B",(0,e.jsx)(n.strong,{children:"\u6709\u6EB6\u89E3\u6548\u679C"})]}),`
+`,(0,e.jsxs)(n.li,{children:["\u8BA9\u5730\u9762",(0,e.jsx)(n.strong,{children:"\u6839\u636E\u76F8\u673A\u8DDD\u79BB\u53D8\u8272"}),`
+\u2026\u2026
+\u90FD\u4E0D\u9700\u8981\u4ECE\u96F6\u5199 shader\uFF0C`,(0,e.jsx)(n.strong,{children:"\u6539\u4E00\u884C chunk \u5C31\u591F\u4E86"}),"\u3002"]}),`
+`]})]}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E5Dcustomshadermaterialonbeforecompile-\u7684\u73B0\u4EE3\u5C01\u88C5",children:"\u4E5D\u3001CustomShaderMaterial\uFF1AonBeforeCompile \u7684\u73B0\u4EE3\u5C01\u88C5"}),`
+`,(0,e.jsxs)(n.p,{children:["\u793E\u533A\u5E93 ",(0,e.jsx)(n.a,{href:"https://github.com/FarazzShaikh/THREE-CustomShaderMaterial",children:(0,e.jsx)(n.code,{children:"three-custom-shader-material"})})," \u628A onBeforeCompile \u5305\u88C5\u6210\u66F4\u53CB\u597D\u7684 API\uFF1A"]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-js",children:[(0,e.jsx)(n.span,{className:"token keyword",children:"import"})," CustomShaderMaterial ",(0,e.jsx)(n.span,{className:"token keyword",children:"from"})," ",(0,e.jsx)(n.span,{className:"token string",children:"'three-custom-shader-material'"}),`
+
+`,(0,e.jsx)(n.span,{className:"token keyword",children:"const"})," material ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token keyword",children:"new"})," ",(0,e.jsx)(n.span,{className:"token class-name",children:"CustomShaderMaterial"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"baseMaterial"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token constant",children:"THREE"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"MeshStandardMaterial",(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"uniforms"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"uTime"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"})," ",(0,e.jsx)(n.span,{className:"token literal-property property",children:"value"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"0"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"vertexShader"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token comment",children:"/* glsl */"}),(0,e.jsxs)(n.span,{className:"token template-string",children:[(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"}),(0,e.jsx)(n.span,{className:"token string",children:`
+    uniform float uTime;
+    void main() {
+      csm_Position.y += sin(position.x * 3.0 + uTime) * 0.2;
+    }
+  `}),(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"})]}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"fragmentShader"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token comment",children:"/* glsl */"}),(0,e.jsxs)(n.span,{className:"token template-string",children:[(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"}),(0,e.jsx)(n.span,{className:"token string",children:`
+    uniform float uTime;
+    void main() {
+      csm_DiffuseColor.rgb *= 0.5 + 0.5 * sin(uTime);
+    }
+  `}),(0,e.jsx)(n.span,{className:"token template-punctuation string",children:"`"})]}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+  `,(0,e.jsx)(n.span,{className:"token literal-property property",children:"color"}),(0,e.jsx)(n.span,{className:"token operator",children:":"})," ",(0,e.jsx)(n.span,{className:"token number",children:"0xffffff"}),(0,e.jsx)(n.span,{className:"token punctuation",children:","}),`
+`,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.code,{children:"csm_Position"})," / ",(0,e.jsx)(n.code,{children:"csm_DiffuseColor"})," / ",(0,e.jsx)(n.code,{children:"csm_Emissive"}),` \u7B49\u662F\u5B83\u63D0\u4F9B\u7684"\u8BED\u4E49\u94A9\u5B50"\u2014\u2014
+`,(0,e.jsx)(n.strong,{children:"\u6BD4\u624B\u5199 onBeforeCompile \u77ED\u4E00\u534A"}),"\uFF0C2026 \u5E74\u5DE5\u4E1A\u9879\u76EE\u91CC\u63A8\u8350\u7528\u5B83\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u5341shadermaterial-vs-rawshadermaterial-vs-onbeforecompile",children:"\u5341\u3001ShaderMaterial vs RawShaderMaterial vs onBeforeCompile"}),`
+`,(0,e.jsxs)(n.table,{children:[(0,e.jsx)(n.thead,{children:(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.th,{children:"\u7528\u6CD5"}),(0,e.jsx)(n.th,{children:"\u9002\u5408"})]})}),(0,e.jsxs)(n.tbody,{children:[(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"ShaderMaterial"})}),(0,e.jsx)(n.td,{children:"\u5B8C\u5168\u81EA\u5B9A\u4E49\u6548\u679C\uFF08\u6D41\u5149\u3001\u5361\u901A\u3001\u7279\u6548\u7C92\u5B50\uFF09"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"RawShaderMaterial"})}),(0,e.jsx)(n.td,{children:"\u6781\u5C11\u6570\u6781\u81F4\u4F18\u5316\u573A\u666F\uFF08\u9ED8\u8BA4\u4E0D\u8981\u7528\uFF09"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"onBeforeCompile"})}),(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.strong,{children:"\u5728 PBR \u57FA\u7840\u4E0A\u52A0\u6548\u679C"}),"\uFF0890% \u9879\u76EE\u573A\u666F\uFF09"]})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsx)(n.td,{children:(0,e.jsx)(n.code,{children:"CustomShaderMaterial"})}),(0,e.jsx)(n.td,{children:"onBeforeCompile \u7684\u73B0\u4EE3\u5199\u6CD5"})]}),(0,e.jsxs)(n.tr,{children:[(0,e.jsxs)(n.td,{children:[(0,e.jsx)(n.code,{children:"MeshStandardMaterial"})," \u76F4\u63A5\u7528"]}),(0,e.jsx)(n.td,{children:"\u4E0D\u9700\u8981\u81EA\u5B9A\u4E49 shader \u65F6"})]})]})]}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"\u51B3\u7B56\u6811"}),"\uFF1A"]}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"refractor language-text",children:`\u8981 PBR \u5149\u7167\u5417?
+  \u2514 \u662F: \u7528 MeshStandardMaterial
+         \u9700\u8981\u52A0\u81EA\u5B9A\u4E49\u6548\u679C?
+           \u2514 \u662F: onBeforeCompile / CustomShaderMaterial
+           \u2514 \u5426: \u76F4\u63A5\u7528
+  \u2514 \u5426: \u7528 ShaderMaterial \u4ECE\u96F6\u5199
+`})}),`
+`,(0,e.jsx)(n.h2,{id:"\u5341\u4E00\u8C03\u8BD5-shader-\u7684\u51E0\u4E2A\u5DE5\u5177",children:"\u5341\u4E00\u3001\u8C03\u8BD5 shader \u7684\u51E0\u4E2A\u5DE5\u5177"}),`
+`,(0,e.jsx)(n.p,{children:"shader \u8C03\u8BD5\u6BD4 JS \u75DB\u82E6\u5F97\u591A\uFF08\u6CA1\u6709 console.log\uFF09\u3002\u5E38\u7528\u6280\u5DE7\uFF1A"}),`
+`,(0,e.jsx)(n.h3,{id:"111-\u628A\u53D8\u91CF\u5F53\u989C\u8272\u753B\u51FA\u6765",children:'11.1 \u628A\u53D8\u91CF\u5F53\u989C\u8272"\u753B"\u51FA\u6765'}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`gl_FragColor = vec4(vUv, 0.0, 1.0);          // UV \u753B\u6210\u989C\u8272
+gl_FragColor = vec4(vNormal * 0.5 + 0.5, 1); // \u6CD5\u7EBF\u753B\u6210\u989C\u8272 (\u6CD5\u7EBF\u53D8\u8272)
+gl_FragColor = vec4(vec3(depthValue), 1);    // \u4EFB\u4F55 float \u90FD\u80FD\u8FD9\u4E48 debug
+`})}),`
+`,(0,e.jsx)(n.h3,{id:"112-spectorjs",children:"11.2 Spector.js"}),`
+`,(0,e.jsxs)(n.p,{children:["Chrome / Firefox \u6269\u5C55\uFF0C",(0,e.jsx)(n.strong,{children:"\u53EF\u4EE5\u6293\u53D6 WebGL \u8C03\u7528\u3001\u67E5\u770B\u6BCF\u4E2A shader \u7684\u5B9E\u9645\u7F16\u8BD1\u4EE3\u7801"}),`\u3002
+`,(0,e.jsx)(n.strong,{children:"\u6392\u67E5 shader \u7F16\u8BD1\u62A5\u9519\u548C\u6027\u80FD\u95EE\u9898\u5FC5\u5907"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"113-\u68C0\u67E5-onbeforecompile-\u6CE8\u5165\u540E\u7684\u6700\u7EC8\u4EE3\u7801",children:"11.3 \u68C0\u67E5 onBeforeCompile \u6CE8\u5165\u540E\u7684\u6700\u7EC8\u4EE3\u7801"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-js",children:["material",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function-variable function",children:"onBeforeCompile"})," ",(0,e.jsx)(n.span,{className:"token operator",children:"="})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),(0,e.jsx)(n.span,{className:"token parameter",children:"shader"}),(0,e.jsx)(n.span,{className:"token punctuation",children:")"})," ",(0,e.jsx)(n.span,{className:"token operator",children:"=>"})," ",(0,e.jsx)(n.span,{className:"token punctuation",children:"{"}),`
+  `,(0,e.jsx)(n.span,{className:"token comment",children:"// ... \u4FEE\u6539\u5B8C"}),`
+  console`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"log"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),"shader",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"vertexShader",(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+  console`,(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),(0,e.jsx)(n.span,{className:"token function",children:"log"}),(0,e.jsx)(n.span,{className:"token punctuation",children:"("}),"shader",(0,e.jsx)(n.span,{className:"token punctuation",children:"."}),"fragmentShader",(0,e.jsx)(n.span,{className:"token punctuation",children:")"}),`
+`,(0,e.jsx)(n.span,{className:"token punctuation",children:"}"}),`
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"Three.js \u5B9E\u9645\u7F16\u8BD1\u7ED9 GPU \u7684 shader \u957F\u4EC0\u4E48\u6837"}),"\uFF0C\u76F4\u63A5\u6253\u5370\u51FA\u6765\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u5341\u4E8C\u4F5C\u4E1A",children:"\u5341\u4E8C\u3001\u4F5C\u4E1A"}),`
+`,(0,e.jsx)(n.h3,{id:"1-\u628A\u6CE2\u6D6A\u5E73\u9762\u6539\u9020\u6210\u5B9E\u65F6\u53D8\u5F62--\u989C\u8272\u968F\u9AD8\u5EA6",children:'1. \u628A\u6CE2\u6D6A\u5E73\u9762\u6539\u9020\u6210"\u5B9E\u65F6\u53D8\u5F62 + \u989C\u8272\u968F\u9AD8\u5EA6"'}),`
+`,(0,e.jsxs)(n.p,{children:["\u628A ",(0,e.jsx)(n.a,{href:"/blog/threejs-03-geometry-material",children:"Part 03 \u7684 CPU \u7248\u6CE2\u6D6A"}),` \u6539\u6210 ShaderMaterial \u7248\u672C\u2014\u2014
+\u5BF9\u6BD4 CPU vs GPU \u5728 100\xD7100 \u2192 500\xD7500 \u7F51\u683C\u4E0B\u7684 FPS\u3002`]}),`
+`,(0,e.jsx)(n.h3,{id:"2-\u5728-gltf-\u6A21\u578B\u4E0A\u52A0\u6D41\u5149",children:"2. \u5728 GLTF \u6A21\u578B\u4E0A\u52A0\u6D41\u5149"}),`
+`,(0,e.jsxs)(n.p,{children:["\u7528 onBeforeCompile\uFF0C\u8BA9\u52A0\u8F7D\u8FDB\u6765\u7684\u89D2\u8272\u8EAB\u4E0A\u51FA\u73B0",(0,e.jsx)(n.strong,{children:"\u4ECE\u4E0B\u5230\u4E0A\u7684\u80FD\u91CF\u6D41\u5149"}),`\u2014\u2014
+\u6E38\u620F\u91CC"\u6EE1\u8840\u3001\u6FC0\u6D3B\u3001\u590D\u6D3B"\u90A3\u79CD\u6548\u679C\u3002`]}),`
+`,(0,e.jsx)(n.h3,{id:"3-\u7528-glsl-\u753B\u4E00\u4E2A\u5706",children:'3. \u7528 GLSL \u753B\u4E00\u4E2A"\u5706"'}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-glsl",children:`// fragmentShader: \u5728 vUv (0\u20131, 0\u20131) \u8303\u56F4\u5185\u753B\u4E00\u4E2A\u5C45\u4E2D\u7684\u5706
+varying vec2 vUv;
+void main() {
+  float d = distance(vUv, vec2(0.5));
+  float c = smoothstep(0.3, 0.28, d);     // \u8FB9\u7F18\u7FBD\u5316
+  gl_FragColor = vec4(vec3(c), c);
+}
+`})}),`
+`,(0,e.jsxs)(n.p,{children:['\u4F53\u4F1A"shader \u4E0D\u662F\u753B\u51E0\u4F55\u4F53\uFF0C\u662F\u753B',(0,e.jsx)(n.strong,{children:"\u8DDD\u79BB\u573A"}),`"\u2014\u2014
+\u7406\u89E3\u8FD9\u4E2A\uFF0C\u5C06\u6765\u5B66 `,(0,e.jsx)(n.a,{href:"https://iquilezles.org/articles/distfunctions/",children:"Signed Distance Field (SDF)"})," \u4F1A\u987A\u5F97\u591A\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u5341\u4E09\u4E0B\u4E00\u7BC7\u9884\u544A",children:"\u5341\u4E09\u3001\u4E0B\u4E00\u7BC7\u9884\u544A"}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.a,{href:"/blog/threejs-08-postprocessing",children:"Part 08\uFF1A\u540E\u5904\u7406\u4E0E\u7279\u6548"})," \u4F1A\u56DE\u7B54\uFF1A"]}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsx)(n.li,{children:"EffectComposer \u600E\u4E48\u5DE5\u4F5C\uFF08\u591A\u4E2A render pass \u4E32\u8D77\u6765\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u5185\u7F6E pass\uFF1ABloom\uFF08\u8F89\u5149\uFF09\u3001SSAO\u3001SMAA\u3001Outline\u3001Bokeh\uFF08\u666F\u6DF1\uFF09"}),`
+`,(0,e.jsx)(n.li,{children:"\u81EA\u5DF1\u5199\u4E00\u4E2A\u540E\u5904\u7406 pass\uFF08\u8FD9\u5C31\u662F Part 07 \u7684\u5EF6\u4F38\uFF09"}),`
+`,(0,e.jsxs)(n.li,{children:["Three.js \u81EA\u5E26\u7684 PostProcessing vs \u793E\u533A\u5E93 ",(0,e.jsx)(n.a,{href:"https://github.com/pmndrs/postprocessing",children:"postprocessing"})," \u600E\u4E48\u9009"]}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["\u5B66\u5230\u8FD9\u91CC\u4F60\u5DF2\u7ECF\u80FD\u505A",(0,e.jsx)(n.strong,{children:"\u7EDD\u5927\u591A\u6570 Web 3D \u89C6\u89C9\u6548\u679C"}),`\u2014\u2014
+\u5269\u4E0B\u7684\u4E24\u7BC7\u662F\u6027\u80FD\u4E0E\u6E90\u7801\u603B\u89C8\uFF0C\u628A\u8FD9\u5957\u6280\u672F\u62C9\u6210\u771F\u6B63"\u53EF\u4E0A\u7EBF"\u7684\u5DE5\u7A0B\u3002`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E00\u53E5\u8BDD\u603B\u7ED3",children:"\u4E00\u53E5\u8BDD\u603B\u7ED3"}),`
+`,(0,e.jsxs)(n.blockquote,{children:[`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.strong,{children:"Shader \u662F GPU \u7F16\u7A0B\uFF0C\u4E0D\u662F Three.js \u7F16\u7A0B\u3002"}),`
+\u5B66\u597D vertex shader\uFF08\u9876\u70B9\u4F4D\u7F6E\u53D8\u6362\uFF09+ fragment shader\uFF08\u50CF\u7D20\u989C\u8272\u51B3\u5B9A\uFF09+ onBeforeCompile\uFF08\u5D4C\u5165 PBR\uFF09\u4E09\u4EF6\u5957\uFF0C
+\u4F60\u5C31\u80FD\u590D\u523B 90% \u7684 "\u770B\u4E0A\u53BB\u5F88\u9177" \u7684 Web 3D \u6548\u679C\u3002
+\u8FD9\u662F Three.js \u8DEF\u4E0A\u6700\u9661\u7684\u5C71\uFF0C`,(0,e.jsx)(n.strong,{children:"\u4E5F\u662F\u7FFB\u8FC7\u53BB\u4E4B\u540E\u89C6\u91CE\u6700\u5F00\u9614\u7684\u4E00\u6BB5"}),"\u3002"]}),`
+`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u5EF6\u4F38\u9605\u8BFB",children:"\u5EF6\u4F38\u9605\u8BFB"}),`
+`,(0,e.jsx)(n.h3,{id:"\u5165\u95E8\u5230\u7CBE\u901A",children:"\u5165\u95E8\u5230\u7CBE\u901A"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://thebookofshaders.com/",children:"The Book of Shaders"})," \u2014\u2014 ",(0,e.jsx)(n.strong,{children:"shader \u5165\u95E8\u6700\u597D\u7684\u514D\u8D39\u6559\u7A0B"})]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://www.shadertoy.com/",children:"Shadertoy"})," \u2014\u2014 \u5927\u91CF fragment shader \u8303\u4F8B\uFF0C\u53EF\u5728\u7EBF fork"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://iquilezles.org/articles/",children:"Inigo Quilez \u4E2A\u4EBA\u7AD9"})," \u2014\u2014 \u56FE\u5F62\u5B66\u5927\u795E\uFF0C\u6587\u7AE0\u90FD\u662F\u5B9D\u85CF"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://blog.maximeheckel.com/",children:'"I am bored, let me show you fluid simulation"'})," \u2014\u2014 Maxime Heckel \u7684\u9AD8\u8D28\u91CF shader \u7CFB\u5217"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.em,{children:"The Book of Shaders"})," + ",(0,e.jsx)(n.em,{children:"OpenGL Shading Language"}),", Randi Rost \u2014\u2014 GLSL \u7CFB\u7EDF\u5316\u4E66"]}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"threejs-shader-\u8D44\u6E90",children:"Three.js shader \u8D44\u6E90"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://threejs.org/manual/#en/custom-shaders",children:"Three.js Shader \u7AE0\u8282"})," \u2014\u2014 \u5B98\u65B9\u6559\u7A0B"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://github.com/mrdoob/three.js/tree/master/src/renderers/shaders/ShaderChunk",children:(0,e.jsx)(n.code,{children:"src/renderers/shaders/ShaderChunk/"})})," \u2014\u2014 100+ \u5185\u7F6E chunk"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderLib.js",children:(0,e.jsx)(n.code,{children:"src/renderers/shaders/ShaderLib.js"})})," \u2014\u2014 \u5B8C\u6574\u6750\u8D28 shader \u5165\u53E3"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://github.com/FarazzShaikh/THREE-CustomShaderMaterial",children:(0,e.jsx)(n.code,{children:"three-custom-shader-material"})})," \u2014\u2014 onBeforeCompile \u73B0\u4EE3\u5C01\u88C5"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://github.com/FarazzShaikh/glsl-fbm",children:(0,e.jsx)(n.code,{children:"three-shader-fbm"})})," \u2014\u2014 \u566A\u58F0\u51FD\u6570\u5E93"]}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u5DE5\u5177",children:"\u5DE5\u5177"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://spector.babylonjs.com/",children:"Spector.js"})," \u2014\u2014 WebGL \u8C03\u7528\u8FFD\u8E2A"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://shaderpark.com/",children:"Shader Park"})," \u2014\u2014 \u7528 JS \u5199 shader \u7684\u53EF\u89C6\u5316\u5DE5\u5177"]}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u6570\u5B66\u57FA\u7840",children:"\u6570\u5B66\u57FA\u7840"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://www.khanacademy.org/math/linear-algebra",children:"Khan Academy Linear Algebra"})," \u2014\u2014 \u77E9\u9635\u4E0E\u5411\u91CF"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://www.3blue1brown.com/topics/linear-algebra",children:"3Blue1Brown Linear Algebra Series"})," \u2014\u2014 \u51E0\u4F55\u76F4\u89C9"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.a,{href:"https://www.youtube.com/c/jorgevino",children:"Math for Game Developers (YouTube)"})," \u2014\u2014 \u7CFB\u5217\u8BB2\u5EA7"]}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u7CFB\u5217\u5185\u6587\u7AE0",children:"\u7CFB\u5217\u5185\u6587\u7AE0"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:["\u4E0A\u4E00\u7BC7\uFF1A",(0,e.jsx)(n.a,{href:"/blog/threejs-06-loaders",children:"Three.js\uFF08\u516D\uFF09\u52A0\u8F7D\u5916\u90E8\u8D44\u4EA7"})]}),`
+`,(0,e.jsxs)(n.li,{children:["\u4E0B\u4E00\u7BC7\uFF1A",(0,e.jsx)(n.a,{href:"/blog/threejs-08-postprocessing",children:"Three.js\uFF08\u516B\uFF09\u540E\u5904\u7406\u4E0E\u7279\u6548"})]}),`
+`,(0,e.jsxs)(n.li,{children:["\u7CFB\u5217\u5730\u56FE\uFF1A",(0,e.jsx)(n.a,{href:"/blog/threejs-01-overview",children:"Three.js\uFF08\u4E00\uFF09\u5E8F\u7AE0"})]}),`
+`]})]})}function h(a={}){let{wrapper:n}=a.components||{};return n?(0,e.jsx)(n,{...a,children:(0,e.jsx)(d,{...a})}):d(a)}function x(a,n){throw new Error("Expected "+(n?"component":"object")+" `"+a+"` to be defined: you likely forgot to import, pass, or provide it.")}return y(S);})();
+;return Component;7:X
+c:X
+c:C
+0:{"buildId":"arb80KYxBUU24vVOqOQ91","data":[{"rsc":["$","$1","c",{"children":[["$","article",null,{"children":[["$","div",null,{"children":[["$","h1",null,{"children":"Three.js 学习系列（七）着色器入门：ShaderMaterial、GLSL 与 onBeforeCompile","ref":null,"className":"rt-Heading rt-r-size-8"}],["$","span",null,{"children":"学到这里你已经能搭出 PBR 场景。但所有\"看上去很酷\"的效果（流光、溶解、屏幕扭曲、卡通描边）几乎都靠 shader。这一篇用最少的 GLSL 把渲染管线讲清楚，然后做出 5 个能落地的实战效果。","data-accent-color":"gray","ref":null,"className":"rt-Text rt-r-size-3"}],["$","div",null,{"children":[["$","span",null,{"children":["$","time",null,{"dateTime":"2026-06-03T00:00:00.000Z","children":"2026-06-03"}],"data-accent-color":"gray","ref":null,"className":"rt-Text rt-r-size-2"}],"$undefined",["$","span",null,{"children":["· 阅读 ",["$","span",null,{"id":"busuanzi_value_page_pv","children":"--"}]," 次"],"data-accent-color":"gray","id":"busuanzi_container_page_pv","style":{"display":"none"},"ref":null,"className":"rt-Text rt-r-size-2"}],[["$","span","threejs",{"data-accent-color":"gray","data-radius":"full","children":"threejs","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","shader",{"data-accent-color":"gray","data-radius":"full","children":"shader","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","glsl",{"data-accent-color":"gray","data-radius":"full","children":"glsl","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","webgl",{"data-accent-color":"gray","data-radius":"full","children":"webgl","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","learning-series",{"data-accent-color":"gray","data-radius":"full","children":"learning-series","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}]]],"className":"rt-Flex rt-r-ai-center rt-r-fw-wrap rt-r-gap-3"}]],"className":"rt-Flex rt-r-fd-column rt-r-gap-3 rt-r-py-4 rt-r-mb-4"}],["$","$L2",null,{"code":"$3"}]]}],["$L4"],"$L5"]}],"isPartial":"$@6","staleTime":"$7","varyParams":null},{"rsc":"$L8","isPartial":"$@9","staleTime":"$7","varyParams":null},{"rsc":"$La","isPartial":"$@b","staleTime":"$7","varyParams":"$c"},{"rsc":"$Ld","isPartial":"$@e","staleTime":"$7","varyParams":"$c"}],"isUpgradeableISRFallback":false,"a":"$@f","rootVaryParams":null,"needsRuntimeRequest":"$@10"}
+11:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"OutletBoundary"]
+12:"$Sreact.suspense"
+14:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"ViewportBoundary"]
+15:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"MetadataBoundary"]
+16:I[79286,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"IconMark"]
+17:I[82785,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+18:I[96691,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+4:["$","script","script-0",{"src":"/_next/static/chunks/1z5dea6idlh-3.js","async":true}]
+5:["$","$L11",null,{"children":["$","$12",null,{"name":"Next.MetadataOutlet","children":"$@13"}]}]
+8:["$","$1","h",{"children":[null,["$","$L14",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L15",null,{"children":["$","$12",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Three.js 学习系列（七）着色器入门：ShaderMaterial、GLSL 与 onBeforeCompile · Yuns"}],["$","meta","1",{"name":"description","content":"学到这里你已经能搭出 PBR 场景。但所有\"看上去很酷\"的效果（流光、溶解、屏幕扭曲、卡通描边）几乎都靠 shader。这一篇用最少的 GLSL 把渲染管线讲清楚，然后做出 5 个能落地的实战效果。"}],["$","meta","2",{"property":"og:title","content":"Three.js 学习系列（七）着色器入门：ShaderMaterial、GLSL 与 onBeforeCompile · Yuns"}],["$","meta","3",{"property":"og:description","content":"学到这里你已经能搭出 PBR 场景。但所有\"看上去很酷\"的效果（流光、溶解、屏幕扭曲、卡通描边）几乎都靠 shader。这一篇用最少的 GLSL 把渲染管线讲清楚，然后做出 5 个能落地的实战效果。"}],["$","meta","4",{"property":"og:url","content":"https://yunstv.cn/"}],["$","meta","5",{"property":"og:site_name","content":"Yuns"}],["$","meta","6",{"property":"og:locale","content":"zh_CN"}],["$","meta","7",{"property":"og:type","content":"website"}],["$","meta","8",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","9",{"name":"twitter:title","content":"Three.js 学习系列（七）着色器入门：ShaderMaterial、GLSL 与 onBeforeCompile · Yuns"}],["$","meta","10",{"name":"twitter:description","content":"学到这里你已经能搭出 PBR 场景。但所有\"看上去很酷\"的效果（流光、溶解、屏幕扭曲、卡通描边）几乎都靠 shader。这一篇用最少的 GLSL 把渲染管线讲清楚，然后做出 5 个能落地的实战效果。"}],["$","link","11",{"rel":"icon","href":"/icon.svg?icon.34tmb8j3tcgf5.svg","sizes":"any","type":"image/svg+xml"}],["$","$L16","12",{}]]}]}]}],null]}]
+a:["$","$1","c",{"children":[null,["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}]}]]}]
+d:["$","$1","c",{"children":[null,["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}]}]]}]
+10:true
+13:null
+7:300
+7:C
+f:0
+9:"$undefined"
+b:"$undefined"
+e:"$undefined"
+6:"$undefined"

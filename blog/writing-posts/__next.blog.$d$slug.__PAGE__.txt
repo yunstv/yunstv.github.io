@@ -1,0 +1,124 @@
+1:"$Sreact.fragment"
+2:I[54901,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js","/_next/static/chunks/1z5dea6idlh-3.js"],"MDXContent"]
+3:T397c,var Component=(()=>{var m=Object.create;var r=Object.defineProperty;var p=Object.getOwnPropertyDescriptor;var u=Object.getOwnPropertyNames;var g=Object.getPrototypeOf,f=Object.prototype.hasOwnProperty;var x=(c,n)=>()=>(n||c((n={exports:{}}).exports,n),n.exports),k=(c,n)=>{for(var l in n)r(c,l,{get:n[l],enumerable:!0})},t=(c,n,l,i)=>{if(n&&typeof n=="object"||typeof n=="function")for(let d of u(n))!f.call(c,d)&&d!==l&&r(c,d,{get:()=>n[d],enumerable:!(i=p(n,d))||i.enumerable});return c};var N=(c,n,l)=>(l=c!=null?m(g(c)):{},t(n||!c||!c.__esModule?r(l,"default",{value:c,enumerable:!0}):l,c)),b=c=>t(r({},"__esModule",{value:!0}),c);var a=x((v,o)=>{o.exports=_jsx_runtime});var w={};k(w,{default:()=>h,frontmatter:()=>y});var e=N(a()),y={title:"\u4ECE MDX \u5230\u4E0A\u7EBF\uFF1A\u535A\u5BA2\u5199\u4F5C\u5DE5\u4F5C\u6D41",description:"\u4E00\u4EFD\u7ED9\u6211\u81EA\u5DF1\uFF08\u4E5F\u7ED9\u4EFB\u4F55\u60F3 fork \u8FD9\u4E2A\u4ED3\u5E93\u7684\u4EBA\uFF09\u7684\u5199\u4F5C\u6D41\u7A0B\u2014\u2014\u65B0\u5EFA\u6587\u4EF6\u3001\u5199 frontmatter\u3001\u672C\u5730\u9884\u89C8\u3001\u53D1\u5E03\u3002",date:"2026-05-13",tags:["meta","mdx","workflow"]};function s(c){let n={a:"a",code:"code",h2:"h2",h3:"h3",li:"li",p:"p",pre:"pre",span:"span",strong:"strong",ul:"ul",...c.components},{Callout:l}=n;return l||C("Callout",!0),(0,e.jsxs)(e.Fragment,{children:[(0,e.jsx)(n.p,{children:"\u8FD9\u7BC7\u6587\u7AE0\u672C\u8EAB\u5C31\u662F\u6309\u4E0B\u9762\u7684\u6B65\u9AA4\u5199\u51FA\u6765\u7684\u2014\u2014\u53EF\u4EE5\u7406\u89E3\u4E3A\u8FD9\u5957\u6D41\u7A0B\u7684\u6D3B\u4F53\u6D4B\u8BD5\u3002"}),`
+`,(0,e.jsx)(n.h2,{id:"tldr",children:"TL;DR"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-bash",children:[(0,e.jsx)(n.span,{className:"token comment",children:"# 1. \u65B0\u5EFA\u6587\u4EF6"}),`
+`,(0,e.jsx)(n.span,{className:"token function",children:"touch"}),` content/posts/my-new-post.mdx
+
+`,(0,e.jsx)(n.span,{className:"token comment",children:"# 2. \u5199 frontmatter + \u6B63\u6587"}),`
+`,(0,e.jsx)(n.span,{className:"token variable",children:"$EDITOR"}),` content/posts/my-new-post.mdx
+
+`,(0,e.jsx)(n.span,{className:"token comment",children:"# 3. \u672C\u5730\u770B\u6548\u679C\uFF08dev server \u4F1A\u70ED\u66F4\u65B0\uFF09"}),`
+`,(0,e.jsx)(n.span,{className:"token function",children:"pnpm"}),` dev
+
+`,(0,e.jsx)(n.span,{className:"token comment",children:"# 4. \u6EE1\u610F\u4E86\u5C31\u63D0\u4EA4"}),`
+`,(0,e.jsx)(n.span,{className:"token function",children:"git"})," ",(0,e.jsx)(n.span,{className:"token function",children:"add"}),` content/posts/my-new-post.mdx
+`,(0,e.jsx)(n.span,{className:"token function",children:"git"})," commit ",(0,e.jsx)(n.span,{className:"token parameter variable",children:"-m"})," ",(0,e.jsx)(n.span,{className:"token string",children:'"post: my-new-post"'}),`
+`,(0,e.jsx)(n.span,{className:"token function",children:"git"}),` push
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:["\u6587\u4EF6\u540D\u5C31\u662F URL slug\uFF0C",(0,e.jsx)(n.code,{children:"my-new-post.mdx"})," \u5BF9\u5E94 ",(0,e.jsx)(n.code,{children:"/blog/my-new-post"}),"\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"frontmatter-\u5B57\u6BB5",children:"frontmatter \u5B57\u6BB5"}),`
+`,(0,e.jsx)(n.p,{children:"\u6700\u5C0F\u53EF\u53D1\u5E03\u7684 frontmatter\uFF1A"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-mdx",children:`---
+title: \u6807\u9898
+description: \u4E00\u53E5\u8BDD\u6458\u8981\uFF0C\u4F1A\u663E\u793A\u5728\u5217\u8868\u9875\u5361\u7247\u548C SEO meta \u4E0A
+date: 2026-05-13
+---
+`})}),`
+`,(0,e.jsx)(n.p,{children:"\u5B8C\u6574\u53EF\u9009\u5B57\u6BB5\uFF1A"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.code,{children:"title"})," (",(0,e.jsx)(n.strong,{children:"\u5FC5\u586B"}),")\u2014\u2014\u5361\u7247\u548C\u8BE6\u60C5\u9875\u6807\u9898"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.code,{children:"description"})," (",(0,e.jsx)(n.strong,{children:"\u5FC5\u586B"}),")\u2014\u2014\u5217\u8868\u5361\u7247\u6458\u8981 + OG description"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.code,{children:"date"})," (",(0,e.jsx)(n.strong,{children:"\u5FC5\u586B"}),")\u2014\u2014\u53D1\u5E03\u65E5\u671F\uFF0C\u51B3\u5B9A\u6392\u5E8F\uFF0C",(0,e.jsxs)(n.strong,{children:["\u5199 ",(0,e.jsx)(n.code,{children:"YYYY-MM-DD"})," \u4E0D\u8981\u52A0\u5F15\u53F7"]})]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.code,{children:"updated"}),"\u2014\u2014\u6700\u8FD1\u4FEE\u6539\u65E5\uFF0C\u53EF\u9009"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.code,{children:"tags"}),"\u2014\u2014\u6807\u7B7E\u6570\u7EC4\uFF0C\u4F8B\uFF1A",(0,e.jsx)(n.code,{children:"[mdx, story]"})]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.code,{children:"cover"}),"\u2014\u2014\u5C01\u9762\u56FE\u8DEF\u5F84\uFF0C\u53EF\u9009\uFF08\u76EE\u524D\u6A21\u677F\u6CA1\u7528\u5230\uFF0C\u52A0\u4E86\u4E5F\u65E0\u5BB3\uFF09"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.code,{children:"draft"}),"\u2014\u2014",(0,e.jsx)(n.code,{children:"true"})," \u65F6",(0,e.jsx)(n.strong,{children:"\u751F\u4EA7\u6784\u5EFA\u4F1A\u8FC7\u6EE4\u6389"}),"\uFF0C\u4F46\u672C\u5730 ",(0,e.jsx)(n.code,{children:"pnpm dev"})," \u4ECD\u7136\u53EF\u89C1"]}),`
+`]}),`
+`,(0,e.jsx)(l,{type:"info",children:(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.code,{children:"draft: true"})," \u7684\u6587\u7AE0\u5728 ",(0,e.jsx)(n.code,{children:"pnpm build"})," \u540E\u8BBF\u95EE\u4F1A\u8FD4\u56DE 404\uFF0C\u4F46\u4ECD\u51FA\u73B0\u5728 ",(0,e.jsx)(n.code,{children:"pnpm dev"})," \u4E2D\u2014\u2014\u8FD9\u6B63\u662F\u8981\u7684\uFF1A\u8FB9\u5199\u8FB9\u770B\uFF0C\u4F46\u4E0D\u4F1A\u8BEF\u63A8\u5230\u7EBF\u4E0A\u3002"]})}),`
+`,(0,e.jsx)(n.h2,{id:"\u5199\u6B63\u6587",children:"\u5199\u6B63\u6587"}),`
+`,(0,e.jsxs)(n.p,{children:["\u6587\u4EF6\u540E\u7F00\u662F ",(0,e.jsx)(n.code,{children:".mdx"}),"\uFF0C\u610F\u5473\u7740\u4F60\u53EF\u4EE5\u540C\u65F6\u7528\uFF1A"]}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"CommonMark Markdown"}),"\u2014\u2014\u6807\u9898\u3001\u5217\u8868\u3001\u5F15\u7528\u3001\u94FE\u63A5\u3001\u56FE\u7247\u3001\u4EE3\u7801\u5757"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"React \u7EC4\u4EF6"}),"\u2014\u2014\u76F4\u63A5 JSX \u6807\u7B7E"]}),`
+`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u4EE3\u7801\u5757\u5E26\u9AD8\u4EAE",children:"\u4EE3\u7801\u5757\uFF08\u5E26\u9AD8\u4EAE\uFF09"}),`
+`,(0,e.jsx)(n.p,{children:"\u56F4\u680F\u4EE3\u7801\u5757\u52A0\u8BED\u8A00\u540D\u5373\u53EF\uFF0Crefractor \u4F1A\u73B0\u573A\u9AD8\u4EAE\uFF1A"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-mdx",children:"```tsx\nexport function Hello() {\n  return <h1>Hi</h1>\n}\n```\n"})}),`
+`,(0,e.jsxs)(n.p,{children:[`\u5DF2\u6CE8\u518C\u7684\u8BED\u8A00\uFF1Atsx\u3001jsx\u3001ts\u3001js\u3001bash\u3001json\u3001yaml\u3001css\u3001html\u3001python\u3001go\u3001rust \u7B49
+\uFF08\u89C1 `,(0,e.jsx)(n.code,{children:"lib/rehype/highlight.ts"}),"\uFF09\u3002\u4E0D\u5728\u5217\u8868\u91CC\u7684\u4F1A\u4FDD\u6301\u7EAF\u6587\u672C\uFF0C\u4E0D\u62A5\u9519\u3002"]}),`
+`,(0,e.jsxs)(n.h3,{id:"\u81EA\u5B9A\u4E49\u7EC4\u4EF6callout",children:["\u81EA\u5B9A\u4E49\u7EC4\u4EF6\uFF1A",(0,e.jsx)(n.code,{children:"<Callout>"})]}),`
+`,(0,e.jsx)(n.p,{children:"\u56DB\u79CD type\uFF0C\u7EA2\u9EC4\u7EFF\u84DD\u4EFB\u9009\uFF1A"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsx)(n.code,{className:"language-mdx",children:`<Callout type="info">\u63D0\u793A\u6027\u4FE1\u606F</Callout>
+<Callout type="warning">\u9700\u8981\u6CE8\u610F\u7684\u4E8B</Callout>
+<Callout type="success">\u606D\u559C\u4F60\u505A\u5BF9\u4E86</Callout>
+<Callout type="danger">\u5C0F\u5FC3\uFF0C\u4F1A\u70B8</Callout>
+`})}),`
+`,(0,e.jsx)(n.p,{children:"\u6548\u679C\u50CF\u8FD9\u6837\uFF1A"}),`
+`,(0,e.jsxs)(l,{type:"success",children:["\u8FD9\u5C31\u662F ",(0,e.jsx)(n.code,{children:'<Callout type="success">'})," \u957F\u7684\u6837\u5B50\u3002"]}),`
+`,(0,e.jsxs)(n.p,{children:["\u65B0\u52A0\u81EA\u5B9A\u4E49\u7EC4\u4EF6\u7684\u65B9\u5F0F\uFF1A\u5728 ",(0,e.jsx)(n.code,{children:"components/mdx/"}),` \u4E0B\u5199\u4E00\u4E2A\u7EC4\u4EF6\uFF0C
+\u7136\u540E\u5230 `,(0,e.jsx)(n.code,{children:"components/mdx/mdx-components.tsx"}),` \u91CC export \u5B83\uFF0C
+\u4E4B\u540E\u6240\u6709 MDX \u6587\u7AE0\u90FD\u80FD\u76F4\u63A5\u7528\u3002`]}),`
+`,(0,e.jsx)(n.h3,{id:"\u56FE\u7247\u97F3\u89C6\u9891",children:"\u56FE\u7247\u3001\u97F3\u89C6\u9891"}),`
+`,(0,e.jsxs)(n.p,{children:["\u53C2\u89C1 ",(0,e.jsx)(n.a,{href:"/blog/embedding-media",children:"\u300A\u5728 MDX \u535A\u5BA2\u91CC\u52A0\u56FE\u7247\u3001\u97F3\u4E50\u548C\u89C6\u9891\u300B"}),`\u2014\u2014
+\u91CC\u9762\u8BB2\u4E86\u4EC0\u4E48\u65F6\u5019\u653E `,(0,e.jsx)(n.code,{children:"public/"}),"\u3001\u4EC0\u4E48\u65F6\u5019\u8D70\u5916\u90E8\u5D4C\u5165\u3001\u5BF9\u5E94\u7EC4\u4EF6\u957F\u4EC0\u4E48\u6837\u3002"]}),`
+`,(0,e.jsx)(n.h3,{id:"\u6682\u4E0D\u652F\u6301\u7684\u8BED\u6CD5",children:"\u6682\u4E0D\u652F\u6301\u7684\u8BED\u6CD5"}),`
+`,(0,e.jsxs)(n.p,{children:["\u6784\u5EFA\u7BA1\u7EBF\u91CC\u76EE\u524D\u6CA1\u88C5 ",(0,e.jsx)(n.code,{children:"remark-gfm"}),"\uFF0C\u6240\u4EE5\u4E0B\u9762\u8FD9\u4E9B GitHub \u98CE\u5473 Markdown ",(0,e.jsx)(n.strong,{children:"\u4E0D\u4F1A\u6309\u9884\u671F\u6E32\u67D3"}),"\uFF1A"]}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:["\u8868\u683C (",(0,e.jsx)(n.code,{children:"| a | b |"}),")"]}),`
+`,(0,e.jsxs)(n.li,{children:["\u4EFB\u52A1\u5217\u8868 (",(0,e.jsx)(n.code,{children:"- [ ]"}),")"]}),`
+`,(0,e.jsxs)(n.li,{children:["\u5220\u9664\u7EBF (",(0,e.jsx)(n.code,{children:"~~foo~~"}),")"]}),`
+`,(0,e.jsx)(n.li,{children:"\u88F8 URL \u81EA\u52A8\u94FE\u63A5"}),`
+`]}),`
+`,(0,e.jsxs)(n.p,{children:["\u7ED5\u8FC7\u529E\u6CD5\uFF1A\u8868\u683C\u7528\u5217\u8868\u4EE3\u66FF\uFF0C\u6216\u8005\u771F\u7684\u9700\u8981\u65F6\u518D\u88C5 ",(0,e.jsx)(n.code,{children:"remark-gfm"})," \u52A0\u5230 ",(0,e.jsx)(n.code,{children:"lib/mdx.ts"})," \u7684 ",(0,e.jsx)(n.code,{children:"remarkPlugins"})," \u91CC\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u8349\u7A3F\u5DE5\u4F5C\u6D41",children:"\u8349\u7A3F\u5DE5\u4F5C\u6D41"}),`
+`,(0,e.jsx)(n.p,{children:"\u5199\u4E00\u534A\u4E0D\u60F3\u53D1\u5E03\uFF1F\u7ED9 frontmatter \u52A0\u4E00\u884C\uFF1A"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-yaml",children:[(0,e.jsx)(n.span,{className:"token key atrule",children:"draft"}),(0,e.jsx)(n.span,{className:"token punctuation",children:":"})," ",(0,e.jsx)(n.span,{className:"token boolean important",children:"true"}),`
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:["\u672C\u5730\u7167\u5E38 ",(0,e.jsx)(n.code,{children:"pnpm dev"})," \u9884\u89C8\uFF0C\u4F46 ",(0,e.jsx)(n.code,{children:"pnpm build"}),` \u4E0D\u4F1A\u751F\u6210\u5B83\u7684\u9875\u9762\uFF0C
+\u5217\u8868\u9875\u548C sitemap \u4E5F\u4E0D\u4F1A\u5305\u542B\u2014\u2014\u7EBF\u4E0A\u8BBF\u95EE `,(0,e.jsx)(n.code,{children:"/blog/<slug>"})," \u76F4\u63A5 404\u3002"]}),`
+`,(0,e.jsxs)(n.p,{children:["\u5199\u5B8C\u4E86\u518D\u53BB\u6389\u8FD9\u4E00\u884C\uFF08\u6216\u8005\u6539\u6210 ",(0,e.jsx)(n.code,{children:"draft: false"}),"\uFF09\u5373\u53EF\u3002"]}),`
+`,(0,e.jsx)(n.h2,{id:"\u4E00\u4E9B\u5751",children:"\u4E00\u4E9B\u5751"}),`
+`,(0,e.jsxs)(n.ul,{children:[`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"YAML \u91CC\u7684\u65E5\u671F\u4E0D\u8981\u52A0\u5F15\u53F7"}),"\uFF1A\u5199 ",(0,e.jsx)(n.code,{children:"date: 2026-05-13"})," \u800C\u4E0D\u662F ",(0,e.jsx)(n.code,{children:'date: "2026-05-13"'}),`\u3002
+gray-matter \u4F1A\u628A\u65E0\u5F15\u53F7\u7684 ISO \u65E5\u671F\u89E3\u6790\u6210 JS \u7684 `,(0,e.jsx)(n.code,{children:"Date"}),` \u5BF9\u8C61\uFF0C\u52A0\u5F15\u53F7\u53CD\u800C\u53D8\u6210\u5B57\u7B26\u4E32\u2014\u2014
+\u5185\u90E8\u6392\u5E8F\u5BF9\u4E24\u79CD\u60C5\u51B5\u90FD\u505A\u4E86\u517C\u5BB9\uFF0C\u4F46\u4FDD\u6301\u4E00\u81F4\u66F4\u7701\u5FC3\u3002`]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"slug \u6765\u81EA\u6587\u4EF6\u540D"}),"\uFF1A",(0,e.jsx)(n.code,{children:"Hello World.mdx"}),"\uFF08\u5E26\u7A7A\u683C\u5927\u5199\uFF09\u4F1A\u751F\u6210 ",(0,e.jsx)(n.code,{children:"/blog/Hello World"}),` \u8FD9\u79CD\u4E11\u964B URL\uFF0C
+\u7EDF\u4E00\u7528 kebab-case \u7684\u82F1\u6587 / \u62FC\u97F3\u3002`]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u6539\u5B8C frontmatter \u4E0D\u5237\u65B0"}),"\uFF1ANext.js 16 \u7684 dev \u5076\u5C14\u4E0D\u76D1\u542C ",(0,e.jsx)(n.code,{children:".mdx"}),` \u6587\u4EF6\u53D8\u5316\uFF0C
+\u4FDD\u5B58\u540E\u6D4F\u89C8\u5668\u770B\u4E0D\u5230 \u2192 \u5728\u7EC8\u7AEF `,(0,e.jsx)(n.code,{children:"Ctrl+C"})," \u540E\u91CD\u8DD1 ",(0,e.jsx)(n.code,{children:"pnpm dev"}),"\u3002"]}),`
+`,(0,e.jsxs)(n.li,{children:[(0,e.jsx)(n.strong,{children:"\u65B0\u88C5\u7684\u7EC4\u4EF6\u5FD8\u8BB0\u6CE8\u518C"}),"\uFF1A\u5728 ",(0,e.jsx)(n.code,{children:"components/mdx/"}),` \u4E0B\u5199\u4E86\u7EC4\u4EF6\uFF0C
+\u4F46 `,(0,e.jsx)(n.code,{children:"mdx-components.tsx"})," \u6CA1\u5BFC\u51FA \u2192 MDX \u91CC\u5199 ",(0,e.jsx)(n.code,{children:"<Foo />"})," \u4F1A\u6E32\u67D3\u6210\u5B57\u9762\u5B57\u7B26\u4E32\u800C\u4E0D\u662F\u7EC4\u4EF6\u3002"]}),`
+`]}),`
+`,(0,e.jsx)(n.h2,{id:"\u5199\u5B8C\u4E4B\u540E",children:"\u5199\u5B8C\u4E4B\u540E"}),`
+`,(0,e.jsx)(n.pre,{children:(0,e.jsxs)(n.code,{className:"refractor language-bash",children:[(0,e.jsx)(n.span,{className:"token function",children:"pnpm"})," build          ",(0,e.jsx)(n.span,{className:"token comment",children:"# \u786E\u8BA4 prod \u6784\u5EFA\u8FC7\u5F97\u4E86"}),`
+`,(0,e.jsx)(n.span,{className:"token function",children:"git"})," ",(0,e.jsx)(n.span,{className:"token function",children:"add"})," content/    ",(0,e.jsx)(n.span,{className:"token comment",children:"# \u53EA add \u81EA\u5DF1\u6539\u8FC7\u7684\u5185\u5BB9\u6587\u4EF6"}),`
+`,(0,e.jsx)(n.span,{className:"token function",children:"git"})," commit ",(0,e.jsx)(n.span,{className:"token parameter variable",children:"-m"})," ",(0,e.jsx)(n.span,{className:"token string",children:'"post: \u600E\u4E48\u5F80\u8FD9\u4E2A\u535A\u5BA2\u52A0\u65B0\u6587\u7AE0"'}),`
+`,(0,e.jsx)(n.span,{className:"token function",children:"git"}),` push
+`]})}),`
+`,(0,e.jsxs)(n.p,{children:[(0,e.jsx)(n.code,{children:"git push"})," \u540E Vercel / Cloudflare Pages \u4F1A\u81EA\u52A8\u6784\u5EFA\u90E8\u7F72\uFF0C\u7EA6\u4E00\u5206\u949F\u5185\u6587\u7AE0\u4E0A\u7EBF\u3002"]})]})}function h(c={}){let{wrapper:n}=c.components||{};return n?(0,e.jsx)(n,{...c,children:(0,e.jsx)(s,{...c})}):s(c)}function C(c,n){throw new Error("Expected "+(n?"component":"object")+" `"+c+"` to be defined: you likely forgot to import, pass, or provide it.")}return b(w);})();
+;return Component;7:X
+c:X
+c:C
+0:{"buildId":"arb80KYxBUU24vVOqOQ91","data":[{"rsc":["$","$1","c",{"children":[["$","article",null,{"children":[["$","div",null,{"children":[["$","h1",null,{"children":"从 MDX 到上线：博客写作工作流","ref":null,"className":"rt-Heading rt-r-size-8"}],["$","span",null,{"children":"一份给我自己（也给任何想 fork 这个仓库的人）的写作流程——新建文件、写 frontmatter、本地预览、发布。","data-accent-color":"gray","ref":null,"className":"rt-Text rt-r-size-3"}],["$","div",null,{"children":[["$","span",null,{"children":["$","time",null,{"dateTime":"2026-05-13T00:00:00.000Z","children":"2026-05-13"}],"data-accent-color":"gray","ref":null,"className":"rt-Text rt-r-size-2"}],"$undefined",["$","span",null,{"children":["· 阅读 ",["$","span",null,{"id":"busuanzi_value_page_pv","children":"--"}]," 次"],"data-accent-color":"gray","id":"busuanzi_container_page_pv","style":{"display":"none"},"ref":null,"className":"rt-Text rt-r-size-2"}],[["$","span","meta",{"data-accent-color":"gray","data-radius":"full","children":"meta","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","mdx",{"data-accent-color":"gray","data-radius":"full","children":"mdx","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}],["$","span","workflow",{"data-accent-color":"gray","data-radius":"full","children":"workflow","className":"rt-reset rt-Badge rt-r-size-1 rt-variant-soft"}]]],"className":"rt-Flex rt-r-ai-center rt-r-fw-wrap rt-r-gap-3"}]],"className":"rt-Flex rt-r-fd-column rt-r-gap-3 rt-r-py-4 rt-r-mb-4"}],["$","$L2",null,{"code":"$3"}]]}],["$L4"],"$L5"]}],"isPartial":"$@6","staleTime":"$7","varyParams":null},{"rsc":"$L8","isPartial":"$@9","staleTime":"$7","varyParams":null},{"rsc":"$La","isPartial":"$@b","staleTime":"$7","varyParams":"$c"},{"rsc":"$Ld","isPartial":"$@e","staleTime":"$7","varyParams":"$c"}],"isUpgradeableISRFallback":false,"a":"$@f","rootVaryParams":null,"needsRuntimeRequest":"$@10"}
+11:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"OutletBoundary"]
+12:"$Sreact.suspense"
+14:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"ViewportBoundary"]
+15:I[69888,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"MetadataBoundary"]
+16:I[79286,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"IconMark"]
+17:I[82785,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+18:I[96691,["/_next/static/chunks/1nsrbqyxc3jhz.js","/_next/static/chunks/35jcrg_pbv004.js","/_next/static/chunks/1eb0qfr08lp_o.js","/_next/static/chunks/1a6h94gavxoac.js","/_next/static/chunks/2wdsszr6rdhse.js","/_next/static/chunks/1p1i_-g64s6a-.js"],"default"]
+4:["$","script","script-0",{"src":"/_next/static/chunks/1z5dea6idlh-3.js","async":true}]
+5:["$","$L11",null,{"children":["$","$12",null,{"name":"Next.MetadataOutlet","children":"$@13"}]}]
+8:["$","$1","h",{"children":[null,["$","$L14",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L15",null,{"children":["$","$12",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"从 MDX 到上线：博客写作工作流 · Yuns"}],["$","meta","1",{"name":"description","content":"一份给我自己（也给任何想 fork 这个仓库的人）的写作流程——新建文件、写 frontmatter、本地预览、发布。"}],["$","meta","2",{"property":"og:title","content":"从 MDX 到上线：博客写作工作流 · Yuns"}],["$","meta","3",{"property":"og:description","content":"一份给我自己（也给任何想 fork 这个仓库的人）的写作流程——新建文件、写 frontmatter、本地预览、发布。"}],["$","meta","4",{"property":"og:url","content":"https://yunstv.cn/"}],["$","meta","5",{"property":"og:site_name","content":"Yuns"}],["$","meta","6",{"property":"og:locale","content":"zh_CN"}],["$","meta","7",{"property":"og:type","content":"website"}],["$","meta","8",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","9",{"name":"twitter:title","content":"从 MDX 到上线：博客写作工作流 · Yuns"}],["$","meta","10",{"name":"twitter:description","content":"一份给我自己（也给任何想 fork 这个仓库的人）的写作流程——新建文件、写 frontmatter、本地预览、发布。"}],["$","link","11",{"rel":"icon","href":"/icon.svg?icon.34tmb8j3tcgf5.svg","sizes":"any","type":"image/svg+xml"}],["$","$L16","12",{}]]}]}]}],null]}]
+a:["$","$1","c",{"children":[null,["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}]}]]}]
+d:["$","$1","c",{"children":[null,["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}]}]]}]
+10:true
+13:null
+7:300
+7:C
+f:0
+9:"$undefined"
+b:"$undefined"
+e:"$undefined"
+6:"$undefined"
