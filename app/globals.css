@@ -25,6 +25,37 @@
   flex: 1 1 auto;
 }
 
+/* Full-page embed (/three-dimensional/*): lock the shell to the viewport, drop the
+   footer, and let the iframe fill everything below the sticky header. */
+.site-shell:has(.site-embed) {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+.site-shell:has(.site-embed) > footer {
+  display: none;
+}
+.site-main-wrap:has(.site-embed) {
+  min-height: 0;
+  padding: 0 !important;
+  max-width: none;
+}
+.site-main-wrap:has(.site-embed) > *,
+.site-main-wrap:has(.site-embed) main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-width: none !important;
+}
+.site-embed {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  display: block;
+}
+
 /* Refractor / Prism token colours — minimal, inherits site colour via currentColor */
 .refractor {
   font-family: var(--font-mono);

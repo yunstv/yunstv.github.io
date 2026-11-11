@@ -1,6 +1,13 @@
 import Link from 'next/link'
 import { Container, Flex, Text } from '@radix-ui/themes'
 import { ThemeToggle } from './theme-toggle'
+import { NavMenu, type NavMenuItem } from './nav-menu'
+
+const THREE_D: NavMenuItem[] = [
+  { href: '/three-dimensional/engine', label: '内燃机' },
+  { href: '/three-dimensional/drone', label: '无人机' },
+  { href: '/three-dimensional/ship', label: '运输船' },
+]
 
 const NAV = [
   { href: '/blog', label: 'Blog' },
@@ -27,6 +34,7 @@ export function SiteHeader() {
             <Text weight="bold" size="4">Yuns</Text>
           </Link>
           <Flex align="center" gap="5">
+            <NavMenu label="three-dimensional" items={THREE_D} />
             {NAV.map((n) => (
               <Link
                 key={n.href}
