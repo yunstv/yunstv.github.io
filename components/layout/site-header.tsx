@@ -7,6 +7,7 @@ const THREE_D: NavMenuItem[] = [
   { href: '/three-dimensional/engine', label: '内燃机' },
   { href: '/three-dimensional/drone', label: '无人机' },
   { href: '/three-dimensional/ship', label: '运输船' },
+  { href: '/three-dimensional/city', label: '灰港' },
 ]
 
 const NAV = [

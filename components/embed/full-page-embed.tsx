@@ -10,7 +10,6 @@ export function FullPageEmbed({ src, title }: { src: string; title: string }) {
       src={src}
       title={title}
       allow="fullscreen; autoplay"
-      allowFullScreen
     />
   )
 }
